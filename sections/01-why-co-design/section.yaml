@@ -1,0 +1,10 @@
+id: 01-why-co-design
+title: Why FP8 and Sparsity Have to Be Co-designed
+status: draft
+incoming_premise: MiniMax-H3 quality is the product contract.
+outgoing_question: What execution path lets FP8 and sparse attention share work?
+evidence:
+  - experiments/h100-4gpu-e2e/raw/operator-profile.json
+forbidden_claims:
+  - all TorchAO FP8 inference is unavailable on H100
+  - an unsupported backend is merely slower

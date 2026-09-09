@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Co-designing FP8, sparse attention, and multi-GPU execution for MiniMax-H3 in TeleFuser.">
+  <title>Fast and Faithful MiniMax-H3 Inference on H100</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../README.md">TeleFuser Engineering</a>
+    <nav aria-label="Article links">
+      <a href="#the-telefuser-path">System</a>
+      <a href="#end-to-end-evaluation">Results</a>
+      <a href="https://github.com/Tele-AI/TeleFuser">Code</a>
+    </nav>
+  </header>
+  <main>
+    <article><p><a href="../README.md">Back to the modular repository index</a></p>
+<h1>Fast and Faithful MiniMax-H3 Inference on H100</h1>
+<p><em>Co-designing FP8, sparse attention, and multi-GPU execution in TeleFuser</em></p>
+<p>MiniMax-H3 raises the bar for open video generation: one large diffusion
+transformer jointly produces high-resolution video and synchronized audio.
+That unified model is also expensive to serve. Long visual and audio sequences
+make attention costly, while the transformer&rsquo;s projections and feed-forward
+layers keep the tensor cores busy throughout denoising.</p>
+<p>The usual optimization menu looks straightforward: quantize the dense layers,
+make attention sparse, and split the sequence across GPUs. In practice, those
+features often work only as isolated switches. They disagree about tensor
+layouts, quantization scales, and where communication happens. Combining them
+can erase the speedup or, worse, produce a fast but visibly degraded result.</p>
+<p>We built a MiniMax-H3 path in TeleFuser that treats these choices as one
+execution design:</p>
+<ul>
+<li>FP8 Linear layers and an FP8 Sol-Attn kernel for NVIDIA H100;</li>
+<li>attention smoothing and selective dense computation to protect quality;</li>
+<li>tensor and Ulysses sequence parallelism for multi-GPU inference;</li>
+<li>adapter-aware weight preparation for Turbo and FastH3-style adapters.</li>
+</ul>
+<p>This post explains the design at a systems level, then compares the complete
+path with FastVideo&rsquo;s maintained FastH3 recipe on the same four H100 GPUs. The
+headline performance and quality results are <strong>TBD&ndash;new experiment required</strong>.</p>
+<p>MiniMax-H3 is the only model in this study. That constraint is deliberate: the
+goal is not to collect unrelated kernel wins, but to show that low precision,
+sparsity, distribution, and quality control can survive one real end-to-end
+generation workload.</p>
+<hr>
+<h1>Why FP8 and Sparsity Have to Be Co-designed</h1>
+<p>MiniMax-H3 packs text conditioning, video latents, and audio latents into the
+same denoising process. Richer outputs therefore increase two different kinds
+of work.</p>
+<p>First, projections, MLPs, and conditioning layers move large weight matrices
+through every transformer block. FP8 is a natural fit: H100 tensor cores can
+execute lower-precision matrix multiplication at much higher throughput while
+storing the dominant weights in half the bytes of BF16.</p>
+<p>Second, attention operates over a long multimodal sequence. Reducing precision
+does not change how many token pairs dense attention evaluates. Sol-Attn attacks
+that orthogonal dimension by selecting important blocks online and correcting
+for the skipped tail. The result is less attention work without retraining the
+model.</p>
+<p>Either technique alone leaves a major bottleneck untouched. Using both should
+be complementary, but a framework cannot get there by independently enabling
+an FP8 Linear wrapper and a sparse-attention backend. A typical path quantizes
+Q, K, and V for the three projections, converts them back to BF16 for
+normalization and rotary embedding, and then quantizes them again for
+low-precision attention. Under sequence parallelism, doing this before
+all-to-all also gives each rank scales for a tensor that is about to be
+redistributed.</p>
+<p>Hardware support adds another boundary. General FP8 Linear inference is
+available on H100, but an optimized format or kernel does not automatically
+cover sparse QK/PV attention, its routing metadata, or its scale layout. Some
+newer MXFP8 and NVFP4 routes target Blackwell and cannot simply be projected
+onto SM90. We therefore needed a native H100 path whose owner understands both
+quantization and sparse attention.</p>
+<p>That path is the center of this work: quantize once at the point where the
+attention tensor has its final layout, then keep routing and matrix
+multiplication inside one Sol-Attn implementation.</p>
+<hr>
+<h1>The TeleFuser Path</h1>
+<p><img alt="TeleFuser MiniMax-H3 execution overview" src="../sections/02-system-overview/assets/overview.svg"></p>
+<p>The optimized path has four stages.</p>
+<p><strong>1. Prepare the effective model once.</strong> TeleFuser loads the MiniMax-H3 base
+weights on CPU, applies the selected LoRA adapter, and then materializes the
+device-local FP8 caches. The ordering matters: a cache built before the adapter
+merge represents the wrong model. Once the cache is ready, the superseded
+higher-precision copy can be released instead of inflating runtime memory.</p>
+<p><strong>2. Run the dense transformer work in FP8.</strong> The large Linear layers use
+cached FP8 weights and dynamically quantized activations. This covers the
+projection and feed-forward work that sparse attention cannot reduce.</p>
+<p><strong>3. Preserve the sensitive transforms, then enter FP8 Sol-Attn.</strong> Q/K
+normalization and rotary embedding remain at higher precision. Q, K, and V are
+then prepared together for attention, so their scales and layouts match the
+consumer kernel. The custom SM90 implementation combines on-the-fly Sol routing
+with FP8 QK and PV computation; TMA and WGMMA keep the tiled data path native to
+H100.</p>
+<p><strong>4. Return a corrected output to the model.</strong> Sparse blocks are not simply
+dropped. Sol-Attn carries a compact summary of the skipped contribution, while
+TeleFuser restores the attention-centering correction before the next
+transformer operation.</p>
+<p>This organization removes conversions and layout hand-offs that would
+otherwise sit between independent framework features. It also keeps a clear
+fallback boundary: unsupported shapes can use a validated attention backend
+instead of silently entering an untested kernel path.</p>
+<p>The implementation spans several earlier TeleFuser changes, but the public
+interface is intentionally small. A MiniMax-H3 pipeline selects an FP8
+quantization policy, Sol-Attn, a sparsity threshold, optional smoothing, and a
+parallel topology. The complexity stays below that configuration layer.</p>
+<hr>
+<h1>Keeping Quality While Scaling Out</h1>
+<p>An optimization is not useful if it accelerates the wrong trajectory. Video
+diffusion is especially unforgiving: small errors are fed into later denoising
+updates, where they can appear as texture flicker, broken motion, or unstable
+audio. FP8 rounding and sparse routing perturb that same trajectory, so quality
+control has to be part of the execution path rather than a post-processing
+step.</p>
+<p>We use two lightweight controls.</p>
+<p>The first is <strong>attention smoothing</strong>. K can be centered without changing
+softmax attention because subtracting the same key mean shifts every logit in a
+row by the same constant. V is centered before quantization and its mean is
+added back to the output. Both operations reduce the range that FP8 must
+represent while preserving the corresponding high-precision attention
+identity. This is closer to numerical conditioning inside attention than to
+offline SmoothQuant.</p>
+<p>The second is <strong>selective dense computation</strong>. Early denoising updates and a
+small set of sensitive layers can stay dense, while Sol-Attn handles the rest.
+The sparsity threshold remains an explicit quality/performance control rather
+than a hidden constant. In the final profile we use one dense opening update,
+then the validated Sol threshold for the remaining transformer evaluations.</p>
+<p>The same numerical contract must survive distribution. TeleFuser communicates
+Q, K, and V first and performs attention preparation after Ulysses has given
+each rank complete sequence context for its local heads. This avoids deriving
+scales and means from the wrong shard. The four-GPU deployment combines TP2
+with Ulysses SP2: tensor parallelism covers wide Linear/MLP work, while sequence
+parallelism covers long attention. TeleFuser also supports overlapping Ulysses
+communication with attention computation.</p>
+<p>Finally, optimized weights remain adapter-aware. Turbo and FastH3 adapters are
+merged before quantization, with higher-precision accumulation for the weight
+update. FP8 caches are then created inside the worker that owns each GPU. These
+choices make the same optimized path usable for the base model and released
+LoRA variants without keeping stale weights or parent-process CUDA state.</p>
+<p>The result is one deployable configuration rather than separate FP8, sparse,
+parallel, and adapter demos. The remaining question is end-to-end: does it
+outperform an external H3 runtime while its generated video and audio remain
+useful?</p>
+<hr>
+<h1>End-to-End Evaluation</h1>
+<p>We compare against <strong>FastVideo&rsquo;s maintained FastH3 Dense/Data-Free recipe</strong>,
+not another TeleFuser mode. The baseline uses its intended BF16 Linear and FA4
+path with SP4. TeleFuser uses FP8 Linear, FP8 Sol-Attn with smoothing, and
+TP2 x Ulysses SP2. Each framework keeps its native distributed strategy, but
+both receive the same four H100 80GB GPUs and the same generation request.</p>
+<p>The matched workload uses the MiniMax-H3 base checkpoint, the released FastH3
+Dense/Data-Free adapter at strength 1.0, one fixed prompt and seed, 1344 x 768
+output, 124 frames at 24 FPS, and five scheduler sigma points (four actual DiT
+forwards). We run one full warm-up followed by five measured generations.
+End-to-end latency starts before prompt processing and ends after the MP4,
+including stereo audio, is closed.</p>
+<p><img alt="Four-H100 end-to-end comparison" src="../sections/04-evaluation/assets/end-to-end.svg"></p>
+<p>The final result is <strong>TBD&ndash;new experiment required</strong>. Once the four GPUs pass
+the clean-device gate, the chart will report median end-to-end latency,
+completed videos per hour, denoising throughput, and peak memory from the same
+runs. Raw samples, environment revisions, adapter hashes, and MP4 validity
+checks live in
+<a href="../experiments/h100-4gpu-e2e/README.md">the experiment directory</a>.</p>
+<h2>Quality is a gate, not decoration</h2>
+<p>Every timed output must first pass mechanical checks: exact resolution and
+frame count, decodable stereo audio, non-empty media, and no corrupt or black
+video. We then evaluate a fixed prompt suite covering fast motion, camera
+motion, multiple subjects, low-light detail, faces and hands, speech, and
+event-aligned sound.</p>
+<p>Tensor MSE, cosine similarity, and SQNR isolate error at the quantized attention
+boundary. Frame cosine, PSNR, SSIM, waveform cosine, and spectral distance
+describe end-to-end trajectory divergence. These metrics are diagnostic rather
+than a substitute for viewing the samples: two diffusion trajectories can
+diverge sample by sample while remaining perceptually valid.</p>
+<p>The HTML version of this post presents the original outputs as synchronized
+players:</p>
+<div class="video-pair" data-sync-group="primary">
+  <figure>
+    <figcaption>FastVideo FastH3 baseline</figcaption>
+    <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/fastvideo-primary.mp4" data-result-slot="fastvideo-primary"></video>
+  </figure>
+  <figure>
+    <figcaption>TeleFuser FP8 Sol-Attn</figcaption>
+    <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/telefuser-primary.mp4" data-result-slot="telefuser-primary"></video>
+  </figure>
+</div>
+
+<p>Both video and audio conclusions remain <strong>TBD&ndash;new experiment required</strong> until
+the matched outputs are generated and scored.</p>
+<hr>
+<h1>What We Learned</h1>
+<p>Efficient world-model inference is less about collecting optimization flags
+than about preserving contracts between them. FP8 helps the transformer-heavy
+parts of MiniMax-H3; sparse attention helps the long-sequence part. The useful
+speedup appears only when both operate on the same tensor layout and avoid
+paying for duplicate quantization, conversion, and communication.</p>
+<p>Quality techniques belong in that co-design. Attention smoothing, dense
+islands, and an explicit sparsity threshold are small pieces of math, but they
+decide whether a faster denoising loop still produces stable motion, detail,
+and synchronized sound. Multi-GPU execution and adapters then have to preserve
+those same statistics and effective weights.</p>
+<p>This work currently targets MiniMax-H3 on NVIDIA H100. Its custom FP8 Sol-Attn
+kernel is SM90-specific, and the chosen TP2 x Ulysses SP2 topology is a measured
+deployment choice rather than a universal replacement for Ring or other
+parallel layouts. The broader lesson is portable: optimize the end-to-end
+execution graph, validate the generated artifact, and treat quality as a hard
+constraint rather than a screenshot selected after benchmarking.</p>
+<p>The final measured conclusion is <strong>TBD&ndash;new experiment required</strong>.</p>
+<h2>Further reading</h2>
+<ul>
+<li><a href="https://huggingface.co/MiniMaxAI/MiniMax-H3">MiniMax-H3 model and official pipeline</a></li>
+<li><a href="https://nvlabs.github.io/Sana/Sol-Attn/">Sol-Attn: on-the-fly attention sparsification</a></li>
+<li><a href="https://haoailab.com/FastVideo/cookbook/minimax-h3/">FastVideo MiniMax-H3 cookbook</a></li>
+<li><a href="https://docs.pytorch.org/ao/stable/workflows/inference.html">TorchAO quantized inference workflows</a></li>
+<li><a href="https://github.com/Tele-AI/TeleFuser">TeleFuser</a></li>
+</ul></article>
+  </main>
+  <footer>
+    <span>MiniMax-H3 inference on NVIDIA H100</span>
+    <a href="../experiments/h100-4gpu-e2e/README.md">Reproduce the benchmark</a>
+  </footer>
+  <script src="video-sync.js"></script>
+</body>
+</html>

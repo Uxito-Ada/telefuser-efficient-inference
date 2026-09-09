@@ -1,54 +1,34 @@
-# Fast and Faithful World-Model Inference
+# Fast and Faithful MiniMax-H3 Inference
 
-**Co-designing FP8, sparse attention, and sequence parallelism for MiniMax-H3**
+**A community technical blog about co-designing FP8, sparse attention, and
+multi-GPU execution in TeleFuser.**
 
-This repository contains a modular draft of an efficient-AI technical article.
-It studies one question: how can a compute-bound world model become faster on
-NVIDIA H100 GPUs without giving up the visual, temporal, and audio quality that
-made the model useful in the first place?
+MiniMax-H3 generates high-resolution video and synchronized audio with one
+large diffusion transformer. This project explains how TeleFuser combines an
+H100-native FP8 Sol-Attn path, attention smoothing, sequence parallelism, and
+adapter-aware weight preparation without treating output quality as an
+afterthought.
 
-The article follows a single causal argument. Quality requirements make the
-MiniMax-H3 DiT expensive; quantization and sparsity are therefore both needed,
-but their numerical and systems contracts conflict. Resolving that conflict
-requires a hardware-aware FP8 sparse-attention path, explicit quality controls,
-and a distributed weight lifecycle that remains correct after adapters mutate
-the model.
-
-> **Draft status:** the method narrative is being written first. Every headline
-> performance or quality value is intentionally marked `TBD` until a new,
-> matched 4xH100 experiment is complete. Historical PR measurements are not
-> reused as final evidence.
-
-## Read the draft
-
-- [Assembled article](BLOG.md)
-- [Section editing guide](AUTHORING.md)
-- [Flagship experiment contract](experiments/h100-4gpu-e2e/README.md)
-- [Claim and evidence policy](evidence/README.md)
-- [Related work and writing references](references/README.md)
+- [Read the assembled article](BLOG.md)
+- [Open the HTML edition](site/index.html)
+- [Reproduce the four-H100 benchmark](experiments/h100-4gpu-e2e/README.md)
+- [Edit an individual section](AUTHORING.md)
 
 ## Article map
 
-| Section | Question it answers | Why the next section is necessary |
-|---|---|---|
-| [Abstract](sections/00-abstract/README.md) | What system problem and contribution does the article study? | The result needs a precise model-level problem. |
-| [Quality has a computational cost](sections/01-quality-cost/README.md) | Why is high-quality world-model inference expensive? | One optimization cannot remove both Linear and attention cost. |
-| [The composition gap](sections/02-composition-gap/README.md) | Why do FP8 and sparsity fail to compose through existing APIs? | A shared H100 execution path is missing. |
-| [The SM90 FP8 sparse path](sections/03-sm90-fp8-sol/README.md) | How are quantization, layout, routing, and compute fused? | Two approximations now perturb one denoising trajectory. |
-| [Quality under compound approximation](sections/04-quality-control/README.md) | How is error controlled without reverting the whole graph to BF16? | The numerical contract must survive tensor redistribution. |
-| [Distributed numerical contract](sections/05-distributed-contract/README.md) | Where do communication, quantization, and routing belong under Ulysses? | Production checkpoints are mutable through adapters. |
-| [Mutable weight lifecycle](sections/06-weight-lifecycle/README.md) | How do adapters, FP8 caches, and spawn workers remain consistent? | The complete system can finally be evaluated. |
-| [End-to-end evaluation](sections/07-evaluation/README.md) | Does the complete four-GPU system beat external baselines at comparable quality? | Results need interpretation and boundaries. |
-| [Discussion and conclusion](sections/08-discussion/README.md) | What generalizes, and what remains architecture-specific? | - |
+| Section | Focus |
+|---|---|
+| [Introduction](sections/00-introduction/README.md) | The MiniMax-H3 efficiency and quality problem |
+| [Why co-design](sections/01-why-co-design/README.md) | Why FP8 and sparse attention are complementary but not automatically composable |
+| [System overview](sections/02-system-overview/README.md) | The H100 execution path |
+| [Quality and scale](sections/03-quality-and-scale/README.md) | Smoothing, dense islands, multi-GPU execution, and adapters |
+| [Evaluation](sections/04-evaluation/README.md) | One matched external comparison with generated video and audio |
+| [Lessons](sections/05-lessons/README.md) | Scope, limitations, and takeaways |
 
-## Repository contract
+Each directory owns publishable prose, section metadata, and its media. The
+single article is generated with:
 
-Each section is intentionally self-contained for editing but not independent in
-argument. Its `README.md` contains publishable prose; `section.yaml` records the
-incoming premise, outgoing bridge, evidence requirements, and forbidden claims;
-`assets/` owns only media used by that section. `BLOG.md` is generated in order.
+    python scripts/build_blog.py
+    python scripts/validate_repo.py
 
-```bash
-python scripts/build_blog.py
-python scripts/validate_repo.py
-```
+Headline values remain marked TBD until the new matched experiment completes.

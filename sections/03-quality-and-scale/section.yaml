@@ -1,0 +1,17 @@
+id: 03-quality-and-scale
+title: Keeping Quality While Scaling Out
+status: draft
+incoming_premise: The combined FP8 sparse path compounds two approximations.
+outgoing_question: Does the complete system beat a maintained external runtime?
+evidence:
+  - experiments/quality-suite/raw/summary.json
+  - experiments/h100-4gpu-e2e/raw/distributed-profile.json
+implementation_sources:
+  - https://github.com/Tele-AI/TeleFuser/pull/35
+  - https://github.com/Tele-AI/TeleFuser/pull/37
+  - https://github.com/Tele-AI/TeleFuser/pull/40
+  - https://github.com/Tele-AI/TeleFuser/pull/44
+forbidden_claims:
+  - one prompt establishes quality
+  - Ulysses is universally faster than Ring
+  - adapters can be applied after FP8 cache creation

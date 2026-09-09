@@ -1,0 +1,11 @@
+id: 05-lessons
+title: What We Learned
+status: draft
+incoming_premise: One matched experiment measures the complete system.
+outgoing_question: none
+evidence:
+  - experiments/h100-4gpu-e2e/raw/summary.json
+  - experiments/quality-suite/raw/summary.json
+forbidden_claims:
+  - portability beyond MiniMax-H3 on H100
+  - universal superiority of Ulysses

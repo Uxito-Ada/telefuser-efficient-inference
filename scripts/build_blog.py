@@ -17,6 +17,7 @@ def section_text(path: Path) -> str:
     text = path.read_text(encoding="utf-8").strip()
     section_dir = path.parent.relative_to(ROOT).as_posix()
     text = re.sub(r"\]\(assets/", f"]({section_dir}/assets/", text)
+    text = text.replace("](../../experiments/", "](experiments/")
     text = text.replace('src="assets/', f'src="{section_dir}/assets/')
     return text
 

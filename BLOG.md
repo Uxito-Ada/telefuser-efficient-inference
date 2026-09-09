@@ -4,1014 +4,302 @@
 
 <!--
 SECTION-CONTRACT
-id: 00-abstract
-incoming_premise: The reader has no project context.
-outgoing_question: Why does world-model quality create this systems problem?
-evidence: Only the final matched 4xH100 experiment may fill headline values.
-do_not_claim: No historical PR metric is a headline result.
+id: 00-introduction
+incoming_premise: none
+outgoing_question: Why do low precision and sparse attention need one design?
+evidence: experiments/h100-4gpu-e2e/raw/summary.json
+do_not_claim: Do not publish a speedup before the matched experiment is complete.
 -->
 
-# Fast and Faithful World-Model Inference
+# Fast and Faithful MiniMax-H3 Inference on H100
 
-## Co-designing FP8, sparse attention, and sequence parallelism for MiniMax-H3
+*Co-designing FP8, sparse attention, and multi-GPU execution in TeleFuser*
 
-World models are expensive for the same reason they are useful. A generated
-scene must remain visually detailed while people, objects, cameras, and sound
-evolve coherently over time. MiniMax-H3 addresses that requirement with a large
-diffusion transformer (DiT) that repeatedly processes a long joint
-video--audio context. The resulting inference workload is dominated by dense
-Linear and attention computation. Reducing resolution or denoising work makes
-the system cheaper by relaxing the output requirement; our goal is to reduce
-cost without changing that requirement.
+MiniMax-H3 raises the bar for open video generation: one large diffusion
+transformer jointly produces high-resolution video and synchronized audio.
+That unified model is also expensive to serve. Long visual and audio sequences
+make attention costly, while the transformer's projections and feed-forward
+layers keep the tensor cores busy throughout denoising.
 
-FP8 quantization and sparse attention attack complementary parts of this cost.
-FP8 lowers the precision of projection and matrix-multiplication work, while
-sparsity avoids evaluating attention blocks that contribute little. In
-practice, however, they are not independent switches. General quantization
-libraries do not expose the layout, scale, and routing contract required by a
-sparse attention kernel. Hardware-specific formats and kernels have uneven
-architecture coverage. Applying both approximations naively can also turn
-small, data-dependent errors into visible drift over a denoising trajectory.
-The conflict becomes sharper under sequence parallelism, where an all-to-all
-collective changes which tokens and heads define a local quantization domain.
+The usual optimization menu looks straightforward: quantize the dense layers,
+make attention sparse, and split the sequence across GPUs. In practice, those
+features often work only as isolated switches. They disagree about tensor
+layouts, quantization scales, and where communication happens. Combining them
+can erase the speedup or, worse, produce a fast but visibly degraded result.
 
-This article presents an H100-oriented inference path that treats precision,
-sparsity, and distribution as one numerical contract. It shares activation
-quantization across QKV projections, prepares attention operands only after
-normalization, rotary embedding, and Ulysses redistribution, and executes
-dynamic Sol routing with FP8 QK/PV in an SM90 mainloop. Dense islands protect
-sensitive denoising regions. Algebraically equivalent K/V centering and V-bias
-correction reduce quantization error, while fused boundaries limit their
-runtime cost. Adapter updates are merged before FP8 materialization, and
-device-local caches are created after worker launch so the same path remains
-valid for distilled MiniMax-H3 variants.
+We built a MiniMax-H3 path in TeleFuser that treats these choices as one
+execution design:
 
-We evaluate the complete system, rather than isolated pull requests, on four
-NVIDIA H100 GPUs. The primary baseline is the maintained FastVideo FastH3
-Dense/Data-Free BF16+FA4 path with a matched checkpoint, adapter, output,
-sampling work, and end-to-end timing boundary. The final measurements will
-report:
+- FP8 Linear layers and an FP8 Sol-Attn kernel for NVIDIA H100;
+- attention smoothing and selective dense computation to protect quality;
+- tensor and Ulysses sequence parallelism for multi-GPU inference;
+- adapter-aware weight preparation for Turbo and FastH3-style adapters.
 
-- end-to-end latency reduction: **TBD--new experiment required**;
-- single-request throughput improvement: **TBD--new experiment required**;
-- peak GPU-memory change: **TBD--new experiment required**; and
-- quality-suite acceptance: **TBD--new experiment required**.
+This post explains the design at a systems level, then compares the complete
+path with FastVideo's maintained FastH3 recipe on the same four H100 GPUs. The
+headline performance and quality results are **TBD--new experiment required**.
 
-Those numbers are intentionally blank in this draft. Before measuring them, we
-first need to explain why the expensive computation exists and why simpler
-optimizations do not preserve the same output contract.
+MiniMax-H3 is the only model in this study. That constraint is deliberate: the
+goal is not to collect unrelated kernel wins, but to show that low precision,
+sparsity, distribution, and quality control can survive one real end-to-end
+generation workload.
 
 ---
 
 <!--
 SECTION-CONTRACT
-id: 01-quality-cost
-incoming_premise: The article claims that faithful world-model inference is compute-bound.
-outgoing_question: If both bit width and executed work must fall, why not enable FP8 and sparsity independently?
-evidence: Model architecture, representative live tensor shapes, and the new profiler trace.
-do_not_claim: Do not imply that quality necessarily improves with model size or step count.
+id: 01-why-co-design
+incoming_premise: MiniMax-H3 quality is the product contract, not a variable to optimize away.
+outgoing_question: What execution path lets FP8 and sparse attention share work?
+evidence: operator profile from the new four-GPU experiment
+do_not_claim: General FP8 support implies a compatible sparse-attention kernel.
 -->
 
-# 1. Quality Has a Computational Cost
+# Why FP8 and Sparsity Have to Be Co-designed
 
-Consider a five-second scene: a fox runs through fresh snow at dawn, powder
-moves under its paws, the camera tracks the animal, and footsteps remain
-synchronized with the motion. A useful world model must do more than render a
-sharp first frame. Identity must survive motion; occluded geometry must
-reappear plausibly; illumination and camera motion must agree; and the audio
-track must follow the visible event. These constraints are a form of implicit
-world reasoning expressed through pixels and sound.
+MiniMax-H3 packs text conditioning, video latents, and audio latents into the
+same denoising process. Richer outputs therefore increase two different kinds
+of work.
 
-[MiniMax-H3](https://huggingface.co/MiniMaxAI/MiniMax-H3) generates video and
-stereo audio in one diffusion system. Its DiT repeatedly updates a long latent
-sequence conditioned on text and optional multimodal inputs. At the 768p
-configuration used in this study, a representative self-attention boundary has
-32,626 tokens, 56 heads, and head dimension 128. One denoising request invokes
-the same large transformer multiple times before video and audio can be
-decoded.
+First, projections, MLPs, and conditioning layers move large weight matrices
+through every transformer block. FP8 is a natural fit: H100 tensor cores can
+execute lower-precision matrix multiplication at much higher throughput while
+storing the dominant weights in half the bytes of BF16.
 
-That repetition concentrates cost in two matrix-multiplication families:
+Second, attention operates over a long multimodal sequence. Reducing precision
+does not change how many token pairs dense attention evaluates. Sol-Attn attacks
+that orthogonal dimension by selecting important blocks online and correcting
+for the skipped tail. The result is less attention work without retraining the
+model.
 
-\[
-\begin{aligned}
-XW &\quad &&\text{for QKV, output, and feed-forward projections},\\
-\operatorname{softmax}(QK^T/\sqrt{d})V
-   &&&\text{for attention}.
-\end{aligned}
-\]
+Either technique alone leaves a major bottleneck untouched. Using both should
+be complementary, but a framework cannot get there by independently enabling
+an FP8 Linear wrapper and a sparse-attention backend. A typical path quantizes
+Q, K, and V for the three projections, converts them back to BF16 for
+normalization and rotary embedding, and then quantizes them again for
+low-precision attention. Under sequence parallelism, doing this before
+all-to-all also gives each rank scales for a tensor that is about to be
+redistributed.
 
-The first scales with model width and parameter count. Dense attention scales
-quadratically with sequence length. Increasing temporal duration adds tokens
-and also increases the area of the attention matrix; increasing spatial
-resolution does the same in two dimensions. The DiT is therefore
-compute-bound precisely where richer motion and longer context demand more
-work.
+Hardware support adds another boundary. General FP8 Linear inference is
+available on H100, but an optimized format or kernel does not automatically
+cover sparse QK/PV attention, its routing metadata, or its scale layout. Some
+newer MXFP8 and NVFP4 routes target Blackwell and cannot simply be projected
+onto SM90. We therefore needed a native H100 path whose owner understands both
+quantization and sparse attention.
 
-## Why the obvious reductions change the problem
-
-There are easy ways to lower latency if the output contract is negotiable:
-generate fewer frames, lower the resolution, shorten the clip, use fewer
-denoising updates, or replace the base model with a smaller one. Those choices
-can be valuable products, but they do not answer the question in this article.
-They purchase speed by changing what must be generated.
-
-Our contract fixes the model family, task, output shape, duration, frame rate,
-and sampling work before comparing systems. Under that constraint, efficiency
-has to come from executing the same request more economically.
-
-The two strongest levers are complementary:
-
-- **Low precision** reduces bytes moved and increases tensor-core throughput
-  for work that still executes.
-- **Sparse attention** reduces the number of QK and PV blocks that need exact
-  evaluation.
-
-Neither lever covers the full DiT. Weight/activation quantization accelerates
-the many Linear layers but does not automatically change attention precision.
-Sparse attention removes attention work but leaves projection and feed-forward
-GEMMs dense. Long-sequence world-model inference needs both fewer bits and
-fewer operations.
-
-## The quality constraint is active, not decorative
-
-Both levers also perturb the computation. FP8 rounds values to a finite grid
-whose error depends on scale selection and outliers. Dynamic sparse attention
-uses a data-dependent proxy to decide which blocks receive exact computation.
-The error is therefore not constant across prompts, layers, or denoising
-timesteps.
-
-This matters more in a diffusion trajectory than in a single feed-forward
-classification pass. A perturbation at an early update changes the latent
-consumed by every later update. It may leave every tensor finite while altering
-a face, motion direction, object count, or audio event. Efficiency and quality
-cannot be evaluated as separate post-processing steps; quality defines the
-numerical budget within which acceleration is allowed.
-
-The resulting target is more demanding than either technique alone:
-
-> execute MiniMax-H3 with low-precision dense operators and dynamically sparse
-> attention, while keeping sensitive computation exact and preserving the
-> distributed semantics of the reference model.
-
-That target appears straightforward at the algorithm level. At the framework
-boundary, however, the output contract of an FP8 Linear layer does not match
-the input contract of a sparse attention kernel. The next section explains why
-two individually useful optimizations fail to compose.
+That path is the center of this work: quantize once at the point where the
+attention tensor has its final layout, then keep routing and matrix
+multiplication inside one Sol-Attn implementation.
 
 ---
 
 <!--
 SECTION-CONTRACT
-id: 02-composition-gap
-incoming_premise: The fixed-quality workload requires both low precision and fewer attention operations.
-outgoing_question: What shared H100 execution path can make them one operation?
-evidence: H3 operator graph, backend capability matrix, and rejected-path logs.
-do_not_claim: Do not say all TorchAO FP8 is unavailable on H100.
+id: 02-system-overview
+incoming_premise: FP8 and sparse attention must share a hardware-aware boundary.
+outgoing_question: How do we keep the combined approximation stable and scalable?
+evidence: TeleFuser PRs 16, 25, and 30 plus the new operator profile
+do_not_claim: TeleFuser invented Sol-Attn.
 -->
 
-# 2. Two Necessary Optimizations That Do Not Compose
+# The TeleFuser Path
 
-Suppose we quantize every eligible MiniMax-H3 Linear layer. The Q, K, and V
-projections may use FP8 tensor cores, but normalization and rotary position
-embedding still operate on BF16 tensors. A conventional attention backend then
-consumes BF16 Q/K/V, so the longest QK and PV products remain outside the FP8
-path.
+![TeleFuser MiniMax-H3 execution overview](sections/02-system-overview/assets/overview.svg)
 
-Now suppose we instead enable sparse attention. Sol-Attn can avoid exact work
-for low-importance blocks, but its projections and feed-forward layers are
-unchanged. The model still carries BF16 weights and executes dense BF16 GEMMs
-around a less expensive attention operator.
+The optimized path has four stages.
 
-Running both configurations in the same process does not close the gap. The
-boundary typically becomes:
+**1. Prepare the effective model once.** TeleFuser loads the MiniMax-H3 base
+weights on CPU, applies the selected LoRA adapter, and then materializes the
+device-local FP8 caches. The ordering matters: a cache built before the adapter
+merge represents the wrong model. Once the cache is ready, the superseded
+higher-precision copy can be released instead of inflating runtime memory.
 
-```text
-hidden state
-  -> quantize for Q projection -> FP8 GEMM -> BF16 Q
-  -> quantize for K projection -> FP8 GEMM -> BF16 K
-  -> quantize for V projection -> FP8 GEMM -> BF16 V
-  -> norm and RoPE
-  -> transpose / summarize / rescale for sparse attention
-  -> quantize again inside the attention backend
-```
+**2. Run the dense transformer work in FP8.** The large Linear layers use
+cached FP8 weights and dynamically quantized activations. This covers the
+projection and feed-forward work that sparse attention cannot reduce.
 
-The hidden state is quantized three times. Q/K/V are materialized in an
-intermediate layout, transformed, and quantized again. Kernel launches and
-HBM traffic accumulate around the operation that was supposed to get cheaper.
-More importantly, the Linear backend and attention backend choose scales over
-different tensor domains. They are adjacent features in a configuration file,
-not one low-precision data path.
+**3. Preserve the sensitive transforms, then enter FP8 Sol-Attn.** Q/K
+normalization and rotary embedding remain at higher precision. Q, K, and V are
+then prepared together for attention, so their scales and layouts match the
+consumer kernel. The custom SM90 implementation combines on-the-fly Sol routing
+with FP8 QK and PV computation; TMA and WGMMA keep the tiled data path native to
+H100.
 
-## The hardware gap behind the API gap
+**4. Return a corrected output to the model.** Sparse blocks are not simply
+dropped. Sol-Attn carries a compact summary of the skipped contribution, while
+TeleFuser restores the attention-centering correction before the next
+transformer operation.
 
-Low-precision kernels are hardware-aware by construction. A numerical format
-is only useful when the target tensor cores, instruction set, data movement,
-tile shape, and software interface support it. Names such as FP8, MXFP8, and
-NVFP4 do not describe interchangeable implementations.
+This organization removes conversions and layout hand-offs that would
+otherwise sit between independent framework features. It also keeps a clear
+fallback boundary: unsupported shapes can use a validated attention backend
+instead of silently entering an untested kernel path.
 
-On H100 (SM90), generic E4M3 Linear paths are available, including selected
-TorchAO configurations. But a general Linear API does not expose Sol's block
-summaries, dynamic route decisions, online-softmax state, or attention-specific
-Q/K/V scale layout. MXFP8 and NVFP4 optimized routes increasingly target
-Blackwell capabilities, while several high-performance attention kernels are
-distributed through interfaces that cannot be extended with an independent
-sparse mainloop. A kernel may therefore be excellent on its supported shape
-and architecture yet unusable for this particular composition.
-
-Weight-only NF4 illustrates a different mismatch. It can reduce model storage,
-but dequantized BF16 compute does not create an FP8 QK/PV path. Treating it as a
-substitute because both methods are called quantization confuses capacity with
-compute throughput.
-
-The engineering question is consequently narrower and harder than selecting a
-library:
-
-> Which process should own scaling, layout, sparsity, and accumulation for
-> MiniMax-H3 attention on SM90?
-
-If ownership is split across opaque operators, every boundary can reformat or
-requantize the tensor. If one operator owns everything, it must also preserve
-the exact dense contribution, the approximate summary contribution, and the
-softmax normalization correctly.
-
-## Distribution makes a local mismatch global
-
-The same ownership problem appears under sequence parallelism. Before a
-Ulysses all-to-all, a rank holds a subset of tokens across all heads. After the
-collective, it holds the full sequence for a subset of heads. A scale computed
-before communication describes a different tensor from the one consumed by the
-attention kernel. Likewise, a sparse route selected from an incomplete
-sequence does not represent the final local attention problem.
-
-This observation gives us the central design rule used throughout the system:
-
-> The final consumer of a tensor must define its quantization and approximation
-> domain. Communication and exact nonlinear transforms happen first; low-
-> precision preparation and sparse routing happen where the kernel has its
-> final local sequence and heads.
-
-Following that rule requires more than glue code. We need an SM90 path that
-shares QKV activation work, chooses attention-specific scales after norm and
-RoPE, and fuses dynamic sparse attention without exposing incompatible
-intermediate formats. That path is the subject of the next section.
+The implementation spans several earlier TeleFuser changes, but the public
+interface is intentionally small. A MiniMax-H3 pipeline selects an FP8
+quantization policy, Sol-Attn, a sparsity threshold, optional smoothing, and a
+parallel topology. The complexity stays below that configuration layer.
 
 ---
 
 <!--
 SECTION-CONTRACT
-id: 03-sm90-fp8-sol
-incoming_premise: Existing Linear and sparse-attention APIs do not share a low-precision tensor contract on H100.
-outgoing_question: Once both computations are approximate, how is trajectory quality protected?
-evidence: Kernel contracts, H3 tensor captures, operator tests, and new profiler traces.
-do_not_claim: Attribute Sol routing to Sol-Attn; claim only the TeleFuser integration and SM90 FP8 implementation.
+id: 03-quality-and-scale
+incoming_premise: One FP8 sparse path removes redundant work but compounds two approximations.
+outgoing_question: Does the complete system beat a maintained external runtime?
+evidence: quality-suite metrics and four-GPU distributed profile
+do_not_claim: One prompt or pixel metric proves perceptual equivalence.
 -->
 
-# 3. Building One FP8 Sparse Path for SM90
+# Keeping Quality While Scaling Out
 
-The composition gap gives us a more useful starting point than the instruction
-to "use FP8." The final attention consumer must own the precision and layout of
-its operands. Everything that determines their exact value must happen before
-that boundary; everything that exists only to serve the sparse kernel should be
-fused after it.
+An optimization is not useful if it accelerates the wrong trajectory. Video
+diffusion is especially unforgiving: small errors are fed into later denoising
+updates, where they can appear as texture flicker, broken motion, or unstable
+audio. FP8 rounding and sparse routing perturb that same trajectory, so quality
+control has to be part of the execution path rather than a post-processing
+step.
 
-For MiniMax-H3, the resulting path is:
+We use two lightweight controls.
 
-```text
-BF16 hidden state
-  -> one dynamic activation quantization
-  -> cached FP8 Q, K, and V projection GEMMs
-  -> BF16 QK normalization and RoPE
-  -> final local sequence/head layout
-  -> attention-aware FP8 preparation
-  -> Sol routing + QK + online softmax + PV
-  -> BF16 corrected output
-```
+The first is **attention smoothing**. K can be centered without changing
+softmax attention because subtracting the same key mean shifts every logit in a
+row by the same constant. V is centered before quantization and its mean is
+added back to the output. Both operations reduce the range that FP8 must
+represent while preserving the corresponding high-precision attention
+identity. This is closer to numerical conditioning inside attention than to
+offline SmoothQuant.
 
-The BF16 segment is intentional. QK normalization and rotary embedding are
-small relative to the surrounding GEMMs, are sensitive nonlinear transforms,
-and change the final Q/K values. Quantizing before them would either force the
-operators to consume an unsuitable format or require immediate dequantization.
-Quantizing after them makes the scale describe exactly what attention sees.
+The second is **selective dense computation**. Early denoising updates and a
+small set of sensitive layers can stay dense, while Sol-Attn handles the rest.
+The sparsity threshold remains an explicit quality/performance control rather
+than a hidden constant. In the final profile we use one dense opening update,
+then the validated Sol threshold for the remaining transformer evaluations.
 
-## Reusing work across QKV projections
+The same numerical contract must survive distribution. TeleFuser communicates
+Q, K, and V first and performs attention preparation after Ulysses has given
+each rank complete sequence context for its local heads. This avoids deriving
+scales and means from the wrong shard. The four-GPU deployment combines TP2
+with Ulysses SP2: tensor parallelism covers wide Linear/MLP work, while sequence
+parallelism covers long attention. TeleFuser also supports overlapping Ulysses
+communication with attention computation.
 
-Q, K, and V are three different weight matrices applied to the same hidden
-state. A generic dynamic FP8 Linear wrapper has no reason to know that they form
-one logical operation, so it quantizes the activation independently for each
-projection. MiniMax-H3 pays the same reduction and conversion cost three times.
+Finally, optimized weights remain adapter-aware. Turbo and FastH3 adapters are
+merged before quantization, with higher-precision accumulation for the weight
+update. FP8 caches are then created inside the worker that owns each GPU. These
+choices make the same optimized path usable for the base model and released
+LoRA variants without keeping stale weights or parent-process CUDA state.
 
-TeleFuser moves activation preparation to the QKV group. The hidden state is
-quantized once with its row-wise scale, and the resulting activation and scale
-are reused by the three weight GEMMs. Each projection retains its own cached
-E4M3 weight and weight scale. This optimization follows from data reuse, not
-from a new numerical approximation: the three independent wrappers would have
-computed the same activation quantization for the same input.
-
-The cache matters for the same reason. Online quantization begins from a
-standard BF16 checkpoint, but the static weight does not need to be converted
-on every denoising update. We materialize the FP8 weight once, retain the scale
-required by the GEMM, and later release the superseded BF16 source. Runtime
-activation quantization remains dynamic because the hidden-state distribution
-changes with the prompt and timestep.
-
-## Attention needs different scale geometry
-
-The projection GEMM's activation scale is not automatically a good attention
-scale. Sol routes and computes 64-token blocks, so Q and K are prepared at a
-granularity aligned with those blocks. For batch \(b\), head \(h\), and
-token block \(i\):
-
-\[
-s^Q_{bhi}=\frac{\max |Q_{bhi}|}{448}, \qquad
-s^K_{bhi}=\frac{\max |K_{bhi}|}{448}.
-\]
-
-V participates in the probability-times-value product. Its useful dynamic
-range varies by channel, so it uses a per-batch, per-head, per-channel scale
-over the token dimension:
-
-\[
-s^V_{bhd}=\frac{\max_t |V_{bthd}|}{448}.
-\]
-
-The preparation kernel also writes the token-contiguous backing layout expected
-by the PV operand. Performing scaling and layout production together avoids a
-standalone transpose that would move the full live QKV tensor through HBM.
-Tail tokens are padded and masked so the 64-token tile contract never changes
-the logical sequence length.
-
-## Sparse routing belongs inside the attention mainloop
-
-[Sol-Attn](https://nvlabs.github.io/Sana/Sol-Attn/) summarizes K/V blocks and
-uses a query-dependent proxy to decide which blocks deserve exact attention.
-Blocks above a threshold such as \(\mu + \tau\sigma\) enter the exact route;
-the remaining blocks contribute through a compact summary correction. Unlike a
-hard top-k drop, the approximate route still participates in the same
-online-softmax normalization.
-
-The SM90 implementation uses E4M3 QK and PV operations with FP32 accumulation
-and BF16 output. TMA moves tiled operands, while WGMMA executes tensor-core
-matrix products. Routing, exact QK, summary contribution, online max/sum
-updates, and PV accumulation remain in the kernel's tiled loop. The
-implementation does not materialize the quadratic attention matrix or export a
-global route mask to memory.
-
-This ownership is the reason for implementing a dedicated path instead of
-wrapping an opaque dense FP8 operator:
-
-| Responsibility | Generic operator boundary | Unified FP8 Sol path |
-|---|---|---|
-| QKV activation preparation | Three independent calls | One shared conversion |
-| Attention scale domain | Hidden behind another backend | Matches Sol tiles |
-| Sparse route | Separate mask or unsupported | CTA-local mainloop state |
-| Softmax normalization | Dense operator owned | Exact and summary routes merged |
-| Layout conversion | Standalone materialization | Written by preparation kernel |
-| Architecture contract | Backend-dependent | Explicit SM90, E4M3, head-dim 128 |
-
-## Fallbacks are part of correctness
-
-The native path has a deliberately narrow contract: CUDA SM90, non-causal
-self-attention, supported Q/K/V shapes, and head dimension 128. Inputs outside
-that contract use a validated fallback or fail with an actionable message.
-Silently selecting a nearby kernel would be dangerous because a different mask,
-scale convention, or route correction can produce plausible but incorrect
-media.
-
-At this point the system has removed redundant quantization boundaries and can
-execute both low-precision dense GEMMs and sparse attention on H100. It has
-also combined two sources of approximation inside a recurrent denoising
-process. The next question is no longer whether the kernel runs, but where its
-error is safe.
+The result is one deployable configuration rather than separate FP8, sparse,
+parallel, and adapter demos. The remaining question is end-to-end: does it
+outperform an external H3 runtime while its generated video and audio remain
+useful?
 
 ---
 
 <!--
 SECTION-CONTRACT
-id: 04-quality-control
-incoming_premise: The unified path introduces FP8 rounding and sparse approximation into one denoising trajectory.
-outgoing_question: Can the same numerical contract remain valid after Ulysses redistributes tokens and heads?
-evidence: Real H3 tensor error, new prompt-suite media, and fused-boundary microbenchmarks.
-do_not_claim: Trajectory similarity metrics are not absolute perceptual scores.
+id: 04-evaluation
+incoming_premise: The final path combines precision, sparsity, quality controls, adapters, and four-GPU execution.
+outgoing_question: What can the result teach beyond this one benchmark?
+evidence: only new matched records under experiments/
+do_not_claim: Do not use invalid media, different GPU counts, or old PR measurements.
 -->
 
-# 4. Protecting Quality Under Compound Approximation
-
-The unified kernel makes quantization and sparsity fast enough to matter
-together. It also removes the comforting fiction that their errors can be
-validated independently. A rounded Q or K value changes both the exact
-attention logits and the proxy used to choose exact blocks. A sparse routing
-decision changes which rounded values receive full computation. The resulting
-output becomes the input to the next DiT layer and, later, the next denoising
-update.
-
-This feedback explains a common failure mode in generative optimization: every
-kernel returns finite tensors, a few sampled operator errors look small, but
-the final video loses a face, changes an object, or develops unstable motion.
-Numerical validity is necessary and insufficient.
-
-We control this compound error at three levels: where approximation is allowed,
-how tensors are represented before rounding, and how the added protection is
-executed.
-
-## Dense islands allocate the error budget
-
-Sensitivity is not uniform across the graph. Early denoising updates establish
-global structure from noisy latents. Some transformer layers have a larger
-effect on conditioning or the final representation. MiniMax-H3 also carries
-conditioning tokens whose exact contribution should not be mixed with an
-aggressive route chosen for the much larger visual sequence.
-
-The final policy therefore keeps explicit dense islands:
-
-- an initial set of denoising updates uses dense attention;
-- selected early or sensitive layers remain dense;
-- the conditioning prefix is recomputed through the exact path;
-- Sol's \(\tau\) controls the route threshold for the remaining region.
-
-These controls are related, not four arbitrary tuning knobs. Dense steps
-protect trajectory formation, dense layers protect structurally sensitive
-transformations, prefix replacement protects conditioning, and \(\tau\)
-sets the per-input exact-attention budget elsewhere. The quality sweep will
-select the least expensive policy that passes the same prompt-suite gate as the
-external BF16 reference. Its final values remain
-**TBD--new experiment required**.
-
-Consider the running fox example. The first updates establish the animal,
-camera path, and snow field, so they receive dense computation. Later updates
-mostly refine texture and local motion, where dynamic routing can spend exact
-blocks around the moving subject while summarizing less influential context.
-For a dialogue example, the dense prefix protects text and audio conditioning
-even if the visual route changes with the speaker.
-
-## Centering K without changing exact attention
-
-Dense islands limit where error enters; they do not improve the FP8
-representation inside the allowed region. Real post-normalization,
-post-RoPE H3 tensors can contain offsets and outliers that consume E4M3 dynamic
-range. We reshape that distribution using identities of the attention
-function.
-
-For one head, let \(\mu_K\) be the sequence mean of K. Then
-
-\[
-\operatorname{softmax}(Q(K-\mu_K)^T)
-=
-\operatorname{softmax}(QK^T-Q\mu_K^T)
-=
-\operatorname{softmax}(QK^T).
-\]
-
-For each query, \(Q\mu_K^T\) is the same scalar shift across all key logits.
-Softmax removes that shift. K can therefore be centered in FP32 before E4M3
-rounding without changing full-precision attention. The transform is useful
-because it spends the finite FP8 grid on variation around the mean rather than
-on a removable offset.
-
-This is attention smoothing, not SmoothQuant. No activation scale is migrated
-into a Linear weight, and the equivalence follows from softmax invariance.
-
-## Centering V requires an explicit correction
-
-Let \(P=\operatorname{softmax}(QK^T)\) and \(\mu_V\) be the sequence mean of
-V. Since each row of P sums to one,
-
-\[
-P(V-\mu_V)+\mu_V = PV.
-\]
-
-We center V before quantization and restore its mean after attention. E4M3
-rounding can leave a small nonzero mean in the reconstructed centered tensor,
-so the implementation measures that residual per head and channel and corrects
-it at the BF16 output boundary.
-
-K centering reduces logit error; V centering and correction reduce output bias.
-The two transformations address different failure mechanisms and should be
-measured separately on captured H3 tensors. The draft reserves the following
-new-data table rather than importing an earlier result:
-
-| Boundary | FP8 Sol | FP8 Sol + smoothing | Change |
-|---|---:|---:|---:|
-| K reconstruction MSE | TBD | TBD | TBD |
-| V reconstruction MSE | TBD | TBD | TBD |
-| V residual mean bias | TBD | TBD | TBD |
-| Dense attention-output MSE | TBD | TBD | TBD |
-| Attention-output cosine | TBD | TBD | TBD |
-
-## Exact math still needs efficient execution
-
-An algebraically neutral transform can still make the system slower. Exact K/V
-means require reductions over the live sequence, and a naive implementation
-adds separate centering, quantization, correction, and prefix-merge kernels.
-On a 32,626-token tensor, those launches and full-tensor memory passes are not
-free.
-
-The implementation computes exact statistics in FP32, fuses centering into FP8
-preparation, and combines output correction with dense-prefix replacement.
-Tests compare the fused path against an unfused reference before performance is
-measured. The new boundary latency and its contribution to end-to-end time are
-**TBD--new experiment required**.
-
-We now have a quality-aware contract for one local attention problem: which
-regions stay exact, how the approximate region is represented, and how its
-bias is corrected. Sequence parallelism changes that local problem by moving
-tokens and heads between GPUs. Preserving the contract requires placing every
-operation relative to that redistribution.
-
----
-
-<!--
-SECTION-CONTRACT
-id: 05-distributed-contract
-incoming_premise: Quality controls are defined over the complete sequence consumed by one attention problem.
-outgoing_question: How can mutable adapter weights and FP8 caches remain correct across spawned workers?
-evidence: Distributed layout tests and the new 4xH100 communication/compute trace.
-do_not_claim: Four-GPU speedup is unknown until the new experiment is complete.
--->
-
-# 5. Preserving the Numerical Contract Across GPUs
-
-The quality controls in the previous section use sequence statistics. K/V means
-are reduced over tokens; Q/K scales correspond to 64-token blocks; Sol routing
-compares blocks across the attention context. Those definitions are
-unambiguous on one GPU. Sequence parallelism changes the tensor that is local
-to each rank, so it also changes where those definitions are valid.
-
-MiniMax-H3 needs multiple GPUs for more than aggregate capacity. A 32,626-token
-attention problem exposes enough computation to benefit from distributing the
-sequence, but only if communication does not introduce redundant transforms or
-change sparse semantics. We use Ulysses because its post-collective layout
-matches the local problem expected by the current Sol kernel.
-
-## Ulysses changes ownership before attention
-
-Let the logical Q/K/V shape be \([B,S,H,D]\) and let \(p\) be the sequence-
-parallel degree. Around the all-to-all, ownership changes as follows:
-
-| Phase | Tokens on one rank | Heads on one rank | What the rank can compute |
-|---|---:|---:|---|
-| Before all-to-all | \(S/p\) | \(H\) | projections and token-local transforms |
-| After all-to-all | \(S\) | \(H/p\) | complete attention for local heads |
-
-Quantizing Q/K/V before the collective would attach scales to a partial
-sequence across all heads. The all-to-all then rearranges those values into a
-complete sequence for fewer heads. Block boundaries, sequence means, and the
-head set no longer match the domain that produced the scales.
-
-TeleFuser therefore orders the path as:
-
-```text
-local-token QKV projection
-  -> QK norm and RoPE
-  -> Ulysses all-to-all
-  -> exact K/V statistics over the complete local-head sequence
-  -> smoothing and FP8 preparation
-  -> local FP8 Sol attention
-  -> inverse all-to-all
-```
-
-The ordering follows the final-consumer rule established in Section 2:
-communication determines ownership first; quantization and approximation are
-defined second. FP8 preparation remains device-local, so quantized tensors do
-not need a new distributed scale-exchange protocol.
-
-## Why Ulysses, rather than Ring, is the first composition
-
-Ring attention keeps sequence shards local and circulates K/V blocks. Dense
-online attention can merge partial maximum, exponential sum, and output state
-as blocks arrive. Native Sol adds another distributed state: dynamic route
-decisions and summary corrections must remain consistent across ranks.
-
-The current FP8 Sol kernel expects the complete sequence for its local heads.
-Ulysses produces exactly that contract after one all-to-all, whereas a Ring
-implementation would require a new distributed routing and log-sum-exp merge.
-Choosing Ulysses is therefore not a claim that it is universally faster. It is
-the parallel layout that preserves the already validated sparse numerical
-problem without inventing an untested distributed approximation.
-
-TeleFuser also supports overlapping Ulysses communication with attention
-computation to reduce exposed distributed overhead.
-
-## Not every sequence-shaped input is sharded
-
-Parallel wrappers often fail at inputs smaller than Q/K/V. MiniMax-H3 carries
-timestep and conditioning information in more than one shape:
-
-- a scalar or batch-level timestep controls every token and is replicated;
-- a token-shaped timestep or condition has a real sequence axis and follows
-  the sequence partition;
-- prefix metadata describes logical positions and must account for padding.
-
-Blindly slicing a scalar timestep either produces an empty tensor or changes
-the denoising state across ranks. Conversely, refusing to slice a token-shaped
-condition misaligns it with the local latent. TeleFuser switches on tensor
-semantics and shape rather than applying one "sequence parallel" operation to
-every input.
-
-The same care applies when \(S\) is not divisible by \(p\). Communication may
-pad the physical tensor, but scale reductions, K/V means, routing statistics,
-and dense-prefix replacement must use the valid logical sequence. Otherwise
-padding zeros become part of an allegedly exact statistic.
-
-## The four-GPU topology is part of the final method
-
-The flagship configuration uses a two-dimensional four-GPU topology:
-TP2 x Ulysses SP2. Tensor parallelism partitions the wide projection and
-feed-forward work, while each Ulysses group redistributes sequence tokens into
-complete attention contexts for its local heads. The topology increases
-effective bandwidth for both dominant DiT operator families instead of forcing
-all four devices into a single parallel dimension.
-
-The external FastVideo baseline uses its maintained SP4 configuration. Both
-systems receive the same four H100 GPUs; each framework retains its intended
-distributed layout. The new experiment will separate:
-
-- all-to-all time;
-- QKV preparation and smoothing time;
-- FP8 Sol attention time;
-- total denoising time; and
-- full encode-to-MP4 latency.
-
-The resulting four-GPU throughput and communication fraction are
-**TBD--new experiment required**. No earlier TP/SP measurement is substituted.
-
-With this ordering, precision, sparsity, and distribution describe the same
-tensor. The remaining assumption is that model weights are static. Fast
-MiniMax-H3 deployments violate that assumption: Turbo and FastH3 are delivered
-as adapters that change the effective Linear weights. A cached FP8 model must
-therefore treat weight mutation as part of its distributed lifecycle.
-
----
-
-<!--
-SECTION-CONTRACT
-id: 06-weight-lifecycle
-incoming_premise: The distributed FP8 path is correct only while effective weights remain unchanged.
-outgoing_question: Does the complete adapter-aware four-GPU system beat an external implementation at comparable quality?
-evidence: Adapter mapping tests, cache lifecycle tests, and process-spawn tests.
-do_not_claim: Dense FastH3 support implies support for learned VSA replacement gates.
--->
-
-# 6. Treating Optimized Weights as Mutable State
-
-The distributed path now has a precise tensor contract, but its weight cache
-introduces a new source of state. Online FP8 converts a BF16 checkpoint into a
-device-efficient representation. An adapter then changes the effective model
-from \(W\) to \(W+\Delta W\). If the adapter is applied after FP8
-materialization, the optimized GEMM continues to read a stale copy of \(W\)
-even though the Python model appears to contain the adapter.
-
-This failure is especially dangerous for generation. Shapes remain valid,
-inference completes, and the output can look like a plausible sample from the
-base model. No exception proves that the intended distilled model was never
-executed.
-
-## Merge semantics precede precision
-
-The only reliable source of truth is the fully adapted high-precision weight.
-TeleFuser therefore uses the following lifecycle:
-
-```text
-load BF16 base weight on CPU
-  -> identify adapter format and scaling convention
-  -> compute adapter update in FP32
-  -> merge into the BF16 source
-  -> move or shard the final weight for its worker
-  -> materialize cached E4M3 weight and scale
-  -> release the superseded BF16 source
-```
-
-The ordering avoids an update to already rounded values and guarantees that
-every FP8 cache represents the requested model:
-
-\[
-W_{\mathrm{FP8}} =
-Q_{\mathrm{E4M3}}\left(
-  W_{\mathrm{BF16}} + \lambda\Delta W_{\mathrm{adapter}}
-\right).
-\]
-
-The adapter computation uses FP32 accumulation before writing the BF16 source.
-Quantizing each low-rank term independently and then summing in FP8 would add a
-second, unnecessary approximation before denoising begins.
-
-## Adapter files encode model semantics
-
-MiniMax-H3 Turbo and FastH3 illustrate why a loader cannot infer behavior from
-a filename ending in `.safetensors`. A conventional LoRA contains low-rank A/B
-pairs plus an alpha/rank convention. The FastH3 dense adapter combines
-low-rank updates with exact residual tensors and uses its published scaling
-contract. Missing the residuals or applying the wrong implicit scale produces
-a different model.
-
-Some FastH3 VSA releases additionally contain learned compression-gate
-replacements. Those gates define a trained sparse model; they are not
-equivalent to the training-free Sol route. Until the runtime implements that
-gate contract, it must reject the adapter rather than apply only the familiar
-low-rank tensors. This distinction also matters in evaluation: a VSA result is
-a related sparse system, not a strictly matched weight comparison.
-
-## Cache ownership must follow process ownership
-
-Four-GPU execution uses spawned worker processes. Two implementation details
-follow from that process model.
-
-First, an `FP8Linear` instance cannot retain a Python extension module object.
-Such modules are not pickleable, so the parent model cannot be serialized for a
-spawned worker. The wrapper stores only serializable configuration and resolves
-the kernel implementation at runtime inside the owning process.
-
-Second, the parent cannot build CUDA FP8 caches and expect child workers to
-inherit them safely. Workers begin from CPU weights, establish their CUDA
-device, and construct device-local caches lazily. This avoids inheriting
-parent-process CUDA tensors and ensures each cache belongs to the allocator and
-device that execute it.
-
-These choices also make memory accounting meaningful. The temporary BF16
-source must be released after cache construction; otherwise a reported FP8
-peak includes both copies and says little about the steady model. Whole-process
-peak may still occur in the text encoder or decoder because end-to-end memory
-is the maximum over pipeline phases, not simply the byte ratio of DiT weights.
-
-The system is now complete in the sense required by the opening problem:
-low-precision dense GEMMs, sparse low-precision attention, quality controls,
-four-GPU tensor ownership, and adapter-correct weights participate in one
-execution graph. We can therefore ask a single experimental question: does
-this complete path outperform a maintained external MiniMax-H3 implementation
-without violating the same output contract?
-
----
-
-<!--
-SECTION-CONTRACT
-id: 07-evaluation
-incoming_premise: The complete method now includes precision, sparsity, quality control, four-GPU parallelism, and adapter-correct weights.
-outgoing_question: Which conclusions generalize beyond the measured H100/H3 contract?
-evidence: Only new raw records under experiments/.
-do_not_claim: Do not use failed, invalid, unmatched, single-GPU, or B200 runs in the headline comparison.
--->
-
-# 7. Evaluating the Complete System
-
-The preceding sections made one optimization path progressively executable.
-Evaluating each implementation step on a different workload would not tell us
-whether the final system is useful. This section therefore asks one primary
-question:
-
-> On the same four H100 GPUs, can the complete TeleFuser FP8 sparse path execute
-> a matched MiniMax-H3 FastH3 request faster than a maintained external
-> implementation while preserving acceptable video and audio quality?
-
-The comparison uses an external baseline because an internal BF16 mode would
-only isolate an ablation. The production question is whether the resulting
-system is competitive with another optimized H3 runtime.
-
-## Systems under test
-
-**Primary baseline: FastVideo Dense/Data-Free, BF16 + FA4.** FastVideo maintains
-the official FastH3 CUDA recipe and adapter path. The dense Data-Free adapter
-provides a strict comparison because both frameworks can load the same
-MiniMax-H3 base and the same released adapter. FA4 is the baseline's intended
-H100 dense-attention backend. The run uses the maintained example with
-configuration-only workload changes.
-
-**Our system: TeleFuser FP8 Linear + FP8 Sol + smoothing, TP2 x Ulysses SP2.** This
-is the complete path described in the article: merged Dense/Data-Free adapter,
-cached E4M3 Linear weights, shared QKV activation quantization, post-Ulysses
-attention preparation, dynamic Sol routing, dense quality islands, K/V
-smoothing, and V-bias correction.
-
-**Related sparse reference: FastVideo VSA.** The trained VSA route is admitted
-only if the maintained H100 path runs without source changes and produces valid
-media at the matched output specification. Its result is contextual, not the
-denominator of the headline speedup, because VSA contains learned gates and
-therefore represents a different effective model.
-
-**Official quality reference: MiniMax-H3 Diffusers.** The publisher-supported
-BF16 route establishes expected output behavior. It is excluded from the
-four-GPU performance chart unless it exposes a comparable four-GPU execution
-contract.
-
-**Conditional LightX2V reference.** The published MiniMax-H3 Sol example is
-included only if a clean official-environment reproduction produces meaningful
-video and audio and reaches the matched workload through configuration alone.
-An invalid output has no meaningful throughput and is recorded under excluded
-results.
-
-## Matched workload
-
-| Dimension | Contract |
-|---|---|
-| Hardware | 4 x NVIDIA H100 80GB |
-| Model | MiniMax-H3 |
-| Adapter | FastH3 Dense/Data-Free, scale 1.0 |
-| Task | Text-to-video-and-audio |
-| Output | 1344 x 768, 124 frames, 24 FPS, 5 seconds |
-| Sampling work | Five sigma points, four actual DiT forwards |
-| Batch / concurrency | 1 / 1 |
-| Prompt | One fixed benchmark prompt, stored verbatim in the experiment config |
-| Seed | Fixed and recorded |
-| Parallelism | Four GPUs for every headline performance row |
-| Warm-up | One full generation including decode and file output |
-| Repeats | Five measured requests; report median and full samples |
-| E2E boundary | Prompt processing through synchronized MP4 close |
-
-The primary prompt is held constant for timing so text length and conditioning
-do not become uncontrolled variables. A separate prompt suite measures quality
-coverage. Model loading, adapter merging, and first-time kernel compilation are
-reported separately from warm serving latency; they are not hidden inside one
-framework's result and excluded from another's.
-
-## Metrics
-
-End-to-end latency measures the user-visible request. Denoising time is retained
-to explain where the speedup comes from but is not the headline denominator.
-Throughput is reported as completed five-second videos per hour at concurrency
-one:
-
-\[
-\text{videos/hour}=\frac{3600}{\operatorname{median}(t_{\mathrm{E2E}})}.
-\]
-
-We also report actual DiT forwards per second rather than calling five sigma
-points five steps of transformer work. GPU memory is sampled through NVML at
-100 ms intervals during every formal request. Both the largest per-GPU peak and
-the aggregate four-GPU peak are retained. Framework-specific allocator metrics
-may diagnose a phase but do not replace the common NVML boundary.
-
-## End-to-end result
-
-The following table is deliberately incomplete until all systems pass the
-protocol and media-validity gate.
-
-| System | 4-GPU mode | Median E2E | Videos/hour | DiT forwards/s | Max per-GPU memory | Aggregate peak |
-|---|---|---:|---:|---:|---:|---:|
-| FastVideo BF16 + FA4 | official distributed recipe | TBD | TBD | TBD | TBD | TBD |
-| TeleFuser FP8 + Sol | TP2 x Ulysses SP2 | TBD | TBD | TBD | TBD | TBD |
-| FastVideo VSA | official H100 route, if valid | TBD | TBD | TBD | TBD | TBD |
-
-The final prose will be generated from raw JSON:
-
-> Relative to the matched FastVideo baseline, TeleFuser reduces median
-> end-to-end latency by **TBD%**, increases completed-video throughput by
-> **TBD%**, and changes maximum per-GPU peak memory by **TBD%**. Denoising
-> accounts for **TBD%** of the end-to-end improvement.
-
-One figure will show the same experiment with narrow grouped bars for E2E
-latency, videos/hour, and per-GPU memory. It will not combine unrelated units on
-one axis or import historical measurements.
-
-<!-- RESULT_FIGURE_TBD: experiments/h100-4gpu-e2e/figures/end-to-end.svg -->
-
-## Quality suite
-
-Speed is accepted only after the final configuration passes a prompt suite
-chosen before generation. The suite covers:
-
-| Category | Failure being tested |
-|---|---|
-| Human face and hands | identity drift and local structure |
-| Fast subject motion | temporal breakup and route instability |
-| Camera motion | global geometry and background consistency |
-| Multiple interacting objects | counting and spatial relationships |
-| Low light and high contrast | FP8 outliers and fine detail |
-| Material and fluid motion | high-frequency temporal behavior |
-| Speech or singing | mouth/audio correspondence |
-| Impact and environmental sound | event timing and soundscape alignment |
-
-Each prompt uses fixed seeds and generates paired external-BF16 and TeleFuser
-outputs. Tensor MSE, cosine, and SQNR diagnose the quantized attention boundary.
-LPIPS/SSIM and temporal features measure paired trajectory divergence.
-Prompt-video and prompt-audio scores test semantic alignment. Codec validity,
-frame count, duration, audio channels, black frames, and non-finite samples are
-hard acceptance checks.
-
-These metrics answer different questions. A diffusion sample may diverge from
-the BF16 pixels while remaining perceptually valid, so paired similarity is not
-presented as an absolute quality score. The actual media remains the primary
-evidence.
-
-## Direct video evidence
-
-The final HTML article embeds original MP4 files. Players are presented in
-matched pairs and synchronized by page JavaScript; no frame collage stands in
-for motion or audio.
+# End-to-End Evaluation
+
+We compare against **FastVideo's maintained FastH3 Dense/Data-Free recipe**,
+not another TeleFuser mode. The baseline uses its intended BF16 Linear and FA4
+path with SP4. TeleFuser uses FP8 Linear, FP8 Sol-Attn with smoothing, and
+TP2 x Ulysses SP2. Each framework keeps its native distributed strategy, but
+both receive the same four H100 80GB GPUs and the same generation request.
+
+The matched workload uses the MiniMax-H3 base checkpoint, the released FastH3
+Dense/Data-Free adapter at strength 1.0, one fixed prompt and seed, 1344 x 768
+output, 124 frames at 24 FPS, and five scheduler sigma points (four actual DiT
+forwards). We run one full warm-up followed by five measured generations.
+End-to-end latency starts before prompt processing and ends after the MP4,
+including stereo audio, is closed.
+
+![Four-H100 end-to-end comparison](sections/04-evaluation/assets/end-to-end.svg)
+
+The final result is **TBD--new experiment required**. Once the four GPUs pass
+the clean-device gate, the chart will report median end-to-end latency,
+completed videos per hour, denoising throughput, and peak memory from the same
+runs. Raw samples, environment revisions, adapter hashes, and MP4 validity
+checks live in
+[the experiment directory](experiments/h100-4gpu-e2e/README.md).
+
+## Quality is a gate, not decoration
+
+Every timed output must first pass mechanical checks: exact resolution and
+frame count, decodable stereo audio, non-empty media, and no corrupt or black
+video. We then evaluate a fixed prompt suite covering fast motion, camera
+motion, multiple subjects, low-light detail, faces and hands, speech, and
+event-aligned sound.
+
+Tensor MSE, cosine similarity, and SQNR isolate error at the quantized attention
+boundary. Frame cosine, PSNR, SSIM, waveform cosine, and spectral distance
+describe end-to-end trajectory divergence. These metrics are diagnostic rather
+than a substitute for viewing the samples: two diffusion trajectories can
+diverge sample by sample while remaining perceptually valid.
+
+The HTML version of this post presents the original outputs as synchronized
+players:
 
 <div class="video-pair" data-sync-group="primary">
   <figure>
-    <figcaption>FastVideo BF16 + FA4</figcaption>
+    <figcaption>FastVideo FastH3 baseline</figcaption>
     <video controls playsinline preload="metadata" data-result-slot="fastvideo-primary"></video>
   </figure>
   <figure>
-    <figcaption>TeleFuser FP8 + Sol + smoothing, TP2 x Ulysses SP2</figcaption>
+    <figcaption>TeleFuser FP8 Sol-Attn</figcaption>
     <video controls playsinline preload="metadata" data-result-slot="telefuser-primary"></video>
   </figure>
 </div>
 
-<p><strong>Video result:</strong> TBD--new experiment required.</p>
-<p><strong>Audio result:</strong> TBD--new experiment required.</p>
-
-The article-level quality conclusion is filled only after every predefined
-prompt has a valid result. A single attractive clip cannot establish stability.
-Once the result is available, its interpretation must remain within the
-hardware, model, adapter, and prompt-suite boundaries defined here.
+Both video and audio conclusions remain **TBD--new experiment required** until
+the matched outputs are generated and scored.
 
 ---
 
 <!--
 SECTION-CONTRACT
-id: 08-discussion
-incoming_premise: The final experiment has tested the complete system against external references.
+id: 05-lessons
+incoming_premise: One matched experiment measures the complete system.
 outgoing_question: none
-evidence: Final experiment plus explicit implementation boundaries.
-do_not_claim: Pending results are hypotheses, not findings.
+evidence: final benchmark and quality records
+do_not_claim: Portability beyond the tested MiniMax-H3 and H100 contract.
 -->
 
-# 8. Discussion
+# What We Learned
 
-The system in this article follows from one constraint: improve inference
-without weakening the MiniMax-H3 output request. That constraint is what made
-FP8 and sparse attention necessary together, exposed their incompatible
-interfaces, required a dedicated SM90 path, and turned numerical quality,
-parallel layout, and adapter loading into parts of the same design.
+Efficient world-model inference is less about collecting optimization flags
+than about preserving contracts between them. FP8 helps the transformer-heavy
+parts of MiniMax-H3; sparse attention helps the long-sequence part. The useful
+speedup appears only when both operate on the same tensor layout and avoid
+paying for duplicate quantization, conversion, and communication.
 
-Several broader lessons follow from the method. Their measured magnitude
-remains pending until the flagship experiment is complete.
+Quality techniques belong in that co-design. Attention smoothing, dense
+islands, and an explicit sparsity threshold are small pieces of math, but they
+decide whether a faster denoising loop still produces stable motion, detail,
+and synchronized sound. Multi-GPU execution and adapters then have to preserve
+those same statistics and effective weights.
 
-## A dtype is not an execution strategy
+This work currently targets MiniMax-H3 on NVIDIA H100. Its custom FP8 Sol-Attn
+kernel is SM90-specific, and the chosen TP2 x Ulysses SP2 topology is a measured
+deployment choice rather than a universal replacement for Ring or other
+parallel layouts. The broader lesson is portable: optimize the end-to-end
+execution graph, validate the generated artifact, and treat quality as a hard
+constraint rather than a screenshot selected after benchmarking.
 
-FP8 names a representation, not a guaranteed kernel, layout, or speedup.
-Hardware support, scale granularity, tensor shape, fusion, and framework
-coverage determine whether lower precision reduces wall time. A generic Linear
-quantizer can be correct and still leave attention untouched. A Blackwell-
-oriented MXFP8 or NVFP4 result cannot be assumed to transfer to H100. The
-relevant unit of design is the end-to-end operator path on a named
-architecture.
+The final measured conclusion is **TBD--new experiment required**.
 
-## Approximation methods share one error budget
+## Further reading
 
-Quantization and sparsity are often evaluated separately, but the composed
-system does not experience separate errors. Rounded Q/K values influence sparse
-routing, sparse routing determines which rounded values receive exact work, and
-their output re-enters the denoising trajectory. Dense islands and smoothing
-are therefore not optional polish after optimization; they allocate and reshape
-the common error budget.
-
-This also explains why operator MSE and generated quality must be reported
-together. Operator error helps identify a mechanism. Video and audio reveal
-whether that mechanism matters after dozens of layers, multiple updates, and
-decoding.
-
-## Distribution is part of numerical semantics
-
-Sequence parallelism is usually introduced as a performance technique. Here it
-also decides which tokens and heads define a scale, mean, block, and sparse
-route. Moving quantization across an all-to-all can change the represented
-function even if every local kernel is individually correct. Distributed
-layout must be treated as part of an operator's numerical contract.
-
-## Model state extends beyond the checkpoint
-
-An optimized deployment contains derived state: packed weights, scales,
-compiled kernels, sparse metadata, and device-local caches. An adapter mutates
-the model that this state represents. Correctness requires explicit invalidation
-or, as in this path, merge-before-materialize ordering. Process launch adds a
-second ownership boundary: serializable policy can cross spawn, but CUDA
-tensors and Python module objects must be created or resolved by the worker
-that owns them.
-
-## Limitations
-
-- The native FP8 Sol path targets NVIDIA H100/SM90, E4M3, non-causal
-  self-attention, and the MiniMax-H3 head geometry. It is not a portable
-  low-precision attention implementation.
-- TP2 x Ulysses SP2 is evaluated because each Ulysses rank receives the
-  complete sequence for local heads while tensor parallelism also partitions
-  wide DiT operators. Ring-compatible sparse routing would require a new
-  distributed summary and online-softmax merge.
-- The strict performance claim uses the Dense/Data-Free adapter. VSA uses
-  learned gates and is reported only as related context.
-- Whole-process peak memory includes text encoding and media decoding, so it
-  need not follow the DiT weight compression ratio.
-- The quality suite samples predefined prompts and seeds but cannot replace a
-  large blinded human preference study.
-- Warm serving latency does not describe cold model load, adapter merge, or
-  first kernel compilation; those costs are reported separately.
-
-## Conclusion
-
-High-quality world-model inference is not accelerated by choosing between
-quantization, sparsity, and parallelism. The useful operating point comes from
-making them agree on the same tensor and model:
-
-- quantize the work that remains;
-- sparsify the work that need not be exact;
-- preserve sensitive computation through mathematically justified controls;
-- distribute before defining local scales and routes; and
-- materialize optimized weights only after the model has reached its final
-  adapted state.
-
-On the matched four-H100 MiniMax-H3 workload, the complete path delivers
-**TBD--new experiment required** end-to-end acceleration with
-**TBD--new experiment required** quality outcome. Those final values will be
-inserted from raw experiment artifacts, not reconstructed from the development
-history.
+- [MiniMax-H3 model and official pipeline](https://huggingface.co/MiniMaxAI/MiniMax-H3)
+- [Sol-Attn: on-the-fly attention sparsification](https://nvlabs.github.io/Sana/Sol-Attn/)
+- [FastVideo MiniMax-H3 cookbook](https://haoailab.com/FastVideo/cookbook/minimax-h3/)
+- [TorchAO quantized inference workflows](https://docs.pytorch.org/ao/stable/workflows/inference.html)
+- [TeleFuser](https://github.com/Tele-AI/TeleFuser)

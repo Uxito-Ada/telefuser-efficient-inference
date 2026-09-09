@@ -74,6 +74,20 @@ The commands are launched from the repository root. The harnesses record the
 framework commit, environment, complete samples, memory trace summary, adapter
 hash, and output validity in the JSON result.
 
+After both reports are admitted, generate the publication chart and derived
+speedups:
+
+    /data/heyang/FastVideo-fasth3-h100/.venv/bin/python \
+      experiments/h100-4gpu-e2e/scripts/plot_results.py \
+      --baseline experiments/h100-4gpu-e2e/raw/fastvideo-dense-fa4.json \
+      --telefuser experiments/h100-4gpu-e2e/raw/telefuser-fp8-sol.json \
+      --figure sections/04-evaluation/assets/end-to-end.svg \
+      --summary experiments/h100-4gpu-e2e/raw/summary.json
+
+Copy one validated, fixed-seed formal output from each system to the evaluation
+assets as fastvideo-primary.mp4 and telefuser-primary.mp4. Then run the media
+comparison and rebuild both article formats.
+
 ## Timing
 
 Use host `perf_counter` around the complete synchronous generation and file

@@ -17,3 +17,17 @@ MP4s with synchronized controls.
 
 Paired pixel and spectral metrics diagnose deviation from BF16; they are not
 treated as human preference scores.
+
+## Matched media comparison
+
+After the four-GPU runs complete, compare their admitted MP4 outputs with:
+
+    /data/zuoxin/workspace/TeleFuser/.venv/bin/python \
+      experiments/quality-suite/scripts/compare_media.py \
+      --reference sections/04-evaluation/assets/fastvideo-primary.mp4 \
+      --candidate sections/04-evaluation/assets/telefuser-primary.mp4 \
+      --output experiments/quality-suite/raw/media-metrics.json
+
+The script streams decoded frames rather than materializing the complete RGB
+video in memory. It reports all-frame cosine and PSNR, sampled SSIM, waveform
+cosine and MSE, spectral convergence, and log-spectral distance.

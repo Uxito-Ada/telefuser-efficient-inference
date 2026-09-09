@@ -1,0 +1,14 @@
+id: 04-evaluation
+title: End-to-End Evaluation
+status: protocol-defined
+incoming_premise: The complete method participates in one four-GPU graph.
+outgoing_question: What can the result teach beyond this benchmark?
+evidence:
+  - experiments/h100-4gpu-e2e/raw/summary.json
+  - experiments/quality-suite/raw/summary.json
+primary_baseline: FastVideo FastH3 Dense/Data-Free BF16 + FA4 on 4xH100
+forbidden_claims:
+  - internal TeleFuser modes as headline baselines
+  - unmatched GPU counts or output specifications
+  - performance from invalid media
+  - perceptual equivalence from paired pixel metrics alone
