@@ -1,0 +1,56 @@
+{
+  "adapter_alpha": 8,
+  "adapter_path": "<ARTIFACT_ROOT>/models/lightx2v-minimax-h3-turbo/minimax_h3_fl2v_turbo_8step_v1.0_768p_bf16.safetensors",
+  "attention": "sol_attn",
+  "broken_xformers_import_disabled": true,
+  "config_only_workload_changes": [
+    "8-step v1.0 768p adapter",
+    "9 sigma points / 8 NFE",
+    "124 frames",
+    "same 768p image and prompt",
+    "DiT CPU offload disabled"
+  ],
+  "denoising_seconds_median": 40.15397061780095,
+  "denoising_seconds_samples": [
+    40.15397061780095,
+    40.16744037531316,
+    40.11113494075835
+  ],
+  "effective_dit_updates": 8,
+  "formal_run_peak_memory_mib": 80799,
+  "framework": "LightX2V",
+  "generation_seconds_median": 63.72014359757304,
+  "generation_seconds_samples": [
+    64.50487511046231,
+    63.62937279418111,
+    63.72014359757304
+  ],
+  "incremental_formal_run_peak_memory_mib": 80791,
+  "load_seconds": 15.737026460468769,
+  "official_example_source": "configs/minimax_h3/dmd/minimax_h3_bf16_4step_sol_attn_single_gpu_offload.json",
+  "output": "<ARTIFACT_ROOT>/outputs/turbo_lightx2v_bf16_sol_resident_dit.mp4",
+  "per_phase_peak_memory_mib": {
+    "denoise": 80799,
+    "pipeline_other": 70347,
+    "text_and_condition_encode": 73205,
+    "vae_decode": 79407
+  },
+  "preexisting_memory_mib": 8,
+  "processor_compatibility_shim": false,
+  "profile": "minimax-h3-turbo-8step-bf16-sol-single-gpu-resident-dit",
+  "repeats": 3,
+  "save_seconds": 1.8844735007733107,
+  "schema_version": 1,
+  "steady_state_memory_mib": 68029,
+  "steps_per_second": 0.19923309891683444,
+  "target_height": 768,
+  "target_video_length": 124,
+  "target_width": 1344,
+  "task": "i2av",
+  "versions": {
+    "lightx2v_commit": "f8aee98b5462cca8d7288888146ebd95592bf266",
+    "sageattention": "2.2.0",
+    "torch": "2.11.0+cu128"
+  },
+  "warmup_seconds": 84.41048631258309
+}

@@ -1,0 +1,68 @@
+{
+  "aspect_ratio": "16:9",
+  "attention": "SOL_ATTN",
+  "audio": "benchmarks/minimax_h3_fp8_sol/optimized_sp2_tp2_fp8_sol_exact.audio.npy",
+  "denoising_steps_per_second": 1.0146706610340988,
+  "duration_seconds": 5.0,
+  "frames": "benchmarks/minimax_h3_fp8_sol/optimized_sp2_tp2_fp8_sol_exact.frames.npy",
+  "generated_video_seconds_per_second": 0.09564872155468736,
+  "generation_seconds": 52.274614011868834,
+  "linear_quantization": "tf-kernel-fp8",
+  "load_seconds": 219.09087232872844,
+  "model_root": "<MODEL_ROOT>/MiniMaxAI_MiniMax-H3",
+  "num_inference_steps": 50,
+  "output": "benchmarks/minimax_h3_fp8_sol/optimized_sp2_tp2_fp8_sol_exact.mp4",
+  "parallelism": {
+    "tp_degree": 2,
+    "ulysses_degree": 2,
+    "world_size": 4
+  },
+  "peak_memory_mib": [
+    44732,
+    43501,
+    43647,
+    43501
+  ],
+  "peak_memory_total_mib": 175381,
+  "profile": "optimized",
+  "prompt": "Steam rises from the ramen while the family talks in the background.",
+  "resident_memory_mib": [
+    40056,
+    38825,
+    38823,
+    38825
+  ],
+  "runtime_metrics": {
+    "audio_decoding_seconds": 0.1341969035565853,
+    "audio_encoding_seconds": 0.0,
+    "denoising_seconds": 49.2770727686584,
+    "denoising_stage_seconds": 49.33619703352451,
+    "feature_cache_computed_steps": 49,
+    "feature_cache_skipped_steps": 0,
+    "media_preparation_seconds": 0.0027611758559942245,
+    "peak_allocated_bytes": 13283451392,
+    "peak_reserved_bytes": 14954790912,
+    "pipeline_seconds": 51.86262197047472,
+    "text_encoding_seconds": 0.049342984333634377,
+    "video_decoding_seconds": 1.533589055761695,
+    "visual_encoding_seconds": 0.0
+  },
+  "save_seconds": 3.010063024237752,
+  "schema_version": 1,
+  "seed": 0,
+  "sol": {
+    "dense_layers": 2,
+    "dense_steps": 10,
+    "fp8_layer_end": null,
+    "fp8_layer_start": 0,
+    "fp8_qkv": true,
+    "tau": 1.0,
+    "threshold_type": "exact"
+  },
+  "versions": {
+    "telefuser": "0.1.0.post4.dev193+g25c1efb.d20260816",
+    "tf-kernel": "0.1.0",
+    "torch": "2.11.0+cu128"
+  },
+  "warmup_seconds": 134.6495048236102
+}

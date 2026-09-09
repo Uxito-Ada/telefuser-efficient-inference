@@ -1,0 +1,33 @@
+{
+  "aspect_ratio": "16:9",
+  "backend": "torchao-fp8",
+  "duration_seconds": 5.0,
+  "generation_seconds": 361.2869214825332,
+  "load_seconds": 5.248354164883494,
+  "model_root": "<MODEL_ROOT>/MiniMaxAI_MiniMax-H3",
+  "num_inference_steps": 50,
+  "output": "outputs/minimax_h3_torchao_fp8_50step.mp4",
+  "prompt": "Steam rises from the ramen while the family talks in the background.",
+  "runtime_metrics": {
+    "audio_decoding_seconds": 1.1152812466025352,
+    "audio_encoding_seconds": 0.0,
+    "communication_seconds": 0.0,
+    "denoising_seconds": 283.66718160919845,
+    "denoising_stage_seconds": 300.72352572344244,
+    "media_preparation_seconds": 0.00011640414595603943,
+    "peak_allocated_bytes": 43489249280,
+    "peak_reserved_bytes": 59382956032,
+    "pipeline_seconds": 360.86267418786883,
+    "text_encoding_seconds": 46.07057684101164,
+    "video_decoding_seconds": 12.127089628949761,
+    "visual_encoding_seconds": 0.0
+  },
+  "save_seconds": 3.686351366341114,
+  "seed": 0,
+  "versions": {
+    "bitsandbytes": "0.50.0",
+    "telefuser": "0.1.dev279+ga68013557",
+    "torch": "2.13.0",
+    "torchao": "0.18.0"
+  }
+}

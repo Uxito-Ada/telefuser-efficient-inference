@@ -1,0 +1,13 @@
+id: 06-fp8-sol-attention
+order: 6
+title: "Case III: Fusing FP8 with Dynamic Sparse Attention"
+kind: case-study
+source_prs: [30]
+depends_on: [05-online-quantization-h3]
+workloads:
+  - "MiniMax-H3 FL2VA, 1344x768, 124 frames, 50 steps, 1x H100"
+  - "Wan2.1-T2V-1.3B, 832x480, 81 frames, 50 steps, 1x H100"
+canonical_claims:
+  - MiniMax-H3 FP8 Sol raises throughput by 65.0% versus BF16 Dense.
+  - MiniMax-H3 FP8 Sol uses 41.9% less peak allocated memory.
+  - Wan FP8 Sol is 36.2% faster than BF16 Dense.

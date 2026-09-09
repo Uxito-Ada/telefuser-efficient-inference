@@ -1,0 +1,19 @@
+{
+  "adapter_alpha": 8,
+  "adapter_path": "<ARTIFACT_ROOT>/models/lightx2v-minimax-h3-turbo/minimax_h3_fl2v_turbo_8step_v1.0_768p_bf16.safetensors",
+  "attention_backend": "_flash_3_hub",
+  "effective_dit_updates_completed": 0,
+  "failure": "CUDA out of memory during the first DiT update FFN activation",
+  "framework": "Diffusers 0.40.0",
+  "fuse_lora": true,
+  "memory_at_failure_gib": 78.28,
+  "memory_reserve_margin": "12GB",
+  "official_example_source": "https://github.com/ModelTC/Minimax-H3-Turbo/blob/main/inference_minimax_h3.py",
+  "requested_allocation_gib": 1.06,
+  "result": "oom_no_valid_performance_result",
+  "target_height": 768,
+  "target_video_length": 124,
+  "target_width": 1344,
+  "task": "i2va",
+  "video_audio_shifts": [6.0, 3.0]
+}

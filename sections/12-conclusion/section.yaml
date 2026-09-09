@@ -1,0 +1,9 @@
+id: 12-conclusion
+order: 12
+title: Conclusion
+kind: conclusion
+source_prs: [16, 25, 30, 35, 40, 44]
+depends_on: [11-discussion]
+canonical_claims:
+  - Efficient inference is a cross-layer lifecycle contract.
+  - The work reports local Pareto improvements rather than one universal speedup.

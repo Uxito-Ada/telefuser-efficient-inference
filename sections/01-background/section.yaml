@@ -1,0 +1,9 @@
+id: 01-background
+order: 1
+title: Background
+kind: related-work
+source_prs: []
+depends_on: [references]
+canonical_claims:
+  - Linear GEMM and attention GEMM require separate optimization contracts.
+  - Ulysses and ring expose different local tensors to quantization.

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Wan2.1 T2V-1.3B H100 benchmark</title>
+  <desc id="desc">Clean-process cold-start benchmark. Bars show peak allocated memory in GiB and the red line shows throughput in frames per second.</desc>
+  <rect width="1200" height="720" fill="#ffffff"/>
+  <text x="60" y="65" font-family="DejaVu Sans, sans-serif" font-size="30" font-weight="700" fill="#17202a">Wan2.1 T2V-1.3B H100 Benchmark</text>
+  <text x="60" y="102" font-family="DejaVu Sans, sans-serif" font-size="18" fill="#566573">Clean-process cold start | 832x480 | 81 frames | 50 UniPC steps</text>
+  <g stroke="#e5e7e9" stroke-width="1">
+    <line x1="125" y1="610" x2="1080" y2="610"/><line x1="125" y1="544.3" x2="1080" y2="544.3"/>
+    <line x1="125" y1="478.6" x2="1080" y2="478.6"/><line x1="125" y1="412.9" x2="1080" y2="412.9"/>
+    <line x1="125" y1="347.1" x2="1080" y2="347.1"/><line x1="125" y1="281.4" x2="1080" y2="281.4"/>
+    <line x1="125" y1="215.7" x2="1080" y2="215.7"/><line x1="125" y1="150" x2="1080" y2="150"/>
+  </g>
+  <g font-family="DejaVu Sans, sans-serif" font-size="15" fill="#566573" text-anchor="end">
+    <text x="112" y="615">12</text><text x="112" y="549">13</text><text x="112" y="484">14</text>
+    <text x="112" y="418">15</text><text x="112" y="352">16</text><text x="112" y="287">17</text>
+    <text x="112" y="221">18</text><text x="112" y="155">19</text>
+  </g>
+  <line x1="125" y1="150" x2="125" y2="610" stroke="#7b8a8b" stroke-width="2"/>
+  <line x1="125" y1="610" x2="1080" y2="610" stroke="#7b8a8b" stroke-width="2"/>
+  <text x="25" y="390" transform="rotate(-90 25 390)" font-family="DejaVu Sans, sans-serif" font-size="17" font-weight="700" fill="#2874a6">Peak allocated (GiB)</text>
+  <g fill="#85c1e9">
+    <rect x="185" y="337.5" width="120" height="272.5" rx="5"/><rect x="405" y="281.0" width="120" height="329.0" rx="5"/>
+    <rect x="625" y="364.9" width="120" height="245.1" rx="5"/><rect x="845" y="364.9" width="120" height="245.1" rx="5"/>
+  </g>
+  <g font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="700" fill="#21618c" text-anchor="middle">
+    <text x="245" y="322">16.147</text><text x="465" y="265">17.023</text><text x="685" y="349">15.730</text><text x="905" y="349">15.730</text>
+  </g>
+  <g font-family="DejaVu Sans, sans-serif" font-size="15" fill="#17202a" text-anchor="middle">
+    <text x="245" y="640">BF16 Dense</text><text x="465" y="640">BF16 Sol</text>
+    <text x="685" y="635">FP8 Dense</text><text x="685" y="655">(exact)</text>
+    <text x="905" y="635">FP8 Sol</text><text x="905" y="655">(routed)</text>
+  </g>
+  <line x1="1080" y1="150" x2="1080" y2="610" stroke="#7b8a8b" stroke-width="2"/>
+  <g font-family="DejaVu Sans, sans-serif" font-size="15" fill="#566573">
+    <text x="1098" y="615">0.7</text><text x="1098" y="523">0.8</text><text x="1098" y="431">0.9</text>
+    <text x="1098" y="339">1.0</text><text x="1098" y="247">1.1</text><text x="1098" y="155">1.2</text>
+  </g>
+  <text x="1165" y="390" transform="rotate(-90 1165 390)" font-family="DejaVu Sans, sans-serif" font-size="17" font-weight="700" fill="#c0392b">Throughput (frames/s)</text>
+  <polyline points="245,472.8 465,233.7 685,450.0 905,190.0" fill="none" stroke="#c0392b" stroke-width="4"/>
+  <g fill="#c0392b" stroke="#ffffff" stroke-width="3">
+    <circle cx="245" cy="472.8" r="8"/><circle cx="465" cy="233.7" r="8"/><circle cx="685" cy="450.0" r="8"/><circle cx="905" cy="190.0" r="8"/>
+  </g>
+  <g font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="700" fill="#922b21" text-anchor="middle">
+    <text x="245" y="452">0.8491</text><text x="465" y="214">1.1090</text><text x="685" y="430">0.8739</text><text x="905" y="170">1.1565</text>
+  </g>
+  <rect x="80" y="675" width="28" height="22" fill="#85c1e9"/><text x="118" y="692" font-family="DejaVu Sans, sans-serif" font-size="16" fill="#17202a">Peak allocated memory</text>
+  <line x1="340" y1="686" x2="385" y2="686" stroke="#c0392b" stroke-width="4"/><circle cx="362.5" cy="686" r="7" fill="#c0392b"/>
+  <text x="400" y="692" font-family="DejaVu Sans, sans-serif" font-size="16" fill="#17202a">Throughput</text>
+</svg>

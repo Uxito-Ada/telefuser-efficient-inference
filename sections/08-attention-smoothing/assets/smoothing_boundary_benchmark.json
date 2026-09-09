@@ -1,0 +1,25 @@
+{
+  "shape": [
+    1,
+    32626,
+    56,
+    128
+  ],
+  "prefix_tokens": 128,
+  "repetitions": 100,
+  "sequence_statistics": {
+    "unfused_ms": 1.0097154998779296,
+    "fused_ms": 0.5319417572021484,
+    "change_percent": -47.31765955197697
+  },
+  "quantization_and_correction_statistics": {
+    "unfused_ms": 2.57953125,
+    "fused_ms": 2.1054112243652345,
+    "change_percent": -18.380084584544786
+  },
+  "output_correction_and_prefix_merge": {
+    "unfused_ms": 0.8775820922851563,
+    "fused_ms": 0.553977279663086,
+    "change_percent": -36.87459161563203
+  }
+}

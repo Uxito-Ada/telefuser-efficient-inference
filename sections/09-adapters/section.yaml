@@ -1,0 +1,13 @@
+id: 09-adapters
+order: 9
+title: "Case VI: Adapter-Aware FP8 Deployment"
+kind: case-study
+source_prs: [44]
+depends_on: [06-fp8-sol-attention]
+workloads:
+  - "MiniMax-H3 Turbo, 1344x768, 124 frames, 8 DiT updates, 1x H100"
+  - "FastH3 dense adapter, 1344x768, 124 frames, 4 DiT updates, 1x H100"
+canonical_claims:
+  - Turbo throughput is 36.5% higher than resident LightX2V BF16 Sol.
+  - FastH3 throughput is 57.2% higher than FastVideo BF16 FA4.
+  - FastH3 dense-datafree applies 362 low-rank pairs and 85 exact deltas.

@@ -1,0 +1,36 @@
+{
+  "aspect_ratio": "16:9",
+  "backend": "fp8",
+  "denoising_steps_per_second": 0.1806125622579833,
+  "duration_seconds": 5.0,
+  "generated_video_seconds_per_second": 0.012577208212316582,
+  "generation_seconds": 397.5445039626211,
+  "load_seconds": 4.953862471506,
+  "model_root": "<MODEL_ROOT>/MiniMaxAI_MiniMax-H3",
+  "num_inference_steps": 50,
+  "output": "benchmarks/minimax_h3_fp8_sol/minimax_h3_fp8_dense.mp4",
+  "prompt": "integrated_multimodal_description: [Shot 1] Cinematic, medium wide shot, pushing in slowly. In the cavernous, dimly lit bridge of a starship, sleek metallic consoles with glowing amber displays flank a massive, curved observation window. A female captain, in her late 40s with an athletic build and short silver-streaked black hair, stands in the center midground. She wears a structured, high-collared dark navy military tunic with silver chest insignias. Her back is to the camera, silhouetted against the cool, ambient starlight pouring through the thick glass. She stands perfectly still with her hands clasped tightly behind her back. Outside the window, a massive armada of jagged, dark grey dreadnoughts hovers in tight formation against a deep purple space nebula. The fleet's massive rear thrusters begin to glow with an intense, escalating bright blue light. [Shot 2] At 00:04.500, the camera cuts to a close-up of the captain's face and shakes strongly. The brilliant blue-white light from the fleet's gathering energy reflects vividly in her dark eyes. Suddenly, a blinding white flash floods through the window, completely washing out the background as the fleet jumps to hyperspace. The sheer spatial force violently jolts the bridge, causing the captain from Shot 1 to stagger slightly forward, her shoulders tensing as she visibly braces herself against the physical tremors. As the intense white light fades abruptly, leaving only the dim, empty expanse of the purple nebula reflected on her starkly lit skin, her jaw clenches, and she slowly closes her eyes in the newly emptied space.\noverall_soundscape: A low, resonant hum of the ship's ambient life support systems serves as the baseline, soon drowned out by an audible, escalating, high-pitched electronic whine as the fleet outside charges its hyperdrives. A massive, deafening, bass-heavy boom and sharp crackle erupts during the blinding flash, accompanied by the loud metallic creaking, rattling, and deep thuds of the bridge's bulkheads vibrating under immense physical stress. The intense roaring impact then cuts abruptly back to a hollow, echoing room tone, leaving only the faint, steady hum of the isolated bridge.\nnon_diegetic_music: Cinematic space-opera orchestral score, slow tempo, featuring a solitary, mournful French horn melody over deep, sustained string dissonances that build rapidly in volume and intensity, swelling to a massive orchestral peak before snapping immediately into silence right after the jump.",
+  "runtime_metrics": {
+    "audio_decoding_seconds": 1.3159478511661291,
+    "audio_encoding_seconds": 0.0,
+    "denoising_seconds": 276.8356717545539,
+    "denoising_stage_seconds": 343.271333001554,
+    "feature_cache_computed_steps": 49,
+    "feature_cache_skipped_steps": 0,
+    "media_preparation_seconds": 0.00012598000466823578,
+    "peak_allocated_bytes": 38590493696,
+    "peak_reserved_bytes": 46793752576,
+    "pipeline_seconds": 397.02121628820896,
+    "text_encoding_seconds": 40.40176730975509,
+    "video_decoding_seconds": 11.20461356267333,
+    "visual_encoding_seconds": 0.0
+  },
+  "save_seconds": 2.642853641882539,
+  "seed": 0,
+  "versions": {
+    "bitsandbytes": "0.49.2",
+    "telefuser": "0.1.0.post4.dev193+g25c1efb.d20260816",
+    "torch": "2.11.0+cu128",
+    "torchao": "0.17.0"
+  }
+}

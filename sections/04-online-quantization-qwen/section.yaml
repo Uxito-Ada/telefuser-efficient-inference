@@ -1,0 +1,10 @@
+id: 04-online-quantization-qwen
+order: 4
+title: "Case I: Online Quantization as Infrastructure"
+kind: case-study
+source_prs: [16]
+depends_on: [03-system-overview]
+workload: "Qwen-Image-2512, 1328x1328, 16 steps, 1x H100"
+canonical_claims:
+  - BNB NF4 reduces peak allocated memory by 47.4% versus BF16.
+  - Online TorchAO FP8 reduces memory but is slower than BF16 in this profile.

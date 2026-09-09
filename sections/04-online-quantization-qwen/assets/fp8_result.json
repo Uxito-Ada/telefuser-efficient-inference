@@ -1,0 +1,22 @@
+{
+  "mode": "fp8",
+  "status": "ok",
+  "backend": "qwen_image_lightning_fp8_checkpoint",
+  "model_root": "<MODEL_ROOT>/Qwen-Image-2512",
+  "lightning_fp8_path": "<MODEL_ROOT>/Qwen-Image-2512-Lightning/qwen_image_2512_fp8_e4m3fn_scaled_8steps_v1.0.safetensors",
+  "bnb_replaced_linear": "",
+  "torchao_replaced_linear": "",
+  "torchao_int4_group_size": "",
+  "aspect_ratio": "1:1",
+  "steps": 16,
+  "cfg_scale": 1.0,
+  "rand_device": "cpu",
+  "offload": "none",
+  "warmup": 2,
+  "repeat": 5,
+  "latency_mean_s": 5.5012299828231335,
+  "latency_min_s": 5.405261700972915,
+  "latency_max_s": 5.788694027811289,
+  "peak_allocated_gb": 40.4916934967041,
+  "error": ""
+}

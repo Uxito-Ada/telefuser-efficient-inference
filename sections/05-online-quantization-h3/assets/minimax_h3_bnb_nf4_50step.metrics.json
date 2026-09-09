@@ -1,0 +1,33 @@
+{
+  "aspect_ratio": "16:9",
+  "backend": "bnb-nf4",
+  "duration_seconds": 5.0,
+  "generation_seconds": 378.05489781685174,
+  "load_seconds": 5.0252740904688835,
+  "model_root": "<MODEL_ROOT>/MiniMaxAI_MiniMax-H3",
+  "num_inference_steps": 50,
+  "output": "outputs/minimax_h3_bnb_nf4_50step.mp4",
+  "prompt": "Steam rises from the ramen while the family talks in the background.",
+  "runtime_metrics": {
+    "audio_decoding_seconds": 1.2601759247481823,
+    "audio_encoding_seconds": 0.0,
+    "communication_seconds": 0.0,
+    "denoising_seconds": 298.12952913343906,
+    "denoising_stage_seconds": 322.0444737430662,
+    "media_preparation_seconds": 0.00016497261822223663,
+    "peak_allocated_bytes": 22624088576,
+    "peak_reserved_bytes": 55968792576,
+    "pipeline_seconds": 377.6125101968646,
+    "text_encoding_seconds": 41.78011283837259,
+    "video_decoding_seconds": 11.71238156221807,
+    "visual_encoding_seconds": 0.0
+  },
+  "save_seconds": 3.7400711365044117,
+  "seed": 0,
+  "versions": {
+    "bitsandbytes": "0.50.0",
+    "telefuser": "0.1.dev279+ga68013557",
+    "torch": "2.13.0",
+    "torchao": "0.18.0"
+  }
+}
