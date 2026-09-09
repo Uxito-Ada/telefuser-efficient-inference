@@ -1,56 +1,57 @@
 # Authoring Guide
 
-This repository is organized like a collection of narrowly scoped skills. A
-section can be edited independently as long as its local contract is respected.
+The repository is modular like a collection of skills, but the article must
+read as one argument. A locally correct section is not acceptable if it breaks
+the causal hand-off to the section before or after it.
 
 ## Editing one section
 
-1. Open `sections/<id>/README.md`.
-2. Read its hidden `SECTION-CONTRACT` before changing prose.
-3. Check `section.yaml` for upstream dependencies and canonical claims.
-4. Check `assets/MANIFEST.md` before replacing a figure or metric file.
-5. Edit only that section unless a changed claim affects the abstract,
-   evaluation synthesis, or conclusion.
-6. Run `python scripts/build_blog.py --check` to see whether `BLOG.md` is stale.
-7. Run `python scripts/build_blog.py`, then `python scripts/validate_repo.py`.
+1. Read the hidden `SECTION-CONTRACT` at the top of `README.md`.
+2. Read `section.yaml`, especially `incoming_premise` and
+   `outgoing_question`.
+3. Preserve the four-part reasoning unit: observation, explanation, design,
+   evidence.
+4. Put concrete MiniMax-H3 examples inside that reasoning; do not create a
+   chapter merely because an implementation once had its own pull request.
+5. Update the abstract, evaluation, and conclusion only when new evidence
+   changes the article-level claim.
+6. Rebuild and validate the assembled article.
 
-## Source priority
+## Claim policy
 
-When sources disagree, use this order:
+- Final numbers must come from the new 4xH100 benchmark under
+  `experiments/h100-sp4-e2e/`.
+- Do not copy a historical PR number into a final chart.
+- A speedup claim requires the same checkpoint, adapter, task, output shape,
+  sampling work, GPU count, warm-up policy, and timing boundary.
+- The primary performance baseline is an external framework, not another
+  TeleFuser mode.
+- Use actual DiT forwards when describing denoising throughput. Scheduler
+  points and transformer evaluations are not interchangeable.
+- Whole-process memory must be sampled after warm-up and must identify both
+  per-GPU maximum and aggregate maximum.
+- Paired PSNR, SSIM, LPIPS, cosine, or spectral error measure trajectory
+  similarity to BF16. They do not by themselves prove perceptual equivalence.
+- A framework that OOMs, crashes, or produces invalid media is an excluded
+  result, not a performance datapoint.
 
-1. The final public PR description at the cited revision.
-2. Raw JSON from the final measured profile.
-3. The benchmark README associated with the PR.
-4. Intermediate local reports.
-5. Conversation notes.
+## Placeholder policy
 
-Do not silently mix warm and cold measurements, denoise and end-to-end time,
-allocated and NVML-sampled memory, or Base H3 and distilled FastH3 workloads.
+Until the new experiment exists, write `TBD--new experiment required`. Do not
+estimate a value from an old run or from another hardware generation. Every
+placeholder is tracked in `evidence/claims.yaml`.
 
-## Claim rules
+## Media policy
 
-- State the model, resolution, frame count, denoising work, GPU count, and
-  warm-up policy close to every primary performance result.
-- Use `step/s` only when the numerator is the configured scheduler points.
-  Use `DiT updates/s` when reporting actual transformer evaluations.
-- Call a comparison "matched" only when prompt, output shape, denoising work,
-  and measurement boundary match. Explain remaining framework differences.
-- Treat same-seed PSNR, SSIM, cosine, and audio metrics as trajectory
-  similarity, not absolute perceptual quality.
-- Never infer a global speedup by multiplying results from separate cases.
-- Keep failures and rejected alternatives when they explain the final design.
+The final article is built as HTML so video evidence is displayed with native
+`<video controls>` players. Do not replace dynamic evidence with a contact
+sheet. Each paired comparison must expose the original MP4 files and use the
+same prompt, seed, resolution, frame count, and FPS.
 
-## Media rules
+Do not commit checkpoints, captured full-size tensors, credentials, or
+machine-local absolute paths.
 
-The checked-in MP4s are evidence snapshots. The section text also retains the
-original GitHub `user-attachments` URLs because standalone URLs render as
-players in pull-request Markdown. In this repository, use a thumbnail or
-contact sheet followed by a normal link to the local MP4.
-
-No source model checkpoints, captured tensors, credentials, or machine-local
-absolute paths belong in the repository.
-
-## Rebuilding
+## Validation
 
 ```bash
 python scripts/build_blog.py

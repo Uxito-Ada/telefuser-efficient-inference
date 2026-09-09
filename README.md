@@ -1,68 +1,54 @@
-# TeleFuser Efficient Inference
+# Fast and Faithful World-Model Inference
 
-## From Quantization to Quality: Building an Efficient Video-DiT Inference Stack
+**Co-designing FP8, sparse attention, and sequence parallelism for MiniMax-H3**
 
-This repository is a modular, paper-style technical blog about six TeleFuser contributions:
-[PR #16](https://github.com/Tele-AI/TeleFuser/pull/16),
-[PR #25](https://github.com/Tele-AI/TeleFuser/pull/25),
-[PR #30](https://github.com/Tele-AI/TeleFuser/pull/30),
-[PR #35](https://github.com/Tele-AI/TeleFuser/pull/35),
-[PR #40](https://github.com/Tele-AI/TeleFuser/pull/40), and
-[PR #44](https://github.com/Tele-AI/TeleFuser/pull/44).
+This repository contains a modular draft of an efficient-AI technical article.
+It studies one question: how can a compute-bound world model become faster on
+NVIDIA H100 GPUs without giving up the visual, temporal, and audio quality that
+made the model useful in the first place?
 
-The work follows one system arc: make low precision deployable, move FP8 through
-the attention boundary, combine sparse attention with sequence parallelism,
-recover quantization quality with algebraically equivalent smoothing, and keep
-the optimized path usable after LoRA adapters change the weights.
+The article follows a single causal argument. Quality requirements make the
+MiniMax-H3 DiT expensive; quantization and sparsity are therefore both needed,
+but their numerical and systems contracts conflict. Resolving that conflict
+requires a hardware-aware FP8 sparse-attention path, explicit quality controls,
+and a distributed weight lifecycle that remains correct after adapters mutate
+the model.
 
-> **Headline result.** On matched MiniMax-H3 workloads, the stack reaches up to
-> 65.0% higher denoising throughput than TeleFuser BF16 Dense on one H100,
-> 53.2% higher throughput than the matched four-H100 TeleFuser BF16 + FA4
-> baseline, and 2.62x the denoising speed of the deployed LightX2V baseline.
-> Attention smoothing then reduces dense attention-output MSE by 8.18% for a
-> 2.11% throughput cost, while adapter-aware FP8 Sol retains 36.5%-57.2%
-> throughput advantages over the matched external baselines.
+> **Draft status:** the method narrative is being written first. Every headline
+> performance or quality value is intentionally marked `TBD` until a new,
+> matched 4xH100 experiment is complete. Historical PR measurements are not
+> reused as final evidence.
 
-These percentages come from different case-specific workloads. They are not
-combined into one global speedup.
+## Read the draft
 
-## Read
+- [Assembled article](BLOG.md)
+- [Section editing guide](AUTHORING.md)
+- [Flagship experiment contract](experiments/h100-sp4-e2e/README.md)
+- [Claim and evidence policy](evidence/README.md)
+- [Related work and writing references](references/README.md)
 
-- [Complete assembled article](BLOG.md)
-- [Authoring and section-editing guide](AUTHORING.md)
-- [Reference work and style study](references/README.md)
-- [PR-to-section evidence index](references/PR_INDEX.md)
-- [Reproducibility contract](sections/10-evaluation/README.md)
+## Article map
 
-## Modular paper map
-
-| Section | Purpose | Primary evidence |
+| Section | Question it answers | Why the next section is necessary |
 |---|---|---|
-| [Abstract](sections/00-abstract/README.md) | Contributions and headline findings | PRs #16, #25, #30, #35, #40, #44 |
-| [Background](sections/01-background/README.md) | Video-DiT cost model and low-precision attention | Sol-Attn, SageAttention2, xDiT, FA4 |
-| [Motivation](sections/02-motivation/README.md) | Why isolated optimizations are insufficient | Cross-PR failure cases |
-| [System overview](sections/03-system-overview/README.md) | Optimization stack and ownership boundaries | TeleFuser implementation |
-| [Qwen-Image online quantization](sections/04-online-quantization-qwen/README.md) | General FP8/NF4 infrastructure | PR #16 |
-| [MiniMax-H3 online quantization](sections/05-online-quantization-h3/README.md) | Large multimodal DiT deployment | PR #25 |
-| [FP8 Sol-Attn](sections/06-fp8-sol-attention/README.md) | Fused quantized sparse attention | PR #30 |
-| [Sequence parallel FP8 Sol](sections/07-sequence-parallel/README.md) | TP2 x Ulysses SP2 and tuning | PR #35 |
-| [Attention smoothing](sections/08-attention-smoothing/README.md) | Accuracy recovery and fused correction | PR #40 |
-| [Adapter-aware deployment](sections/09-adapters/README.md) | Turbo LoRA and FastH3 adapters | PR #44 |
-| [Evaluation](sections/10-evaluation/README.md) | Protocols, metrics, and evidence table | Raw JSON and media |
-| [Discussion](sections/11-discussion/README.md) | Lessons, limitations, open problems | Cross-case analysis |
-| [Conclusion](sections/12-conclusion/README.md) | Efficient-AI takeaways | All cases |
+| [Abstract](sections/00-abstract/README.md) | What system problem and contribution does the article study? | The result needs a precise model-level problem. |
+| [Quality has a computational cost](sections/01-quality-cost/README.md) | Why is high-quality world-model inference expensive? | One optimization cannot remove both Linear and attention cost. |
+| [The composition gap](sections/02-composition-gap/README.md) | Why do FP8 and sparsity fail to compose through existing APIs? | A shared H100 execution path is missing. |
+| [The SM90 FP8 sparse path](sections/03-sm90-fp8-sol/README.md) | How are quantization, layout, routing, and compute fused? | Two approximations now perturb one denoising trajectory. |
+| [Quality under compound approximation](sections/04-quality-control/README.md) | How is error controlled without reverting the whole graph to BF16? | The numerical contract must survive tensor redistribution. |
+| [Distributed numerical contract](sections/05-distributed-contract/README.md) | Where do communication, quantization, and routing belong under Ulysses? | Production checkpoints are mutable through adapters. |
+| [Mutable weight lifecycle](sections/06-weight-lifecycle/README.md) | How do adapters, FP8 caches, and spawn workers remain consistent? | The complete system can finally be evaluated. |
+| [End-to-end evaluation](sections/07-evaluation/README.md) | Does the complete SP4 system beat external baselines at comparable quality? | Results need interpretation and boundaries. |
+| [Discussion and conclusion](sections/08-discussion/README.md) | What generalizes, and what remains architecture-specific? | - |
 
 ## Repository contract
 
-Each section is self-contained:
+Each section is intentionally self-contained for editing but not independent in
+argument. Its `README.md` contains publishable prose; `section.yaml` records the
+incoming premise, outgoing bridge, evidence requirements, and forbidden claims;
+`assets/` owns only media used by that section. `BLOG.md` is generated in order.
 
-- `README.md` is the publishable section and begins with a hidden
-  `SECTION-CONTRACT`.
-- `section.yaml` declares ownership, source PRs, dependencies, and claims.
-- `assets/` contains figures, videos, raw metrics, and a provenance manifest.
-- `BLOG.md` is generated. Edit a section and run `python scripts/build_blog.py`.
-
-The repository intentionally preserves negative results: online FP8 can be
-slower than BF16, sparse attention can add memory, distributed scaling can be
-communication-bound, and lower tensor MSE does not guarantee better audio.
-Those observations are part of the system result, not noise to hide.
+```bash
+python scripts/build_blog.py
+python scripts/validate_repo.py
+```

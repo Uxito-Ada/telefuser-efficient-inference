@@ -1,10 +1,11 @@
 id: 00-abstract
-order: 0
-title: From Quantization to Quality
-kind: abstract
-source_prs: [16, 25, 30, 35, 40, 44]
-depends_on: []
-canonical_claims:
-  - MiniMax-H3 single-H100 FP8 Sol is 65.0% higher throughput than BF16 Dense.
-  - Four-H100 FP8 Sol is 53.2% higher throughput than TeleFuser BF16 FA4.
-  - Attention smoothing reduces attention-output MSE by 8.18%.
+title: Fast and Faithful World-Model Inference
+status: draft
+incoming_premise: none
+outgoing_question: Why does world-model quality create this systems problem?
+evidence:
+  - experiments/h100-sp4-e2e/raw/summary.json
+  - experiments/quality-suite/raw/summary.json
+forbidden_claims:
+  - historical PR measurements as headline results
+  - equivalence to BF16 before the quality suite is complete

@@ -1,0 +1,14 @@
+id: 03-sm90-fp8-sol
+title: Building One FP8 Sparse Path for SM90
+status: draft
+incoming_premise: Existing APIs cannot represent the required composed operation.
+outgoing_question: How is trajectory quality protected under FP8 and sparse approximation?
+evidence:
+  - experiments/h100-sp4-e2e/raw/operator-profile.json
+  - experiments/quality-suite/raw/tensor-error.json
+implementation_sources:
+  - https://github.com/Tele-AI/TeleFuser/pull/30
+forbidden_claims:
+  - TeleFuser invented Sol-Attn
+  - unsupported shapes silently use the native kernel
+  - FP8 projection scales are reused unchanged for attention

@@ -1,4 +1,4 @@
 # Asset Manifest
 
-This section intentionally has no section-local media. It summarizes evidence
-owned by the six case-study directories.
+No assets belong in the abstract. Headline values are sourced from the final
+experiment and rendered in the evaluation section.

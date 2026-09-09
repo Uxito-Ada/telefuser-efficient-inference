@@ -1,0 +1,62 @@
+schema_version: 1
+status: frozen-before-generation
+common:
+  width: 1344
+  height: 768
+  frames: 124
+  fps: 24
+  duration_seconds: 5
+  seeds: [1000, 2026]
+prompts:
+  - id: face-hands
+    category: human structure
+    text: >-
+      integrated_multimodal_description: A chef faces the camera while folding
+      dumplings with both hands at a busy open kitchen.
+      overall_soundscape: Quiet conversation, ceramic bowls, and soft kitchen
+      ambience.
+  - id: fast-motion
+    category: fast subject motion
+    text: >-
+      integrated_multimodal_description: A red fox sprints through fresh snow
+      at dawn while the camera tracks beside it.
+      overall_soundscape: Fast pawsteps in snow, winter wind, and distant birds.
+  - id: camera-motion
+    category: global geometry
+    text: >-
+      integrated_multimodal_description: The camera circles a glass greenhouse
+      as a gardener walks between rows of green plants.
+      overall_soundscape: Footsteps, rustling leaves, and a light ventilation
+      hum.
+  - id: interactions
+    category: multiple objects
+    text: >-
+      integrated_multimodal_description: Three children pass a yellow ball
+      around a fountain while pedestrians cross behind them.
+      overall_soundscape: Splashing water, footsteps, and children laughing.
+  - id: low-light
+    category: low light and contrast
+    text: >-
+      integrated_multimodal_description: A violinist performs beneath one warm
+      spotlight in a dark theater as the camera slowly moves closer.
+      overall_soundscape: Solo violin with faint room reverberation.
+  - id: fluid-motion
+    category: material dynamics
+    text: >-
+      integrated_multimodal_description: Clear water pours into a metal bowl,
+      splashing over floating orange slices in slow motion.
+      overall_soundscape: Running water and resonant metallic droplets.
+  - id: speech
+    category: speech synchronization
+    text: >-
+      integrated_multimodal_description: A woman at a train platform looks into
+      the camera and says, The last train arrives at midnight.
+      overall_soundscape: Her clear voice, distant rail noise, and station
+      ambience.
+  - id: impact
+    category: event synchronization
+    text: >-
+      integrated_multimodal_description: A ceramic cup falls from a wooden
+      table and shatters on the floor.
+      overall_soundscape: One sharp ceramic impact followed by small fragments
+      settling.

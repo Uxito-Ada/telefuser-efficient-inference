@@ -1,0 +1,41 @@
+schema_version: 1
+status: planned
+hardware:
+  gpu: NVIDIA H100 80GB HBM3
+  count: 4
+workload:
+  model: MiniMaxAI/MiniMax-H3
+  adapter: FastH3 Dense/Data-Free
+  adapter_scale: 1.0
+  task: t2va
+  width: 1344
+  height: 768
+  frames: 124
+  fps: 24
+  duration_seconds: 5
+  sigma_points: 5
+  actual_dit_forwards: 4
+  batch_size: 1
+  concurrency: 1
+  seed: 1000
+  prompt: >-
+    integrated_multimodal_description: A red fox runs through fresh snow at
+    dawn. overall_soundscape: Fast pawsteps in snow, winter wind, and distant
+    birds.
+measurement:
+  warmups: 1
+  repeats: 5
+  statistic: median
+  memory_sample_interval_ms: 100
+  e2e_start: before prompt processing
+  e2e_end: after synchronized MP4 file close
+profiles:
+  - id: fastvideo-dense-fa4
+    role: primary-baseline
+    distributed: official-four-gpu
+  - id: telefuser-fp8-sol
+    role: proposed
+    distributed: ulysses-sp4
+  - id: fastvideo-vsa
+    role: related-sparse-reference
+    admission: official H100 path and valid media required
