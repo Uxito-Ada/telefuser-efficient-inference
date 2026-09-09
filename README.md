@@ -23,7 +23,7 @@ the model.
 
 - [Assembled article](BLOG.md)
 - [Section editing guide](AUTHORING.md)
-- [Flagship experiment contract](experiments/h100-sp4-e2e/README.md)
+- [Flagship experiment contract](experiments/h100-4gpu-e2e/README.md)
 - [Claim and evidence policy](evidence/README.md)
 - [Related work and writing references](references/README.md)
 
@@ -38,7 +38,7 @@ the model.
 | [Quality under compound approximation](sections/04-quality-control/README.md) | How is error controlled without reverting the whole graph to BF16? | The numerical contract must survive tensor redistribution. |
 | [Distributed numerical contract](sections/05-distributed-contract/README.md) | Where do communication, quantization, and routing belong under Ulysses? | Production checkpoints are mutable through adapters. |
 | [Mutable weight lifecycle](sections/06-weight-lifecycle/README.md) | How do adapters, FP8 caches, and spawn workers remain consistent? | The complete system can finally be evaluated. |
-| [End-to-end evaluation](sections/07-evaluation/README.md) | Does the complete SP4 system beat external baselines at comparable quality? | Results need interpretation and boundaries. |
+| [End-to-end evaluation](sections/07-evaluation/README.md) | Does the complete four-GPU system beat external baselines at comparable quality? | Results need interpretation and boundaries. |
 | [Discussion and conclusion](sections/08-discussion/README.md) | What generalizes, and what remains architecture-specific? | - |
 
 ## Repository contract

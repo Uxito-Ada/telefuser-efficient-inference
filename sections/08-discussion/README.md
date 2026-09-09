@@ -65,9 +65,10 @@ that owns them.
 - The native FP8 Sol path targets NVIDIA H100/SM90, E4M3, non-causal
   self-attention, and the MiniMax-H3 head geometry. It is not a portable
   low-precision attention implementation.
-- Ulysses SP4 is evaluated because it gives each rank the complete sequence for
-  local heads. Ring-compatible sparse routing would require a new distributed
-  summary and online-softmax merge.
+- TP2 x Ulysses SP2 is evaluated because each Ulysses rank receives the
+  complete sequence for local heads while tensor parallelism also partitions
+  wide DiT operators. Ring-compatible sparse routing would require a new
+  distributed summary and online-softmax merge.
 - The strict performance claim uses the Dense/Data-Free adapter. VSA uses
   learned gates and is reported only as related context.
 - Whole-process peak memory includes text encoding and media decoding, so it

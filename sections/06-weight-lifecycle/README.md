@@ -2,7 +2,7 @@
 SECTION-CONTRACT
 id: 06-weight-lifecycle
 incoming_premise: The distributed FP8 path is correct only while effective weights remain unchanged.
-outgoing_question: Does the complete, adapter-aware SP4 system beat an external implementation at comparable quality?
+outgoing_question: Does the complete adapter-aware four-GPU system beat an external implementation at comparable quality?
 evidence: Adapter mapping tests, cache lifecycle tests, and process-spawn tests.
 do_not_claim: Dense FastH3 support implies support for learned VSA replacement gates.
 -->

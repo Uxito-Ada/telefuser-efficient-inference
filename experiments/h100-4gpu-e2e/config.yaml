@@ -32,10 +32,10 @@ measurement:
 profiles:
   - id: fastvideo-dense-fa4
     role: primary-baseline
-    distributed: official-four-gpu
+    distributed: sp4
   - id: telefuser-fp8-sol
     role: proposed
-    distributed: ulysses-sp4
+    distributed: tp2-ulysses-sp2
   - id: fastvideo-vsa
     role: related-sparse-reference
     admission: official H100 path and valid media required

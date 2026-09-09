@@ -4,8 +4,8 @@ status: draft
 incoming_premise: Attention statistics are defined over the final local tensor.
 outgoing_question: How do adapter mutation, FP8 caches, and spawn workers remain consistent?
 evidence:
-  - experiments/h100-sp4-e2e/raw/distributed-profile.json
-  - experiments/h100-sp4-e2e/raw/summary.json
+  - experiments/h100-4gpu-e2e/raw/distributed-profile.json
+  - experiments/h100-4gpu-e2e/raw/summary.json
 implementation_sources:
   - https://github.com/Tele-AI/TeleFuser/pull/35
   - https://github.com/Tele-AI/TeleFuser/pull/37
@@ -15,4 +15,4 @@ examples:
 forbidden_claims:
   - Ulysses is universally faster than Ring
   - pre-communication quantization has equivalent scale semantics
-  - SP4 speedup before the new benchmark
+  - four-GPU speedup before the new benchmark

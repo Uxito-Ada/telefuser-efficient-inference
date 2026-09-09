@@ -4,7 +4,7 @@ status: draft
 incoming_premise: The complete system is evaluated under one matched contract.
 outgoing_question: none
 evidence:
-  - experiments/h100-sp4-e2e/raw/summary.json
+  - experiments/h100-4gpu-e2e/raw/summary.json
   - experiments/quality-suite/raw/summary.json
 forbidden_claims:
   - portability beyond the tested architecture

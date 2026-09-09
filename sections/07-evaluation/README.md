@@ -1,7 +1,7 @@
 <!--
 SECTION-CONTRACT
 id: 07-evaluation
-incoming_premise: The complete method now includes precision, sparsity, quality control, SP4, and adapter-correct weights.
+incoming_premise: The complete method now includes precision, sparsity, quality control, four-GPU parallelism, and adapter-correct weights.
 outgoing_question: Which conclusions generalize beyond the measured H100/H3 contract?
 evidence: Only new raw records under experiments/.
 do_not_claim: Do not use failed, invalid, unmatched, single-GPU, or B200 runs in the headline comparison.
@@ -31,7 +31,7 @@ MiniMax-H3 base and the same released adapter. FA4 is the baseline's intended
 H100 dense-attention backend. The run uses the maintained example with
 configuration-only workload changes.
 
-**Our system: TeleFuser FP8 Linear + FP8 Sol + smoothing + Ulysses SP4.** This
+**Our system: TeleFuser FP8 Linear + FP8 Sol + smoothing, TP2 x Ulysses SP2.** This
 is the complete path described in the article: merged Dense/Data-Free adapter,
 cached E4M3 Linear weights, shared QKV activation quantization, post-Ulysses
 attention preparation, dynamic Sol routing, dense quality islands, K/V
@@ -44,8 +44,9 @@ denominator of the headline speedup, because VSA contains learned gates and
 therefore represents a different effective model.
 
 **Official quality reference: MiniMax-H3 Diffusers.** The publisher-supported
-BF16 route establishes expected output behavior. It is excluded from the SP4
-performance chart unless it exposes a comparable four-GPU execution contract.
+BF16 route establishes expected output behavior. It is excluded from the
+four-GPU performance chart unless it exposes a comparable four-GPU execution
+contract.
 
 **Conditional LightX2V reference.** The published MiniMax-H3 Sol example is
 included only if a clean official-environment reproduction produces meaningful
@@ -102,7 +103,7 @@ protocol and media-validity gate.
 | System | 4-GPU mode | Median E2E | Videos/hour | DiT forwards/s | Max per-GPU memory | Aggregate peak |
 |---|---|---:|---:|---:|---:|---:|
 | FastVideo BF16 + FA4 | official distributed recipe | TBD | TBD | TBD | TBD | TBD |
-| TeleFuser FP8 + Sol | Ulysses SP4 | TBD | TBD | TBD | TBD | TBD |
+| TeleFuser FP8 + Sol | TP2 x Ulysses SP2 | TBD | TBD | TBD | TBD | TBD |
 | FastVideo VSA | official H100 route, if valid | TBD | TBD | TBD | TBD | TBD |
 
 The final prose will be generated from raw JSON:
@@ -116,7 +117,7 @@ One figure will show the same experiment with narrow grouped bars for E2E
 latency, videos/hour, and per-GPU memory. It will not combine unrelated units on
 one axis or import historical measurements.
 
-<!-- RESULT_FIGURE_TBD: experiments/h100-sp4-e2e/figures/end-to-end.svg -->
+<!-- RESULT_FIGURE_TBD: experiments/h100-4gpu-e2e/figures/end-to-end.svg -->
 
 ## Quality suite
 
@@ -158,7 +159,7 @@ for motion or audio.
     <video controls playsinline preload="metadata" data-result-slot="fastvideo-primary"></video>
   </figure>
   <figure>
-    <figcaption>TeleFuser FP8 + Sol + smoothing, SP4</figcaption>
+    <figcaption>TeleFuser FP8 + Sol + smoothing, TP2 x Ulysses SP2</figcaption>
     <video controls playsinline preload="metadata" data-result-slot="telefuser-primary"></video>
   </figure>
 </div>

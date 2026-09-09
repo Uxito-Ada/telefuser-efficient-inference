@@ -4,7 +4,7 @@ status: draft
 incoming_premise: Both low precision and sparse attention are needed.
 outgoing_question: What shared H100 execution path can make them one operation?
 evidence:
-  - experiments/h100-sp4-e2e/raw/backend-capabilities.json
+  - experiments/h100-4gpu-e2e/raw/backend-capabilities.json
   - evidence/excluded-results.md
 examples:
   - repeated QKV activation quantization

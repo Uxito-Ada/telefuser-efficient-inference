@@ -2,10 +2,10 @@ id: 06-weight-lifecycle
 title: Treating Optimized Weights as Mutable State
 status: draft
 incoming_premise: FP8 caches are correct only for the weight they represent.
-outgoing_question: Does the complete adapter-aware SP4 system beat an external baseline?
+outgoing_question: Does the complete adapter-aware four-GPU system beat an external baseline?
 evidence:
   - implementation unit tests
-  - experiments/h100-sp4-e2e/raw/environment.json
+  - experiments/h100-4gpu-e2e/raw/environment.json
 implementation_sources:
   - https://github.com/Tele-AI/TeleFuser/pull/25
   - https://github.com/Tele-AI/TeleFuser/pull/44

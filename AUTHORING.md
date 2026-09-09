@@ -20,7 +20,7 @@ the causal hand-off to the section before or after it.
 ## Claim policy
 
 - Final numbers must come from the new 4xH100 benchmark under
-  `experiments/h100-sp4-e2e/`.
+  `experiments/h100-4gpu-e2e/`.
 - Do not copy a historical PR number into a final chart.
 - A speedup claim requires the same checkpoint, adapter, task, output shape,
   sampling work, GPU count, warm-up policy, and timing boundary.

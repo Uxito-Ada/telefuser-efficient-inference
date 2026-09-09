@@ -525,7 +525,7 @@ id: 05-distributed-contract
 incoming_premise: Quality controls are defined over the complete sequence consumed by one attention problem.
 outgoing_question: How can mutable adapter weights and FP8 caches remain correct across spawned workers?
 evidence: Distributed layout tests and the new 4xH100 communication/compute trace.
-do_not_claim: SP4 speedup is unknown until the new experiment is complete.
+do_not_claim: Four-GPU speedup is unknown until the new experiment is complete.
 -->
 
 # 5. Preserving the Numerical Contract Across GPUs
@@ -588,10 +588,8 @@ Choosing Ulysses is therefore not a claim that it is universally faster. It is
 the parallel layout that preserves the already validated sparse numerical
 problem without inventing an untested distributed approximation.
 
-After establishing that ordering, TeleFuser further splits local heads into
-chunks so Ulysses communication can overlap with attention computation, and
-fuses QK normalization, RoPE, packing, valid-token execution, and output merge
-to reduce exposed communication and layout overhead.
+TeleFuser also supports overlapping Ulysses communication with attention
+computation to reduce exposed distributed overhead.
 
 ## Not every sequence-shaped input is sharded
 
@@ -614,12 +612,18 @@ pad the physical tensor, but scale reductions, K/V means, routing statistics,
 and dense-prefix replacement must use the valid logical sequence. Otherwise
 padding zeros become part of an allegedly exact statistic.
 
-## SP4 is part of the final method, not a side result
+## The four-GPU topology is part of the final method
 
-The flagship configuration uses four H100 GPUs with Ulysses SP4. Its purpose is
-to increase effective bandwidth for the long attention sequence while keeping
-the FP8 Sol computation local after redistribution. The new experiment will
-separate:
+The flagship configuration uses a two-dimensional four-GPU topology:
+TP2 x Ulysses SP2. Tensor parallelism partitions the wide projection and
+feed-forward work, while each Ulysses group redistributes sequence tokens into
+complete attention contexts for its local heads. The topology increases
+effective bandwidth for both dominant DiT operator families instead of forcing
+all four devices into a single parallel dimension.
+
+The external FastVideo baseline uses its maintained SP4 configuration. Both
+systems receive the same four H100 GPUs; each framework retains its intended
+distributed layout. The new experiment will separate:
 
 - all-to-all time;
 - QKV preparation and smoothing time;
@@ -627,7 +631,7 @@ separate:
 - total denoising time; and
 - full encode-to-MP4 latency.
 
-The resulting SP4 throughput and communication fraction are
+The resulting four-GPU throughput and communication fraction are
 **TBD--new experiment required**. No earlier TP/SP measurement is substituted.
 
 With this ordering, precision, sparsity, and distribution describe the same
@@ -642,7 +646,7 @@ therefore treat weight mutation as part of its distributed lifecycle.
 SECTION-CONTRACT
 id: 06-weight-lifecycle
 incoming_premise: The distributed FP8 path is correct only while effective weights remain unchanged.
-outgoing_question: Does the complete, adapter-aware SP4 system beat an external implementation at comparable quality?
+outgoing_question: Does the complete adapter-aware four-GPU system beat an external implementation at comparable quality?
 evidence: Adapter mapping tests, cache lifecycle tests, and process-spawn tests.
 do_not_claim: Dense FastH3 support implies support for learned VSA replacement gates.
 -->
@@ -740,7 +744,7 @@ without violating the same output contract?
 <!--
 SECTION-CONTRACT
 id: 07-evaluation
-incoming_premise: The complete method now includes precision, sparsity, quality control, SP4, and adapter-correct weights.
+incoming_premise: The complete method now includes precision, sparsity, quality control, four-GPU parallelism, and adapter-correct weights.
 outgoing_question: Which conclusions generalize beyond the measured H100/H3 contract?
 evidence: Only new raw records under experiments/.
 do_not_claim: Do not use failed, invalid, unmatched, single-GPU, or B200 runs in the headline comparison.
@@ -770,7 +774,7 @@ MiniMax-H3 base and the same released adapter. FA4 is the baseline's intended
 H100 dense-attention backend. The run uses the maintained example with
 configuration-only workload changes.
 
-**Our system: TeleFuser FP8 Linear + FP8 Sol + smoothing + Ulysses SP4.** This
+**Our system: TeleFuser FP8 Linear + FP8 Sol + smoothing, TP2 x Ulysses SP2.** This
 is the complete path described in the article: merged Dense/Data-Free adapter,
 cached E4M3 Linear weights, shared QKV activation quantization, post-Ulysses
 attention preparation, dynamic Sol routing, dense quality islands, K/V
@@ -783,8 +787,9 @@ denominator of the headline speedup, because VSA contains learned gates and
 therefore represents a different effective model.
 
 **Official quality reference: MiniMax-H3 Diffusers.** The publisher-supported
-BF16 route establishes expected output behavior. It is excluded from the SP4
-performance chart unless it exposes a comparable four-GPU execution contract.
+BF16 route establishes expected output behavior. It is excluded from the
+four-GPU performance chart unless it exposes a comparable four-GPU execution
+contract.
 
 **Conditional LightX2V reference.** The published MiniMax-H3 Sol example is
 included only if a clean official-environment reproduction produces meaningful
@@ -841,7 +846,7 @@ protocol and media-validity gate.
 | System | 4-GPU mode | Median E2E | Videos/hour | DiT forwards/s | Max per-GPU memory | Aggregate peak |
 |---|---|---:|---:|---:|---:|---:|
 | FastVideo BF16 + FA4 | official distributed recipe | TBD | TBD | TBD | TBD | TBD |
-| TeleFuser FP8 + Sol | Ulysses SP4 | TBD | TBD | TBD | TBD | TBD |
+| TeleFuser FP8 + Sol | TP2 x Ulysses SP2 | TBD | TBD | TBD | TBD | TBD |
 | FastVideo VSA | official H100 route, if valid | TBD | TBD | TBD | TBD | TBD |
 
 The final prose will be generated from raw JSON:
@@ -855,7 +860,7 @@ One figure will show the same experiment with narrow grouped bars for E2E
 latency, videos/hour, and per-GPU memory. It will not combine unrelated units on
 one axis or import historical measurements.
 
-<!-- RESULT_FIGURE_TBD: experiments/h100-sp4-e2e/figures/end-to-end.svg -->
+<!-- RESULT_FIGURE_TBD: experiments/h100-4gpu-e2e/figures/end-to-end.svg -->
 
 ## Quality suite
 
@@ -897,7 +902,7 @@ for motion or audio.
     <video controls playsinline preload="metadata" data-result-slot="fastvideo-primary"></video>
   </figure>
   <figure>
-    <figcaption>TeleFuser FP8 + Sol + smoothing, SP4</figcaption>
+    <figcaption>TeleFuser FP8 + Sol + smoothing, TP2 x Ulysses SP2</figcaption>
     <video controls playsinline preload="metadata" data-result-slot="telefuser-primary"></video>
   </figure>
 </div>
@@ -979,9 +984,10 @@ that owns them.
 - The native FP8 Sol path targets NVIDIA H100/SM90, E4M3, non-causal
   self-attention, and the MiniMax-H3 head geometry. It is not a portable
   low-precision attention implementation.
-- Ulysses SP4 is evaluated because it gives each rank the complete sequence for
-  local heads. Ring-compatible sparse routing would require a new distributed
-  summary and online-softmax merge.
+- TP2 x Ulysses SP2 is evaluated because each Ulysses rank receives the
+  complete sequence for local heads while tensor parallelism also partitions
+  wide DiT operators. Ring-compatible sparse routing would require a new
+  distributed summary and online-softmax merge.
 - The strict performance claim uses the Dense/Data-Free adapter. VSA uses
   learned gates and is reported only as related context.
 - Whole-process peak memory includes text encoding and media decoding, so it

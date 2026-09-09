@@ -4,7 +4,7 @@ status: draft
 incoming_premise: Existing APIs cannot represent the required composed operation.
 outgoing_question: How is trajectory quality protected under FP8 and sparse approximation?
 evidence:
-  - experiments/h100-sp4-e2e/raw/operator-profile.json
+  - experiments/h100-4gpu-e2e/raw/operator-profile.json
   - experiments/quality-suite/raw/tensor-error.json
 implementation_sources:
   - https://github.com/Tele-AI/TeleFuser/pull/30

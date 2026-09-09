@@ -4,7 +4,7 @@ id: 05-distributed-contract
 incoming_premise: Quality controls are defined over the complete sequence consumed by one attention problem.
 outgoing_question: How can mutable adapter weights and FP8 caches remain correct across spawned workers?
 evidence: Distributed layout tests and the new 4xH100 communication/compute trace.
-do_not_claim: SP4 speedup is unknown until the new experiment is complete.
+do_not_claim: Four-GPU speedup is unknown until the new experiment is complete.
 -->
 
 # 5. Preserving the Numerical Contract Across GPUs
@@ -67,10 +67,8 @@ Choosing Ulysses is therefore not a claim that it is universally faster. It is
 the parallel layout that preserves the already validated sparse numerical
 problem without inventing an untested distributed approximation.
 
-After establishing that ordering, TeleFuser further splits local heads into
-chunks so Ulysses communication can overlap with attention computation, and
-fuses QK normalization, RoPE, packing, valid-token execution, and output merge
-to reduce exposed communication and layout overhead.
+TeleFuser also supports overlapping Ulysses communication with attention
+computation to reduce exposed distributed overhead.
 
 ## Not every sequence-shaped input is sharded
 
@@ -93,12 +91,18 @@ pad the physical tensor, but scale reductions, K/V means, routing statistics,
 and dense-prefix replacement must use the valid logical sequence. Otherwise
 padding zeros become part of an allegedly exact statistic.
 
-## SP4 is part of the final method, not a side result
+## The four-GPU topology is part of the final method
 
-The flagship configuration uses four H100 GPUs with Ulysses SP4. Its purpose is
-to increase effective bandwidth for the long attention sequence while keeping
-the FP8 Sol computation local after redistribution. The new experiment will
-separate:
+The flagship configuration uses a two-dimensional four-GPU topology:
+TP2 x Ulysses SP2. Tensor parallelism partitions the wide projection and
+feed-forward work, while each Ulysses group redistributes sequence tokens into
+complete attention contexts for its local heads. The topology increases
+effective bandwidth for both dominant DiT operator families instead of forcing
+all four devices into a single parallel dimension.
+
+The external FastVideo baseline uses its maintained SP4 configuration. Both
+systems receive the same four H100 GPUs; each framework retains its intended
+distributed layout. The new experiment will separate:
 
 - all-to-all time;
 - QKV preparation and smoothing time;
@@ -106,7 +110,7 @@ separate:
 - total denoising time; and
 - full encode-to-MP4 latency.
 
-The resulting SP4 throughput and communication fraction are
+The resulting four-GPU throughput and communication fraction are
 **TBD--new experiment required**. No earlier TP/SP measurement is substituted.
 
 With this ordering, precision, sparsity, and distribution describe the same

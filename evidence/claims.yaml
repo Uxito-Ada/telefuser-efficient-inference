@@ -2,15 +2,15 @@ claims:
   headline_e2e_speedup:
     status: pending
     value: TBD--new experiment required
-    source: experiments/h100-sp4-e2e/raw/summary.json
+    source: experiments/h100-4gpu-e2e/raw/summary.json
   headline_throughput_gain:
     status: pending
     value: TBD--new experiment required
-    source: experiments/h100-sp4-e2e/raw/summary.json
+    source: experiments/h100-4gpu-e2e/raw/summary.json
   headline_peak_memory_change:
     status: pending
     value: TBD--new experiment required
-    source: experiments/h100-sp4-e2e/raw/summary.json
+    source: experiments/h100-4gpu-e2e/raw/summary.json
   quality_acceptance:
     status: pending
     value: TBD--new experiment required
