@@ -1,8 +1,8 @@
 id: 04-evaluation
-title: Evaluation
+title: Results on H100
 status: complete
-incoming_premise: Precision, sparsity, adapters, and distribution now share one semantic path.
-outgoing_question: What can the result teach beyond this benchmark?
+incoming_premise: TeleFuser combines precision, sparsity, smoothing, adapters, and distributed execution.
+outgoing_question: What does this add to TeleFuser as a world-model runtime?
 evidence:
   - experiments/h100-4gpu-e2e/raw/summary.json
   - experiments/quality-suite/raw/summary.json

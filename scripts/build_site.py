@@ -56,16 +56,16 @@ def render() -> str:
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Co-designing FP8, sparse attention, and multi-GPU execution for MiniMax-H3 in TeleFuser.">
-  <title>Fast and Faithful MiniMax-H3 Inference on H100</title>
+  <meta name="description" content="TeleFuser's quality-aware FP8, sparse attention, adapter, and multi-GPU optimization stack for world models.">
+  <title>TeleFuser: Fast and Faithful World Model Inference</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="topbar">
     <a class="brand" href="../README.md">TeleFuser Engineering</a>
     <nav aria-label="Article links">
-      <a href="#building-the-h100-execution-path">System</a>
-      <a href="#what-the-complete-path-actually-buys">Results</a>
+      <a href="#telefusers-optimization-stack">System</a>
+      <a href="#results-on-h100">Results</a>
       <a href="https://github.com/Tele-AI/TeleFuser">Code</a>
     </nav>
   </header>

@@ -1,7 +1,7 @@
 id: 05-lessons
-title: What Carries Beyond This Benchmark
-status: draft
-incoming_premise: Matched external and diagnostic experiments expose performance and quality.
+title: A Unified Efficient-Inference Path in TeleFuser
+status: complete
+incoming_premise: TeleFuser's combined path improves performance while retaining measurable output quality.
 outgoing_question: none
 evidence:
   - experiments/h100-4gpu-e2e/raw/summary.json

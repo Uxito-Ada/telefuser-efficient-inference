@@ -1,8 +1,8 @@
 id: 02-system-overview
-title: Building the H100 Execution Path
-status: draft
-incoming_premise: FP8 and sparse attention need one hardware-aware boundary.
-outgoing_question: How is the combined approximation kept stable and scalable?
+title: TeleFuser's Optimization Stack
+status: complete
+incoming_premise: FP8 and sparse attention need one hardware-aware model contract.
+outgoing_question: How does TeleFuser keep the combined approximation stable?
 evidence:
   - experiments/h100-4gpu-e2e/raw/operator-profile.json
 implementation_sources:

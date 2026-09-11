@@ -1,13 +1,12 @@
-# Fast and Faithful MiniMax-H3 Inference
+# TeleFuser Efficient Inference
 
-**A community technical blog about making FP8, sparse attention, adapters, and
-multi-GPU execution work as one MiniMax-H3 system.**
+**A community technical blog about TeleFuser's quality-aware FP8, sparse
+attention, adapter, and multi-GPU optimization stack.**
 
-MiniMax-H3 generates high-resolution video and synchronized audio with one
-large diffusion transformer. This project explains how TeleFuser combines an
-H100-native FP8 Sol-Attn path, attention smoothing, sequence parallelism, and
-adapter-aware weight preparation without treating output quality as an
-afterthought.
+TeleFuser is an open-source streaming inference and serving framework for
+real-time world models and multimodal generation. This article uses
+MiniMax-H3 to show how its H100 optimization stack combines FP8 Linear, FP8
+Sol-Attn, attention smoothing, adapters, and distributed execution.
 
 - [Read the assembled article](BLOG.md)
 - [Open the HTML edition](site/index.html)
@@ -18,12 +17,12 @@ afterthought.
 
 | Section | Focus |
 |---|---|
-| [Introduction](sections/00-introduction/README.md) | The MiniMax-H3 efficiency and quality problem |
-| [Why co-design](sections/01-why-co-design/README.md) | Why FP8 and sparse attention are complementary but not automatically composable |
-| [System overview](sections/02-system-overview/README.md) | The H100 execution path |
-| [Quality and scale](sections/03-quality-and-scale/README.md) | Smoothing, dense islands, multi-GPU execution, and adapters |
-| [Evaluation](sections/04-evaluation/README.md) | One matched external comparison with generated video and audio |
-| [Lessons](sections/05-lessons/README.md) | Scope, limitations, and takeaways |
+| [Introduction](sections/00-introduction/README.md) | TeleFuser and the MiniMax-H3 optimization result |
+| [Why co-design](sections/01-why-co-design/README.md) | Why FP8 and sparse attention need one design |
+| [Optimization stack](sections/02-system-overview/README.md) | FP8 Sol-Attn, adapters, and distributed execution |
+| [Quality and scale](sections/03-quality-and-scale/README.md) | Attention smoothing, quality-aware sparsity, and Ulysses |
+| [Results](sections/04-evaluation/README.md) | External performance baseline and generated output |
+| [Conclusion](sections/05-lessons/README.md) | The unified TeleFuser inference path |
 
 Each directory owns publishable prose, section metadata, and its media. The
 single article is generated with:

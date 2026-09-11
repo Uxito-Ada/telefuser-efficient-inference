@@ -1,8 +1,8 @@
 id: 01-why-co-design
-title: One Model, Two Bottlenecks
-status: draft
-incoming_premise: MiniMax-H3 quality is a product constraint while its DiT has multiple bottlenecks.
-outgoing_question: Where should precision conversion, sparse routing, and communication meet?
+title: Why FP8 and Sparse Attention Need One Design
+status: complete
+incoming_premise: TeleFuser must accelerate a high-quality multimodal DiT as one system.
+outgoing_question: What does TeleFuser add at the model, attention, and distributed levels?
 evidence:
   - experiments/h100-4gpu-e2e/raw/operator-profile.json
 forbidden_claims:

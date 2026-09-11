@@ -1,6 +1,6 @@
 id: 00-introduction
-title: Fast and Faithful MiniMax-H3 Inference on H100
-status: draft
+title: TeleFuser: Fast and Faithful World Model Inference
+status: complete
 incoming_premise: none
 outgoing_question: Why do low precision and sparse attention need one design?
 evidence:

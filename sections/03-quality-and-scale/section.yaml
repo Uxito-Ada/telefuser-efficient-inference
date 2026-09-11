@@ -1,8 +1,8 @@
 id: 03-quality-and-scale
-title: Stabilizing the Approximation, Then Scaling It
+title: Preserving Quality While Scaling
 status: complete
-incoming_premise: The combined FP8 sparse path compounds two approximations.
-outgoing_question: What does the complete path buy, and which measurements are genuinely comparable?
+incoming_premise: The shared FP8 sparse path is faster but perturbs a recurrent denoising trajectory.
+outgoing_question: What performance and quality does the complete path deliver?
 evidence:
   - experiments/quality-suite/raw/real-h3-qkv-error.json
   - experiments/quality-suite/raw/media-quality.json
