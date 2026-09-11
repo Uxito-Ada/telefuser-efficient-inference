@@ -17,7 +17,12 @@ def main() -> None:
     for section in sections:
         if not section.is_dir():
             continue
-        for required in ("README.md", "section.yaml", "assets/MANIFEST.md"):
+        for required in (
+            "README.md",
+            "README.zh.md",
+            "section.yaml",
+            "assets/MANIFEST.md",
+        ):
             if not (section / required).is_file():
                 errors.append(f"missing {section.relative_to(ROOT) / required}")
         readme = section / "README.md"

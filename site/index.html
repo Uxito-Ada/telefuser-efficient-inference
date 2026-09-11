@@ -14,10 +14,11 @@
       <a href="#telefusers-optimization-stack">System</a>
       <a href="#results-on-h100">Results</a>
       <a href="https://github.com/Tele-AI/TeleFuser">Code</a>
+      <a href="index.zh.html">中文</a>
     </nav>
   </header>
   <main>
-    <article><h1>TeleFuser: Fast and Faithful World Model Inference</h1>
+    <article><h1 id="telefuser-fast-and-faithful-world-model-inference">TeleFuser: Fast and Faithful World Model Inference</h1>
 <p><em>Co-designing FP8, sparse attention, adapters, and multi-GPU execution on H100</em></p>
 <p><a href="https://github.com/Tele-AI/TeleFuser">TeleFuser</a> is an open-source streaming
 inference and serving framework for real-time world models and multimodal
@@ -34,7 +35,7 @@ efficient world-model runtime must handle.</p>
 <p>TeleFuser now brings those pieces together with:</p>
 <ul>
 <li>FP8 Linear compute and an H100-native FP8 Sol-Attn path;</li>
-<li>attention smoothing and selective dense computation for output quality;</li>
+<li>quality-aware FP8 attention and selective dense computation;</li>
 <li>base, Turbo LoRA, and FastH3-style adapter support;</li>
 <li>Ulysses sequence parallelism, tensor parallelism, and communication overlap.</li>
 </ul>
@@ -51,7 +52,7 @@ video and audio are embedded below alongside the baseline.</p>
 </ol>
 <p>We close with matched performance, memory, tensor-error, and media results.</p>
 <hr>
-<h1>Why FP8 and Sparse Attention Need One Design</h1>
+<h1 id="why-fp8-and-sparse-attention-need-one-design">Why FP8 and Sparse Attention Need One Design</h1>
 <p>World models pay for quality with compute. In MiniMax-H3, large projections and
 MLPs make the DiT compute-heavy, while visual, audio, and conditioning tokens
 make attention expensive. No single optimization addresses both costs.</p>
@@ -106,11 +107,11 @@ distributed execution share the same model contract. That common contract is
 what lets the individual optimizations add up instead of interfering with one
 another.</p>
 <hr>
-<h1>TeleFuser&rsquo;s Optimization Stack</h1>
+<h1 id="telefusers-optimization-stack">TeleFuser&rsquo;s Optimization Stack</h1>
 <p>The MiniMax-H3 work extends TeleFuser at three levels: dense DiT compute,
 long-sequence attention, and model-scale execution. Users select one supported
 inference profile that brings these capabilities together.</p>
-<h2>H100-native FP8 sparse attention</h2>
+<h2 id="h100-native-fp8-sparse-attention">H100-native FP8 sparse attention</h2>
 <p>TeleFuser applies FP8 to the DiT projections and MLPs, then carries the same
 low-precision objective into attention with an SM90 implementation of
 Sol-Attn. Sol-Attn selects important attention regions online; the TeleFuser
@@ -120,7 +121,7 @@ BF16 attention backend.</p>
 a common integration gap: the output of a quantized transformer no longer has
 to pass through repeated conversions before sparse attention can use it. The
 implementation retains validated dense fallbacks for unsupported cases.</p>
-<h2>Adapter-aware low-precision inference</h2>
+<h2 id="adapter-aware-low-precision-inference">Adapter-aware low-precision inference</h2>
 <p>MiniMax-H3 is used both as a base model and with acceleration or style adapters.
 TeleFuser supports the official Turbo LoRA path as well as FastH3-style LoRA
 and dense adapters. Adapter changes are incorporated into the effective model
@@ -129,7 +130,7 @@ execution represents the requested model rather than the base checkpoint.</p>
 <p>This support matters beyond compatibility. A distilled adapter can reduce the
 number of DiT evaluations, while FP8 and sparsity reduce the cost of each
 evaluation. TeleFuser can apply both forms of acceleration in the same request.</p>
-<h2>Distributed execution for long sequences</h2>
+<h2 id="distributed-execution-for-long-sequences">Distributed execution for long sequences</h2>
 <p>For larger deployments, Ulysses sequence parallelism divides long attention
 work across GPUs and tensor parallelism divides wide transformer layers.
 TeleFuser supports two- and four-GPU MiniMax-H3 topologies, including
@@ -137,50 +138,31 @@ TeleFuser supports two- and four-GPU MiniMax-H3 topologies, including
 compute.</p>
 <p>The result is a single optimization stack spanning fewer model evaluations,
 lower-precision dense compute, sparse low-precision attention, and distributed
-execution. The remaining challenge is quality: FP8 rounding and sparsity both
-perturb the denoising trajectory, so the faster path needs an explicit way to
-stabilize attention.</p>
+execution. Because FP8 rounding and sparsity affect the same denoising
+trajectory, quality preservation is built into this path as well.</p>
 <hr>
-<h1>Preserving Quality While Scaling</h1>
-<p>Diffusion models reuse each prediction in the next denoising update. Small
-attention errors can accumulate into visible changes in texture, motion, or
-audio-video alignment. Combining FP8 rounding with sparse routing makes this
-quality problem more important, not less.</p>
-<h2>Attention smoothing</h2>
-<p>Profiles from real MiniMax-H3 layers showed that K and V are not always
-centered around zero. Symmetric FP8 represents zero directly and scales around
-it, so a large mean consumes dynamic range that could otherwise represent the
-variation attention needs.</p>
-<p>TeleFuser uses two attention identities to remove that offset before FP8
-quantization without changing the corresponding higher-precision operation:</p>
-<pre><code class="language-python">K_centered = K - K.mean(dim=sequence)
-softmax(Q @ K_centered.T) == softmax(Q @ K.T)
-
-V_mean = V.mean(dim=sequence)
-V_centered = V - V_mean
-attention(Q, K, V) == attention(Q, K, V_centered) + V_mean
-</code></pre>
-<p>K can be centered because softmax cancels a constant shift in each query row.
-V can be centered because attention probabilities sum to one; its mean is
-restored at the output. TeleFuser also corrects the small residual mean caused
-by FP8 rounding. KV smoothing and V correction are enabled by default for the
-optimized MiniMax-H3 path.</p>
-<p>The mechanism was checked on a captured MiniMax-H3 attention layer with a
-32,626-token context. Centering reduced K quantization MSE by <strong>21.65%</strong> and
-attention-output MSE by <strong>8.18%</strong>, while output SQNR improved from 29.23 to
-29.60 dB.</p>
-<p>The first smoothing implementation added separate tensor passes and increased
-denoising time by 11.7%. Integrating the work into the existing attention path
-reduced the final overhead to 2.2%. The smoothed path still delivered 39.4%
-higher denoising throughput than BF16 Linear + FlashAttention 4 in the 50-step
-quality experiment, with 42.6% lower peak allocated memory.</p>
-<p><img alt="Performance cost and retained speedup of attention smoothing" src="../sections/03-quality-and-scale/assets/smoothing-performance.png"></p>
-<p>For the same prompt and seed, smoothing improved all reported video trajectory
-metrics: frame cosine rose from 0.87488 to 0.87729, PSNR from 14.695 to 14.800
-dB, and mean SSIM from 0.5464 to 0.5659. The measured audio distances were
-mixed, so the demonstrated quality gain is strongest on the video trajectory.
-The synchronized outputs below make the visual and audio differences directly
-inspectable.</p>
+<h1 id="quality-controls-and-multi-gpu-scaling">Quality Controls and Multi-GPU Scaling</h1>
+<p>Diffusion models feed each prediction into the next denoising update, so FP8
+and sparse attention must preserve a stable trajectory as well as reduce
+compute. TeleFuser addresses this inside its FP8 path and in the policy that
+selects sparse work.</p>
+<h2 id="quality-aware-fp8-attention">Quality-aware FP8 attention</h2>
+<p>Profiling real MiniMax-H3 layers revealed that K and V can have clear non-zero
+mean distributions. That offset reduces the useful range of symmetric FP8.
+TeleFuser handles it as an attention-specific form of asymmetric quantization:
+K and V are centralized before FP8 compute, and the equivalent shift is
+compensated in the attention output.</p>
+<p>The centralization and correction were fused into the existing FP8 Sol-Attn
+path so quality does not require a separate performance mode. The initial
+unfused implementation added 11.7% denoising overhead; fusion reduced the final
+cost to 2.2%. On a captured MiniMax-H3 layer, K quantization MSE fell by 21.65%
+and attention-output MSE by 8.18%. KV smoothing and V correction are enabled by
+default in the optimized profile.</p>
+<p>In the 50-step quality experiment, the resulting FP8 path remained 39.4%
+faster in denoising than BF16 Linear + FlashAttention 4 and used 42.6% less peak
+allocated memory. Frame cosine, PSNR, and mean SSIM all improved over
+unsmoothed FP8; audio-distance results were mixed. The synchronized outputs
+below show the complete video and audio result.</p>
 <div class="video-grid video-grid-three" data-sync-group="smoothing">
   <figure>
     <figcaption>BF16 Linear + FlashAttention 4</figcaption>
@@ -191,35 +173,27 @@ inspectable.</p>
     <video controls playsinline preload="metadata" src="../sections/03-quality-and-scale/assets/fp8-sol-unsmoothed.mp4" data-result-slot="fp8-unsmoothed"></video>
   </figure>
   <figure>
-    <figcaption>FP8 Linear + FP8 Sol, KV smoothing + V correction</figcaption>
+    <figcaption>FP8 Linear + FP8 Sol, quality-aware FP8</figcaption>
     <video controls playsinline preload="metadata" src="../sections/03-quality-and-scale/assets/fp8-sol-smoothed.mp4" data-result-slot="fp8-smoothed"></video>
   </figure>
 </div>
 
-<h2>Quality-aware sparsity</h2>
-<p>Smoothing improves low-precision representation; sparse attention still needs
-to decide where full attention matters. Early denoising updates establish
-global structure, and some layers are more sensitive to missing long-range
-interactions. TeleFuser therefore supports a dense opening window and selected
+<h2 id="quality-aware-sparsity">Quality-aware sparsity</h2>
+<p>Some denoising updates and transformer layers are more sensitive to missing
+long-range interactions. TeleFuser supports a dense opening window and selected
 dense layers before Sol-Attn handles the remaining work. The evaluated FastH3
 profile uses two dense opening updates and two dense layers, followed by
-<code>tau=1.0</code> exact sparse routing.</p>
-<p>This policy keeps the most quality-sensitive regions dense while retaining the
-benefit of sparse attention through most of the DiT execution. Dense steps,
-dense layers, threshold mode, and <code>tau</code> remain configurable for other
-MiniMax-H3 schedules.</p>
-<h2>The same semantics on multiple GPUs</h2>
-<p>Sequence parallelism changes which part of attention each rank owns. TeleFuser
-computes smoothing statistics after Ulysses has established the full-sequence,
-local-head view, so distributed execution preserves the single-GPU attention
-semantics. On four H100s, tensor parallelism can split the wide transformer
-work while Ulysses splits the long sequence.</p>
-<p>As FP8 and sparsity reduce arithmetic time, communication becomes more visible.
-TeleFuser therefore supports overlapping Ulysses communication with attention
-compute. This turns multi-GPU execution into part of the optimization rather
-than a scaling wrapper around it.</p>
+<code>tau=1.0</code> exact sparse routing. Dense steps, dense layers, threshold mode, and
+<code>tau</code> remain configurable for other MiniMax-H3 schedules.</p>
+<h2 id="the-same-path-on-multiple-gpus">The same path on multiple GPUs</h2>
+<p>TeleFuser combines Ulysses sequence parallelism with tensor parallelism for
+long-sequence, wide-transformer execution. Quality statistics are derived from
+the attention view established by Ulysses, keeping the single- and multi-GPU
+paths consistent. The runtime also supports overlapping Ulysses communication
+with attention compute, which becomes increasingly valuable after FP8 and
+sparsity reduce arithmetic time.</p>
 <hr>
-<h1>Results on H100</h1>
+<h1 id="results-on-h100">Results on H100</h1>
 <p>The primary comparison uses FastVideo&rsquo;s MiniMax-H3 FastH3 Dense/Data-Free
 adapter path as the external baseline. Both systems run on one H100 80GB with
 the same base checkpoint, adapter strength, prompt, seed, 1344 x 768 output,
@@ -243,7 +217,7 @@ weights, activations, and workspaces remain part of the process peak.</p>
 <p>The chart compares the matched denoising region rather than whole-request
 latency because the recorded frameworks used different prompt-conditioning
 cache policies.</p>
-<h2>Generated output</h2>
+<h2 id="generated-output">Generated output</h2>
 <p>Both outputs contain 124 frames of 1344 x 768 H.264 video and 32kHz stereo AAC
 audio. The HTML players are synchronized for direct comparison.</p>
 <div class="video-pair" data-sync-group="primary">
@@ -261,7 +235,7 @@ audio. The HTML players are synchronized for direct comparison.</p>
 BF16, unsmoothed FP8, and smoothed FP8. The FastH3 pair above shows the final
 adapter-enabled path producing complete video and audio under the performance
 configuration.</p>
-<h2>Multi-GPU execution</h2>
+<h2 id="multi-gpu-execution">Multi-GPU execution</h2>
 <p>A separate Base H3 validation exercises TeleFuser&rsquo;s resident
 <code>TP2 x Ulysses SP2</code> topology on four H100s. Across five prompt/seed cases,
 communication-compute overlap reduced mean request wall time from 78.546 to
@@ -272,12 +246,12 @@ whereas the external comparison uses the five-point FastH3 adapter. Together,
 the two experiments cover the optimized single-GPU path and TeleFuser&rsquo;s
 distributed execution capability.</p>
 <hr>
-<h1>A Unified Efficient-Inference Path in TeleFuser</h1>
+<h1 id="a-unified-efficient-inference-path-in-telefuser">A Unified Efficient-Inference Path in TeleFuser</h1>
 <p>This work expands TeleFuser from supporting MiniMax-H3 execution to optimizing
 the complete DiT path on H100. The framework now combines:</p>
 <ul>
 <li>FP8 Linear and FP8 Sol sparse attention;</li>
-<li>default KV smoothing and V correction;</li>
+<li>quality-aware FP8 attention;</li>
 <li>configurable dense regions for quality-sensitive computation;</li>
 <li>base, Turbo LoRA, and FastH3-style adapters;</li>
 <li>Ulysses sequence parallelism, tensor parallelism, and communication overlap.</li>
@@ -290,7 +264,7 @@ Ulysses carries the same path to multiple GPUs.</p>
 34.6% higher DiT throughput, and 14.3% lower peak GPU memory than the FastVideo
 BF16 + FA4 baseline. The accompanying tensor profiles and generated media show
 how the quality controls affect both numerical error and visible output.</p>
-<h2>Further reading</h2>
+<h2 id="further-reading">Further reading</h2>
 <ul>
 <li><a href="https://github.com/Tele-AI/TeleFuser">TeleFuser</a></li>
 <li><a href="https://huggingface.co/MiniMaxAI/MiniMax-H3">MiniMax-H3 model and official pipeline</a></li>

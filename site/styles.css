@@ -286,6 +286,10 @@ footer {
     display: none;
   }
 
+  nav a:nth-child(3) {
+    display: none;
+  }
+
   main {
     width: min(100% - 32px, 860px);
   }

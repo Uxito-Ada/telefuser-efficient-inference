@@ -28,7 +28,7 @@ efficient world-model runtime must handle.
 TeleFuser now brings those pieces together with:
 
 - FP8 Linear compute and an H100-native FP8 Sol-Attn path;
-- attention smoothing and selective dense computation for output quality;
+- quality-aware FP8 attention and selective dense computation;
 - base, Turbo LoRA, and FastH3-style adapter support;
 - Ulysses sequence parallelism, tensor parallelism, and communication overlap.
 

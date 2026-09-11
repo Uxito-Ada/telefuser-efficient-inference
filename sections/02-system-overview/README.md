@@ -48,6 +48,5 @@ compute.
 
 The result is a single optimization stack spanning fewer model evaluations,
 lower-precision dense compute, sparse low-precision attention, and distributed
-execution. The remaining challenge is quality: FP8 rounding and sparsity both
-perturb the denoising trajectory, so the faster path needs an explicit way to
-stabilize attention.
+execution. Because FP8 rounding and sparsity affect the same denoising
+trajectory, quality preservation is built into this path as well.

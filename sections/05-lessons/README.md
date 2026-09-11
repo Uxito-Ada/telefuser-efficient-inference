@@ -13,7 +13,7 @@ This work expands TeleFuser from supporting MiniMax-H3 execution to optimizing
 the complete DiT path on H100. The framework now combines:
 
 - FP8 Linear and FP8 Sol sparse attention;
-- default KV smoothing and V correction;
+- quality-aware FP8 attention;
 - configurable dense regions for quality-sensitive computation;
 - base, Turbo LoRA, and FastH3-style adapters;
 - Ulysses sequence parallelism, tensor parallelism, and communication overlap.

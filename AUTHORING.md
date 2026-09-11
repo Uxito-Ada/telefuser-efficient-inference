@@ -15,7 +15,9 @@ the causal hand-off to the section before or after it.
    chapter merely because an implementation once had its own pull request.
 5. Update the abstract, evaluation, and conclusion only when new evidence
    changes the article-level claim.
-6. Rebuild and validate the assembled article.
+6. Apply the same content change to `README.zh.md` without translating it
+   mechanically; preserve the argument and technical meaning.
+7. Rebuild and validate both assembled articles.
 
 ## Claim policy
 

@@ -1,5 +1,5 @@
 id: 03-quality-and-scale
-title: Preserving Quality While Scaling
+title: Quality Controls and Multi-GPU Scaling
 status: complete
 incoming_premise: The shared FP8 sparse path is faster but perturbs a recurrent denoising trajectory.
 outgoing_question: What performance and quality does the complete path deliver?
