@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Measure the complete TeleFuser FP8 Sol MiniMax-H3 profile on four H100s."""
+"""Measure the complete TeleFuser FP8 Sol MiniMax-H3 profile on H100s."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from statistics import median
 
 import torch
 
-from benchmark_common import (
+from benchmark_common import (  # noqa: E402
     MemorySampler,
     file_sha256,
     git_commit,
@@ -22,9 +22,9 @@ from benchmark_common import (
     visible_physical_gpus,
     write_report,
 )
-from examples.minimax_h3.common import save_generation
-from examples.minimax_h3.minimax_h3_fl2va_h100 import get_pipeline, run
-from telefuser.core.config import AttnImplType
+from examples.minimax_h3.common import save_generation  # noqa: E402
+from examples.minimax_h3.minimax_h3_fl2va_h100 import get_pipeline, run  # noqa: E402
+from telefuser.core.config import AttnImplType  # noqa: E402
 
 
 PROMPT = (
@@ -52,6 +52,9 @@ def main() -> None:
     parser.add_argument("--adapter-path", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--metrics-json", type=Path, required=True)
+    parser.add_argument("--num-gpus", type=int, choices=(2, 4), default=4)
+    parser.add_argument("--num-frames", type=int, default=124)
+    parser.add_argument("--duration-seconds", type=float, default=5.0)
     parser.add_argument("--repeats", type=int, default=5)
     parser.add_argument("--warmup-seed", type=int, default=999)
     parser.add_argument("--seed", type=int, default=1000)
@@ -61,13 +64,13 @@ def main() -> None:
 
     if args.repeats < 1:
         parser.error("--repeats must be positive")
-    physical_gpus = visible_physical_gpus(4)
+    physical_gpus = visible_physical_gpus(args.num_gpus)
     initial_memory = ensure_clean_gpus(physical_gpus, args.max_initial_memory_mib)
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     load_started = time.perf_counter()
     pipeline = get_pipeline(
-        4,
+        args.num_gpus,
         args.model_root,
         num_inference_steps=5,
         enable_fsdp=False,
@@ -76,8 +79,8 @@ def main() -> None:
         attention_chunks=2,
         ulysses_sequence_mode="valid_only",
         sol_fp8=True,
-        sol_dense_steps=1,
-        sol_dense_layers=0,
+        sol_dense_steps=2,
+        sol_dense_layers=2,
         sol_tau=1.0,
         sol_threshold_type="exact",
         sol_fp8_smoothing="kv",
@@ -96,7 +99,7 @@ def main() -> None:
             prompt=args.prompt,
             seed=args.warmup_seed,
             aspect_ratio="16:9",
-            target_video_length=5.0,
+            target_video_length=args.duration_seconds,
             mode="t2va",
         )
         save_generation(warmup, args.output_dir / "warmup.mp4")
@@ -115,7 +118,7 @@ def main() -> None:
                     prompt=args.prompt,
                     seed=args.seed,
                     aspect_ratio="16:9",
-                    target_video_length=5.0,
+                    target_video_length=args.duration_seconds,
                     mode="t2va",
                 )
                 generation_seconds = time.perf_counter() - generation_started
@@ -123,7 +126,7 @@ def main() -> None:
                 save_generation(result, output)
                 save_seconds = time.perf_counter() - save_started
                 e2e_seconds = time.perf_counter() - e2e_started
-            validity = probe_mp4(output, width=1344, height=768, frames=124)
+            validity = probe_mp4(output, width=1344, height=768, frames=args.num_frames)
             if not validity["valid"]:
                 raise RuntimeError(f"invalid generated media: {validity['errors']}")
             samples.append(
@@ -160,10 +163,13 @@ def main() -> None:
         "framework": "TeleFuser",
         "profile": "fp8-linear-fp8-sol-smoothing",
         "commit": git_commit(args.telefuser_repo),
-        "hardware": "4x NVIDIA H100 80GB HBM3",
+        "hardware": f"{args.num_gpus}x NVIDIA H100 80GB HBM3",
         "physical_gpus": physical_gpus,
         "initial_memory_mib": initial_memory,
-        "parallelism": {"tp_degree": 2, "ulysses_sp_degree": 2},
+        "parallelism": {
+            "tp_degree": 2 if args.num_gpus == 4 else 1,
+            "ulysses_sp_degree": 2,
+        },
         "python": platform.python_version(),
         "torch": torch.__version__,
         "cuda": torch.version.cuda,
@@ -179,9 +185,9 @@ def main() -> None:
             "seed": args.seed,
             "warmup_seed": args.warmup_seed,
             "resolution": [1344, 768],
-            "frames": 124,
+            "frames": args.num_frames,
             "fps": 24,
-            "duration_seconds": 5.0,
+            "duration_seconds": args.duration_seconds,
             "sigma_points": 5,
             "actual_dit_forwards": 4,
         },

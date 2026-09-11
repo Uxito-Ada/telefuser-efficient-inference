@@ -1,5 +1,5 @@
 id: 02-system-overview
-title: The TeleFuser Path
+title: Building the H100 Execution Path
 status: draft
 incoming_premise: FP8 and sparse attention need one hardware-aware boundary.
 outgoing_question: How is the combined approximation kept stable and scalable?
@@ -9,6 +9,8 @@ implementation_sources:
   - https://github.com/Tele-AI/TeleFuser/pull/16
   - https://github.com/Tele-AI/TeleFuser/pull/25
   - https://github.com/Tele-AI/TeleFuser/pull/30
+  - https://github.com/Tele-AI/TeleFuser/pull/35
+  - https://github.com/Tele-AI/TeleFuser/pull/44
 forbidden_claims:
   - TeleFuser invented Sol-Attn
   - unsupported shapes silently use the native kernel

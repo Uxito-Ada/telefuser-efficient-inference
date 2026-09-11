@@ -1,11 +1,12 @@
 id: 03-quality-and-scale
-title: Keeping Quality While Scaling Out
-status: draft
+title: Stabilizing the Approximation, Then Scaling It
+status: complete
 incoming_premise: The combined FP8 sparse path compounds two approximations.
-outgoing_question: Does the complete system beat a maintained external runtime?
+outgoing_question: What does the complete path buy, and which measurements are genuinely comparable?
 evidence:
-  - experiments/quality-suite/raw/summary.json
-  - experiments/h100-4gpu-e2e/raw/distributed-profile.json
+  - experiments/quality-suite/raw/real-h3-qkv-error.json
+  - experiments/quality-suite/raw/media-quality.json
+  - https://github.com/Tele-AI/TeleFuser/pull/37
 implementation_sources:
   - https://github.com/Tele-AI/TeleFuser/pull/35
   - https://github.com/Tele-AI/TeleFuser/pull/37

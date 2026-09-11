@@ -1,18 +1,34 @@
 #!/usr/bin/env python3
-"""Measure FastVideo's official dense FastH3 LoRA profile on four H100s."""
+"""Measure FastVideo's official dense FastH3 LoRA profile on H100s."""
 
 from __future__ import annotations
 
 import argparse
 import gc
+import importlib.machinery
+import os
 import platform
+import sys
 import time
+import types
 from pathlib import Path
 from statistics import median
 
 import torch
 
-from benchmark_common import (
+# Editable environments can install an unrelated top-level "examples" package.
+# Pin it to the same source tree as the FastVideo package under test.
+_source_root = os.environ.get("FASTVIDEO_SOURCE_ROOT")
+if _source_root:
+    examples = types.ModuleType("examples")
+    examples.__path__ = [str(Path(_source_root).resolve() / "examples")]
+    examples.__package__ = "examples"
+    examples.__spec__ = importlib.machinery.ModuleSpec(
+        "examples", loader=None, is_package=True
+    )
+    sys.modules["examples"] = examples
+
+from benchmark_common import (  # noqa: E402
     MemorySampler,
     file_sha256,
     git_commit,
@@ -22,9 +38,9 @@ from benchmark_common import (
     visible_physical_gpus,
     write_report,
 )
-from examples.inference.basic import basic_fasth3
-from examples.inference.basic import basic_fasth3_lora_preview
-from fastvideo import VideoGenerator
+from examples.inference.basic import basic_fasth3  # noqa: E402
+from examples.inference.basic import basic_fasth3_lora_preview  # noqa: E402
+from fastvideo import VideoGenerator  # noqa: E402
 
 
 PROMPT = (
@@ -52,6 +68,9 @@ def main() -> None:
     parser.add_argument("--adapter-path", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--metrics-json", type=Path, required=True)
+    parser.add_argument("--num-gpus", type=int, choices=(2, 4), default=4)
+    parser.add_argument("--num-frames", type=int, default=124)
+    parser.add_argument("--duration-seconds", type=float, default=5.0)
     parser.add_argument("--repeats", type=int, default=5)
     parser.add_argument("--warmup-seed", type=int, default=999)
     parser.add_argument("--seed", type=int, default=1000)
@@ -61,7 +80,7 @@ def main() -> None:
 
     if outer.repeats < 1:
         parser.error("--repeats must be positive")
-    physical_gpus = visible_physical_gpus(4)
+    physical_gpus = visible_physical_gpus(outer.num_gpus)
     initial_memory = ensure_clean_gpus(physical_gpus, outer.max_initial_memory_mib)
     outer.output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -84,7 +103,7 @@ def main() -> None:
             "--width",
             "1344",
             "--num-frames",
-            "124",
+            str(outer.num_frames),
             "--steps",
             "5",
             "--seed",
@@ -94,20 +113,18 @@ def main() -> None:
             "--repeats",
             str(outer.repeats),
             "--num-gpus",
-            "4",
-            "--execution-backend",
-            "mp",
+            str(outer.num_gpus),
+            "--lazy-module-load",
             "--no-vsa",
             "--fa4",
             "--h3-fusions",
-            "--compile-vae",
+            "--no-compile-vae",
             "--parallel-vae",
-            "--replicated-dit",
+            "--no-replicated-dit",
             "--pin-cpu-memory",
-            "--inference-torch-compile",
+            "--no-inference-torch-compile",
             "--ulysses-a2a",
-            "off",
-            "--no-lazy-module-load",
+            "auto",
         ]
     )
     environment = basic_fasth3.configure_environment(official_args)
@@ -144,7 +161,9 @@ def main() -> None:
             generation_time = getattr(result, "generation_time", None)
             if generation_time is not None:
                 generation_time = float(generation_time)
-            validity = probe_mp4(actual_output, width=1344, height=768, frames=124)
+            validity = probe_mp4(
+                actual_output, width=1344, height=768, frames=outer.num_frames
+            )
             if not validity["valid"]:
                 raise RuntimeError(f"invalid generated media: {validity['errors']}")
             samples.append(
@@ -177,10 +196,10 @@ def main() -> None:
         "framework": "FastVideo",
         "profile": "official-fasth3-dense-datafree-bf16-fa4",
         "commit": git_commit(outer.fastvideo_repo),
-        "hardware": "4x NVIDIA H100 80GB HBM3",
+        "hardware": f"{outer.num_gpus}x NVIDIA H100 80GB HBM3",
         "physical_gpus": physical_gpus,
         "initial_memory_mib": initial_memory,
-        "parallelism": {"tp_degree": 1, "sp_degree": 4},
+        "parallelism": {"tp_degree": 1, "sp_degree": outer.num_gpus},
         "python": platform.python_version(),
         "torch": torch.__version__,
         "cuda": torch.version.cuda,
@@ -196,9 +215,9 @@ def main() -> None:
             "seed": outer.seed,
             "warmup_seed": outer.warmup_seed,
             "resolution": [1344, 768],
-            "frames": 124,
+            "frames": outer.num_frames,
             "fps": 24,
-            "duration_seconds": 5.0,
+            "duration_seconds": outer.duration_seconds,
             "sigma_points": 5,
             "actual_dit_forwards": 4,
         },
@@ -207,13 +226,22 @@ def main() -> None:
             "profile": official_args.profile,
             "attention": "BF16 FA4",
             "h3_fusions": True,
-            "regional_compile": True,
+            "regional_compile": False,
+            "compile_vae": False,
             "parallel_vae": True,
-            "replicated_dit": True,
+            "replicated_dit": False,
+            "fsdp_sharded_dit": True,
             "dit_offload": False,
+            "lazy_module_load": True,
             "text_encoder_offload": True,
             "vae_offload": True,
             "boot_environment": environment,
+            "source_files": {
+                "example": str(Path(basic_fasth3.__file__).resolve()),
+                "adapter_example": str(
+                    Path(basic_fasth3_lora_preview.__file__).resolve()
+                ),
+            },
         },
         "measurement": {
             "scope": "prompt processing through synchronized MP4 close",

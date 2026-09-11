@@ -1,8 +1,8 @@
 id: 01-why-co-design
-title: Why FP8 and Sparsity Have to Be Co-designed
+title: One Model, Two Bottlenecks
 status: draft
-incoming_premise: MiniMax-H3 quality is the product contract.
-outgoing_question: What execution path lets FP8 and sparse attention share work?
+incoming_premise: MiniMax-H3 quality is a product constraint while its DiT has multiple bottlenecks.
+outgoing_question: Where should precision conversion, sparse routing, and communication meet?
 evidence:
   - experiments/h100-4gpu-e2e/raw/operator-profile.json
 forbidden_claims:

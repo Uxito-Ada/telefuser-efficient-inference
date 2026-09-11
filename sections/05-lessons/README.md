@@ -1,34 +1,53 @@
 <!--
 SECTION-CONTRACT
 id: 05-lessons
-incoming_premise: One matched experiment measures the complete system.
+incoming_premise: Matched external and diagnostic experiments expose both performance and quality.
 outgoing_question: none
 evidence: final benchmark and quality records
 do_not_claim: Portability beyond the tested MiniMax-H3 and H100 contract.
 -->
 
-# What We Learned
+# What Carries Beyond This Benchmark
 
-Efficient world-model inference is less about collecting optimization flags
-than about preserving contracts between them. FP8 helps the transformer-heavy
-parts of MiniMax-H3; sparse attention helps the long-sequence part. The useful
-speedup appears only when both operate on the same tensor layout and avoid
-paying for duplicate quantization, conversion, and communication.
+The most reusable lesson is that efficient inference features are not vertical
+options. Quantization changes the representation consumed by attention.
+Sparsity changes the set of values accumulated by that attention. Sequence
+parallelism changes the tensor over which scales and means are defined.
+Adapters change the weights that should be quantized. Treating any one of
+these as an isolated toggle leaves the interfaces to chance.
 
-Quality techniques belong in that co-design. Attention smoothing, dense
-islands, and an explicit sparsity threshold are small pieces of math, but they
-decide whether a faster denoising loop still produces stable motion, detail,
-and synchronized sound. Multi-GPU execution and adapters then have to preserve
-those same statistics and effective weights.
+Three design rules emerged from the MiniMax-H3 work.
 
-This work currently targets MiniMax-H3 on NVIDIA H100. Its custom FP8 Sol-Attn
-kernel is SM90-specific, and the chosen TP2 x Ulysses SP2 topology is a measured
-deployment choice rather than a universal replacement for Ring or other
-parallel layouts. The broader lesson is portable: optimize the end-to-end
-execution graph, validate the generated artifact, and treat quality as a hard
-constraint rather than a screenshot selected after benchmarking.
+**Own the boundary where representations change.** The FP8 Sol-Attn path works
+because quantization, scale metadata, sparse routing, and the H100 tile layout
+have one owner. General framework support is still valuable, but it cannot
+substitute for the missing kernel at a hardware-specific boundary.
 
-The final measured conclusion is **TBD--new experiment required**.
+**Use mathematical invariants as quality tools.** Centering K and V is useful
+because attention provides identities that preserve the intended
+higher-precision operation. This gives us a reason to expect quality
+improvement and a precise place to measure it. It is stronger than adding an
+arbitrary correction after degraded videos appear.
+
+**Benchmark the artifact, not only the kernel.** A world-model request includes
+weight preparation, denoising, decoding, audio, and media output. Kernel
+throughput explains where time moved; end-to-end latency, peak per-GPU memory,
+and playable synchronized output determine whether the system improved.
+Warm-up and compilation must be separated, and failed output must be excluded
+rather than assigned an impressive speed.
+
+The scope is intentionally narrow. This implementation targets MiniMax-H3 on
+NVIDIA H100. The FP8 Sol kernel is SM90-specific, the selected sparse policy is
+validated for the tested profiles, and the best parallel topology can change
+with interconnect, duration, or concurrency. Full-reference video metrics also
+measure trajectory agreement, not human preference; they are evidence for
+regressions, not a replacement for viewing and listening.
+
+Within that scope, the work turns FP8 Linear, FP8 sparse attention, attention
+smoothing, adapters, and Ulysses from separate demonstrations into one
+deployable execution path. The broader pattern is the real result: reduce work
+aggressively, preserve the model's numerical contracts deliberately, and
+measure both speed and meaning at the end.
 
 ## Further reading
 

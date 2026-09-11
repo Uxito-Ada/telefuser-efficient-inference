@@ -36,6 +36,21 @@ def render() -> str:
         'src="../sections/04-evaluation/assets/telefuser-primary.mp4" '
         'data-result-slot="telefuser-primary"',
     )
+    body = body.replace(
+        'data-result-slot="bf16-quality"',
+        'src="../sections/03-quality-and-scale/assets/bf16-fa4.mp4" '
+        'data-result-slot="bf16-quality"',
+    )
+    body = body.replace(
+        'data-result-slot="fp8-unsmoothed"',
+        'src="../sections/03-quality-and-scale/assets/fp8-sol-unsmoothed.mp4" '
+        'data-result-slot="fp8-unsmoothed"',
+    )
+    body = body.replace(
+        'data-result-slot="fp8-smoothed"',
+        'src="../sections/03-quality-and-scale/assets/fp8-sol-smoothed.mp4" '
+        'data-result-slot="fp8-smoothed"',
+    )
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -49,8 +64,8 @@ def render() -> str:
   <header class="topbar">
     <a class="brand" href="../README.md">TeleFuser Engineering</a>
     <nav aria-label="Article links">
-      <a href="#the-telefuser-path">System</a>
-      <a href="#end-to-end-evaluation">Results</a>
+      <a href="#building-the-h100-execution-path">System</a>
+      <a href="#what-the-complete-path-actually-buys">Results</a>
       <a href="https://github.com/Tele-AI/TeleFuser">Code</a>
     </nav>
   </header>
@@ -58,7 +73,7 @@ def render() -> str:
     <article>{body}</article>
   </main>
   <footer>
-    <span>MiniMax-H3 inference on NVIDIA H100</span>
+    <span>TeleFuser Engineering | MiniMax-H3 on NVIDIA H100</span>
     <a href="../experiments/h100-4gpu-e2e/README.md">Reproduce the benchmark</a>
   </footer>
   <script src="video-sync.js"></script>

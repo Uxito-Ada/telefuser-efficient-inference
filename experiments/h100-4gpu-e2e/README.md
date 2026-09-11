@@ -1,141 +1,77 @@
-# Four-H100 End-to-End Experiment
+# MiniMax-H3 H100 Evidence
 
-Status: **planned; no result has been admitted**.
+Status: **complete for the claims published in the article**.
 
-## Question
+The directory name records the original four-GPU experiment plan. The final
+article separates two questions whose timing boundaries can be defended:
 
-Does TeleFuser's complete FP8 Linear + FP8 Sol + smoothing path on
-TP2 x Ulysses SP2
-outperform the maintained FastVideo FastH3 Dense/Data-Free BF16 + FA4 path on
-the same MiniMax-H3 request and four H100 GPUs?
+1. A matched single-H100 comparison against FastVideo isolates the FastH3
+   adapter denoising path.
+2. A separate four-H100 TeleFuser study validates the resident
+   `TP2 x Ulysses SP2` schedule and communication-compute overlap.
 
-## Strict comparison
+Combining those results into one speedup would mix model schedules, framework
+cache policies, and timing boundaries, so the blog reports them separately.
 
-The following variables must match:
+## Primary external comparison
 
-- MiniMax-H3 base checkpoint revision;
-- Dense/Data-Free adapter file hash and scale;
-- text-to-video-and-audio task;
-- prompt bytes and seed;
-- 1344 x 768 output, 124 frames, 24 FPS;
-- five sigma points and four actual DiT forwards;
-- batch size one and request concurrency one;
-- four visible H100 GPUs;
-- one full warm-up and five formal repeats;
-- encode-through-MP4-close timing boundary.
+Both systems use MiniMax-H3, the FastH3 Dense/Data-Free adapter at strength
+1.0, the same prompt and seed, 1344 x 768 output, 124 frames at 24 FPS, five
+sigma points, four actual DiT forwards, one H100 80GB, one warm-up, and three
+measured requests. Neither DiT is CPU-offloaded during denoising.
 
-Framework-specific configuration is allowed only to select the documented
-attention backend and distributed mode. Source modifications to an external
-baseline disqualify it from the strict comparison.
+- FastVideo: BF16 Linear + FlashAttention 4.
+- TeleFuser: FP8 Linear + FP8 Sol-Attn, `tau=1.0`, exact routing, two dense
+  opening updates, two dense layers, KV smoothing, and V correction.
 
-## Profiles
+The chart uses only matched denoising time, actual DiT forwards per second, and
+whole-process peak GPU memory. It intentionally omits an E2E speedup: repeated
+FastVideo requests reused prompt conditioning, while the recorded TeleFuser
+requests encoded the prompt each time.
 
-| ID | Framework | Precision and attention | Distributed mode | Role |
-|---|---|---|---|---|
-| `fastvideo-dense-fa4` | FastVideo | BF16 Linear + FA4 | maintained 4-GPU recipe | primary external baseline |
-| `telefuser-fp8-sol` | TeleFuser | FP8 Linear + FP8 Sol + smoothing | TP2 x Ulysses SP2 | proposed system |
-| `fastvideo-vsa` | FastVideo | official VSA route | maintained 4-GPU route | related sparse context, if valid on H100 |
+Normalized records:
 
-## Reproduction commands
+- `raw/fastvideo-single-h100.json`
+- `raw/telefuser-single-h100.json`
+- `raw/telefuser-single-h100-source.json`
+- `raw/summary.json`
 
-Run both systems only when all four GPUs are idle. Each harness refuses to load
-the model if any selected GPU already uses more than 1024 MiB.
-
-TeleFuser uses its native four-GPU `TP2 x Ulysses SP2` topology:
+Generate the publication chart with:
 
 ```bash
-CUDA_VISIBLE_DEVICES=0,1,2,3 \
-PYTHONPATH=/data/heyang/TeleFuser-pr40-refine \
-/data/zuoxin/workspace/TeleFuser/.venv/bin/python \
-  experiments/h100-4gpu-e2e/scripts/benchmark_telefuser.py \
-  --telefuser-repo /data/heyang/TeleFuser-pr40-refine \
-  --model-root /hhb-data/aigc/model_zoo/MiniMaxAI_MiniMax-H3 \
-  --adapter-path /data/heyang/FastH3-models/v1-lora/dense-datafree/adapter_model.safetensors \
-  --output-dir experiments/h100-4gpu-e2e/videos/telefuser-fp8-sol \
-  --metrics-json experiments/h100-4gpu-e2e/raw/telefuser-fp8-sol.json
+python experiments/h100-4gpu-e2e/scripts/plot_results.py \
+  --baseline experiments/h100-4gpu-e2e/raw/fastvideo-single-h100.json \
+  --telefuser experiments/h100-4gpu-e2e/raw/telefuser-single-h100.json \
+  --figure sections/04-evaluation/assets/end-to-end.svg \
+  --summary experiments/h100-4gpu-e2e/raw/summary.json
 ```
 
-FastVideo uses the options exposed by its maintained FastH3 Dense/Data-Free
-example and its native `SP4` topology:
+The original MP4s are published as `fastvideo-primary.mp4` and
+`telefuser-primary.mp4` under the evaluation section assets. Both must pass the
+media validity gate before a timing record is admitted: 124 decodable frames,
+1344 x 768 H.264 video, finite stereo AAC audio, and matching duration.
 
-```bash
-CUDA_VISIBLE_DEVICES=0,1,2,3 \
-PYTHONPATH=/data/heyang/FastVideo-blog-baseline \
-/data/heyang/FastVideo-fasth3-h100/.venv/bin/python \
-  experiments/h100-4gpu-e2e/scripts/benchmark_fastvideo.py \
-  --fastvideo-repo /data/heyang/FastVideo-blog-baseline \
-  --model-root /hhb-data/aigc/model_zoo/MiniMaxAI_MiniMax-H3 \
-  --adapter-path /data/heyang/FastH3-models/v1-lora/dense-datafree/adapter_model.safetensors \
-  --output-dir experiments/h100-4gpu-e2e/videos/fastvideo-dense-fa4 \
-  --metrics-json experiments/h100-4gpu-e2e/raw/fastvideo-dense-fa4.json
-```
+## Separate four-H100 validation
 
-The commands are launched from the repository root. The harnesses record the
-framework commit, environment, complete samples, memory trace summary, adapter
-hash, and output validity in the JSON result.
+[TeleFuser PR 37](https://github.com/Tele-AI/TeleFuser/pull/37) reports five
+MiniMax-H3 prompt/seed cases on four H100s with resident
+`TP2 x Ulysses SP2`. Communication-compute overlap reduced mean request wall
+time from 78.546 to 75.766 seconds, or 3.539%, while the five synchronized MP4
+outputs remained byte-identical.
 
-After both reports are admitted, generate the publication chart and derived
-speedups:
+This is evidence that the article's distributed path is exercised and that its
+scheduling optimization is lossless. It is not the external FastH3 baseline:
+the run uses a 50-point Base H3 protocol rather than the distilled five-point
+adapter protocol.
 
-    /data/heyang/FastVideo-fasth3-h100/.venv/bin/python \
-      experiments/h100-4gpu-e2e/scripts/plot_results.py \
-      --baseline experiments/h100-4gpu-e2e/raw/fastvideo-dense-fa4.json \
-      --telefuser experiments/h100-4gpu-e2e/raw/telefuser-fp8-sol.json \
-      --figure sections/04-evaluation/assets/end-to-end.svg \
-      --summary experiments/h100-4gpu-e2e/raw/summary.json
+## Reusable distributed harnesses
 
-Copy one validated, fixed-seed formal output from each system to the evaluation
-assets as fastvideo-primary.mp4 and telefuser-primary.mp4. Then run the media
-comparison and rebuild both article formats.
+`scripts/benchmark_fastvideo.py` and `scripts/benchmark_telefuser.py` preserve
+the strict four-GPU protocol for a future run when four idle H100s are
+available. A result from either harness is not admitted automatically. It must
+use the same checkpoint, adapter hash, sampling work, output contract, GPU
+count, warm-up policy, and timing scope, and it must produce valid media.
 
-## Timing
-
-Use host `perf_counter` around the complete synchronous generation and file
-write. Synchronize CUDA at framework boundaries if generation returns before
-GPU work completes. Store each sample, not only an aggregate. Report median,
-minimum, maximum, and median absolute deviation.
-
-The warm-up must traverse text encoding, denoising, video/audio decode, mux, and
-file close. Cold load, adapter merge, quantization, and compilation are recorded
-separately.
-
-## Memory
-
-Sample NVML every 100 ms from the beginning of each formal request until MP4
-close. Record every physical GPU. Derive:
-
-- maximum used memory on any one GPU;
-- sum across GPUs at every timestamp, then its maximum;
-- the phase in which each peak occurs.
-
-Do not infer FP8 memory from model parameter bytes.
-
-## Validity gate
-
-Before a timing sample is admitted, its output must contain:
-
-- 124 decodable video frames at 1344 x 768;
-- expected duration and 24 FPS metadata;
-- a finite, non-empty stereo audio stream;
-- no black/corrupt-frame failure;
-- the requested adapter confirmed in logs.
-
-Failed profiles are documented in `evidence/excluded-results.md` without a
-performance number.
-
-## Required artifacts
-
-```text
-config.yaml
-raw/
-  environment.json
-  fastvideo-dense-fa4.json
-  telefuser-fp8-sol.json
-  fastvideo-vsa.json              # only if admitted
-  summary.json
-telemetry/
-logs/
-videos/
-figures/
-  end-to-end.svg
-```
+Failed two-GPU attempts made during this refresh are recorded in
+[`evidence/excluded-results.md`](../../evidence/excluded-results.md). Their
+partial timings do not appear in any chart or claim.

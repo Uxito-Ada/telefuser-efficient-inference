@@ -1,45 +1,72 @@
 <!--
 SECTION-CONTRACT
 id: 01-why-co-design
-incoming_premise: MiniMax-H3 quality is the product contract, not a variable to optimize away.
-outgoing_question: What execution path lets FP8 and sparse attention share work?
-evidence: operator profile from the new four-GPU experiment
-do_not_claim: General FP8 support implies a compatible sparse-attention kernel.
+incoming_premise: MiniMax-H3 quality is a product constraint, while its DiT has more than one bottleneck.
+outgoing_question: Where should precision conversion, sparse routing, and communication meet?
+evidence: MiniMax-H3 execution profile and H100 kernel support
+do_not_claim: General FP8 support implies an FP8 sparse-attention path.
 -->
 
-# Why FP8 and Sparsity Have to Be Co-designed
+# One Model, Two Bottlenecks
 
-MiniMax-H3 packs text conditioning, video latents, and audio latents into the
-same denoising process. Richer outputs therefore increase two different kinds
-of work.
+Most of MiniMax-H3's denoising time sits in a large DiT, but "optimize the DiT"
+is not one operation. Its dense projections and MLPs are dominated by matrix
+multiplication. Its attention cost grows with the number of visual, audio, and
+conditioning tokens. Making only the GEMMs cheaper leaves the token-pair work;
+making only attention sparse leaves most model weights and activations in
+BF16.
 
-First, projections, MLPs, and conditioning layers move large weight matrices
-through every transformer block. FP8 is a natural fit: H100 tensor cores can
-execute lower-precision matrix multiplication at much higher throughput while
-storing the dominant weights in half the bytes of BF16.
+That is why FP8 and sparse attention are complementary:
 
-Second, attention operates over a long multimodal sequence. Reducing precision
-does not change how many token pairs dense attention evaluates. Sol-Attn attacks
-that orthogonal dimension by selecting important blocks online and correcting
-for the skipped tail. The result is less attention work without retraining the
-model.
+| Technique | Reduces | Does not reduce |
+|---|---|---|
+| FP8 Linear | weight traffic and dense GEMM cost | the number of attention pairs |
+| FP8 attention | QK/PV precision and bandwidth | dense attention's pair count |
+| Sol-Attn | selected attention blocks | projection and MLP cost |
+| Ulysses SP | per-rank sequence work and state | total work or communication |
 
-Either technique alone leaves a major bottleneck untouched. Using both should
-be complementary, but a framework cannot get there by independently enabling
-an FP8 Linear wrapper and a sparse-attention backend. A typical path quantizes
-Q, K, and V for the three projections, converts them back to BF16 for
-normalization and rotary embedding, and then quantizes them again for
-low-precision attention. Under sequence parallelism, doing this before
-all-to-all also gives each rank scales for a tensor that is about to be
-redistributed.
+The table looks modular. The actual tensors are not.
 
-Hardware support adds another boundary. General FP8 Linear inference is
-available on H100, but an optimized format or kernel does not automatically
-cover sparse QK/PV attention, its routing metadata, or its scale layout. Some
-newer MXFP8 and NVFP4 routes target Blackwell and cannot simply be projected
-onto SM90. We therefore needed a native H100 path whose owner understands both
-quantization and sparse attention.
+Consider the QKV path. The projection output is normalized, rotary position
+embedding changes Q and K, sequence parallelism redistributes heads and
+sequence shards, and sparse attention consumes a tiled layout plus routing
+metadata. If a framework quantizes at every feature boundary, one attention
+call can take the following route:
 
-That path is the center of this work: quantize once at the point where the
-attention tensor has its final layout, then keep routing and matrix
-multiplication inside one Sol-Attn implementation.
+~~~text
+FP8 Linear output
+  -> BF16 normalization and RoPE
+  -> per-rank Q/K/V quantization
+  -> Ulysses all-to-all
+  -> layout conversion
+  -> sparse kernel quantization
+  -> attention
+~~~
+
+The repeated conversion costs time, but the semantic problem is worse.
+Per-tensor means and scales derived before all-to-all describe a sequence
+shard. After redistribution, each rank owns different local heads over the
+complete sequence. The scale is now attached to a tensor it did not summarize.
+A path can therefore be individually "correct" at every API boundary and still
+be numerically inconsistent as a system.
+
+## The hardware boundary is part of the design
+
+H100 makes this composition problem concrete. Hopper tensor cores support
+useful FP8 execution, but a framework-level FP8 label does not provide every
+kernel needed by MiniMax-H3. Linear libraries, dense attention, sparse
+attention, routing, and fused output correction have different shape and
+layout requirements. Newer MXFP8 and NVFP4 recipes can also depend on
+Blackwell-specific hardware paths; their existence does not make them an SM90
+solution.
+
+We therefore use the quantization boundary as an architectural boundary.
+Sensitive transforms stay in higher precision. Q, K, and V are quantized only
+after they have their final per-rank attention semantics, and their scales are
+passed directly to the consumer kernel. Sparse routing and FP8 QK/PV are owned
+by the same H100 implementation.
+
+This decision narrows the interface between features. It also creates a new
+question: once low precision and sparsity perturb the same attention result,
+how do we keep that combined approximation from steering the diffusion
+trajectory away from a useful video?

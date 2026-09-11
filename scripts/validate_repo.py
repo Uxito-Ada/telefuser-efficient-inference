@@ -33,17 +33,19 @@ def main() -> None:
                 continue
             resolved = (markdown.parent / target).resolve()
             if not resolved.exists():
-                errors.append(
-                    f"broken link in {markdown.relative_to(ROOT)}: {target}"
-                )
+                errors.append(f"broken link in {markdown.relative_to(ROOT)}: {target}")
 
     for asset in (ROOT / "sections").rglob("*"):
         if asset.is_file() and asset.stat().st_size >= MAX_ASSET_BYTES:
-            errors.append(f"asset exceeds GitHub 100 MiB limit: {asset.relative_to(ROOT)}")
+            errors.append(
+                f"asset exceeds GitHub 100 MiB limit: {asset.relative_to(ROOT)}"
+            )
 
     if errors:
         raise SystemExit("\n".join(errors))
-    print(f"validated {len(sections)} sections and {len(markdown_files)} Markdown files")
+    print(
+        f"validated {len(sections)} sections and {len(markdown_files)} Markdown files"
+    )
 
 
 if __name__ == "__main__":

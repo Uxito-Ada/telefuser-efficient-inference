@@ -2,40 +2,55 @@
 SECTION-CONTRACT
 id: 00-introduction
 incoming_premise: none
-outgoing_question: Why do low precision and sparse attention need one design?
+outgoing_question: Why do low precision and sparse attention need one execution design?
 evidence: experiments/h100-4gpu-e2e/raw/summary.json
-do_not_claim: Do not publish a speedup before the matched experiment is complete.
+do_not_claim: Do not generalize beyond MiniMax-H3 on H100.
 -->
 
 # Fast and Faithful MiniMax-H3 Inference on H100
 
-*Co-designing FP8, sparse attention, and multi-GPU execution in TeleFuser*
+*Making FP8, sparse attention, adapters, and multi-GPU execution work as one system*
 
-MiniMax-H3 raises the bar for open video generation: one large diffusion
-transformer jointly produces high-resolution video and synchronized audio.
-That unified model is also expensive to serve. Long visual and audio sequences
-make attention costly, while the transformer's projections and feed-forward
-layers keep the tensor cores busy throughout denoising.
+MiniMax-H3 is a useful stress test for efficient AI systems. A single diffusion
+transformer produces a high-resolution video together with synchronized audio.
+The model must preserve appearance, motion, temporal reasoning, speech, and
+event-aligned sound across many denoising updates. Those requirements are what
+make the output compelling, and also what make inference expensive.
 
-The usual optimization menu looks straightforward: quantize the dense layers,
-make attention sparse, and split the sequence across GPUs. In practice, those
-features often work only as isolated switches. They disagree about tensor
-layouts, quantization scales, and where communication happens. Combining them
-can erase the speedup or, worse, produce a fast but visibly degraded result.
+The obvious remedies attack different parts of the workload. FP8 reduces the
+cost of the large projections and feed-forward layers. Sparse attention avoids
+evaluating token pairs that contribute little to the output. Sequence
+parallelism divides a long multimodal sequence across GPUs. Distilled adapters
+reduce the number of transformer evaluations.
 
-We built a MiniMax-H3 path in TeleFuser that treats these choices as one
-execution design:
+The difficult part is not enabling those features one at a time. It is keeping
+them useful when they meet.
 
-- FP8 Linear layers and an FP8 Sol-Attn kernel for NVIDIA H100;
-- attention smoothing and selective dense computation to protect quality;
-- tensor and Ulysses sequence parallelism for multi-GPU inference;
-- adapter-aware weight preparation for Turbo and FastH3-style adapters.
+A generic quantization wrapper may support Linear layers but not sparse QK/PV
+attention. A sparse kernel may assume BF16 inputs or a layout that forces Q, K,
+and V to be converted and quantized again. A statistic computed before
+sequence-parallel redistribution describes the wrong tensor. An adapter merged
+after FP8 caching leaves the cache representing the base model rather than the
+model the user requested. Each mistake is local; their effects accumulate
+through the denoising trajectory.
 
-This post explains the design at a systems level, then compares the complete
-path with FastVideo's maintained FastH3 recipe on the same four H100 GPUs. The
-headline performance and quality results are **TBD--new experiment required**.
+This is the systems problem we addressed in TeleFuser. The resulting
+MiniMax-H3 path combines:
 
-MiniMax-H3 is the only model in this study. That constraint is deliberate: the
-goal is not to collect unrelated kernel wins, but to show that low precision,
-sparsity, distribution, and quality control can survive one real end-to-end
-generation workload.
+- cached FP8 Linear weights and dynamic FP8 activations;
+- an H100-native FP8 Sol-Attn kernel with online sparse routing;
+- attention smoothing and selective dense work to stabilize quality;
+- Ulysses sequence parallelism, tensor parallelism, and communication overlap;
+- base, Turbo LoRA, and FastH3-style adapter loading before quantization.
+
+The rest of this post follows the order in which those constraints arise. We
+first explain why FP8 and sparsity cannot be composed as independent switches.
+We then follow one attention tensor through the H100 execution path, add the
+quality controls demanded by that approximation, and finally distribute the
+same semantics across GPUs. The evaluation separates operator-level diagnosis
+from the result that can be compared honestly: a matched denoising comparison
+against another maintained MiniMax-H3 runtime, a separately scoped multi-GPU
+validation, and the generated video and audio available to inspect.
+
+The goal is not a collection of isolated kernel wins. It is a faster
+MiniMax-H3 request whose output remains worth generating.

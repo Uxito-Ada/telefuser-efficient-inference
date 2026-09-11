@@ -18,7 +18,11 @@ document.querySelectorAll("[data-sync-group]").forEach((group) => {
 
   players.forEach((player) => {
     player.addEventListener("play", () => {
-      mirror(player, (peer) => peer.play().catch(() => {}));
+      player.muted = false;
+      mirror(player, (peer) => {
+        peer.muted = true;
+        peer.play().catch(() => {});
+      });
     });
     player.addEventListener("pause", () => {
       mirror(player, (peer) => peer.pause());

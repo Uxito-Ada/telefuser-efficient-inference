@@ -1,7 +1,7 @@
 # Fast and Faithful MiniMax-H3 Inference
 
-**A community technical blog about co-designing FP8, sparse attention, and
-multi-GPU execution in TeleFuser.**
+**A community technical blog about making FP8, sparse attention, adapters, and
+multi-GPU execution work as one MiniMax-H3 system.**
 
 MiniMax-H3 generates high-resolution video and synchronized audio with one
 large diffusion transformer. This project explains how TeleFuser combines an
@@ -11,7 +11,7 @@ afterthought.
 
 - [Read the assembled article](BLOG.md)
 - [Open the HTML edition](site/index.html)
-- [Reproduce the four-H100 benchmark](experiments/h100-4gpu-e2e/README.md)
+- [Inspect and reproduce the benchmark](experiments/h100-4gpu-e2e/README.md)
 - [Edit an individual section](AUTHORING.md)
 
 ## Article map
@@ -31,4 +31,5 @@ single article is generated with:
     python scripts/build_blog.py
     python scripts/validate_repo.py
 
-Headline values remain marked TBD until the new matched experiment completes.
+The published article is generated from the section directories so each part
+can be reviewed and refined without editing one monolithic document.

@@ -1,0 +1,93 @@
+{
+  "adapter": {
+    "path": "/data/heyang/FastH3-models/v1-lora/dense-datafree/adapter_model.safetensors",
+    "strength": 1.0
+  },
+  "aspect_ratio": "16:9",
+  "attention": "SOL_ATTN",
+  "audio": "/data/heyang/telefuser-fasth3-adapter-benchmark/outputs/formal_adapter_fp8_sol_dense2.audio.npy",
+  "audio_shape": [
+    1,
+    2,
+    165600
+  ],
+  "denoising_seconds_samples": [
+    16.21081716939807,
+    16.115518003702164,
+    16.09876798093319
+  ],
+  "denoising_steps_per_second": 0.31025996178660636,
+  "duration_seconds": 5.0,
+  "frames": "/data/heyang/telefuser-fasth3-adapter-benchmark/outputs/formal_adapter_fp8_sol_dense2.frames.npy",
+  "generated_video_seconds_per_second": 0.07104204147164536,
+  "generation_seconds": 70.3808603528887,
+  "generation_seconds_samples": [
+    75.72403009608388,
+    70.3808603528887,
+    67.28842069022357
+  ],
+  "linear_quantization": "tf-kernel-fp8",
+  "load_seconds": 78.45134861581028,
+  "model_root": "/hhb-data/aigc/model_zoo/MiniMaxAI_MiniMax-H3",
+  "num_inference_steps": 5,
+  "output": "/data/heyang/telefuser-fasth3-adapter-benchmark/outputs/formal_adapter_fp8_sol_dense2.mp4",
+  "packed_sequence_length": 37760,
+  "parallelism": {
+    "tp_degree": 1,
+    "ulysses_degree": 1,
+    "world_size": 1
+  },
+  "peak_memory_mib": [
+    69329
+  ],
+  "peak_memory_total_mib": 69329,
+  "profile": "optimized",
+  "prompt": "integrated_multimodal_description: A red fox runs through fresh snow at dawn. overall_soundscape: Fast pawsteps in snow, winter wind, and distant birds.",
+  "repeats": 3,
+  "resident_memory_mib": [
+    20929
+  ],
+  "runtime_metrics": {
+    "audio_decoding_seconds": 0.4401617720723152,
+    "audio_encoding_seconds": 0.0,
+    "denoising_seconds": 16.09876798093319,
+    "denoising_stage_seconds": 16.118842519819736,
+    "feature_cache_computed_steps": 4,
+    "feature_cache_skipped_steps": 0,
+    "media_preparation_seconds": 6.813555955886841e-05,
+    "peak_allocated_bytes": 27679766016,
+    "peak_reserved_bytes": 28632416256,
+    "pipeline_seconds": 66.92091810517013,
+    "text_encoding_seconds": 39.87430048920214,
+    "video_decoding_seconds": 9.692703180015087,
+    "visual_encoding_seconds": 0.0
+  },
+  "save_seconds": 3.8073608726263046,
+  "schema_version": 1,
+  "seed": 1000,
+  "sol": {
+    "dense_layers": 2,
+    "dense_steps": 2,
+    "fp8_layer_end": null,
+    "fp8_layer_start": 0,
+    "fp8_qkv": true,
+    "smoothing": "kv",
+    "tau": 1.0,
+    "threshold_type": "exact",
+    "v_bias_correction": true
+  },
+  "versions": {
+    "telefuser": "0.1.0.post4.dev193+g25c1efb.d20260816",
+    "tf-kernel": "0.1.0",
+    "torch": "2.11.0+cu128"
+  },
+  "video_shape": [
+    1,
+    124,
+    768,
+    1344,
+    3
+  ],
+  "warmup_seconds": 153.44820012710989,
+  "warmup_seed": 999
+}

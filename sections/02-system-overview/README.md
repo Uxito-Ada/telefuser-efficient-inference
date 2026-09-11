@@ -1,46 +1,85 @@
 <!--
 SECTION-CONTRACT
 id: 02-system-overview
-incoming_premise: FP8 and sparse attention must share a hardware-aware boundary.
-outgoing_question: How do we keep the combined approximation stable and scalable?
-evidence: TeleFuser PRs 16, 25, and 30 plus the new operator profile
-do_not_claim: TeleFuser invented Sol-Attn.
+incoming_premise: FP8 and sparsity need a shared, hardware-aware attention boundary.
+outgoing_question: How can this faster path preserve the statistics expected by MiniMax-H3?
+evidence: TeleFuser PRs 16, 25, 30, 35, and 44
+do_not_claim: TeleFuser invented Sol-Attn or makes all H3 operators FP8.
 -->
 
-# The TeleFuser Path
+# Building the H100 Execution Path
 
 ![TeleFuser MiniMax-H3 execution overview](assets/overview.svg)
 
-The optimized path has four stages.
+The optimized request begins before the first token reaches attention. It
+starts by defining which model is actually being executed.
 
-**1. Prepare the effective model once.** TeleFuser loads the MiniMax-H3 base
-weights on CPU, applies the selected LoRA adapter, and then materializes the
-device-local FP8 caches. The ordering matters: a cache built before the adapter
-merge represents the wrong model. Once the cache is ready, the superseded
-higher-precision copy can be released instead of inflating runtime memory.
+## Prepare the effective weights
 
-**2. Run the dense transformer work in FP8.** The large Linear layers use
-cached FP8 weights and dynamically quantized activations. This covers the
-projection and feed-forward work that sparse attention cannot reduce.
+MiniMax-H3 can run as the base model or with a released Turbo or FastH3-style
+adapter. An adapter is part of the model identity, not a post-processing
+effect. TeleFuser loads the base checkpoint on CPU, applies low-rank and dense
+adapter deltas in higher precision, and only then creates FP8 weight caches.
 
-**3. Preserve the sensitive transforms, then enter FP8 Sol-Attn.** Q/K
-normalization and rotary embedding remain at higher precision. Q, K, and V are
-then prepared together for attention, so their scales and layouts match the
-consumer kernel. The custom SM90 implementation combines on-the-fly Sol routing
-with FP8 QK and PV computation; TMA and WGMMA keep the tiled data path native to
-H100.
+The order is:
 
-**4. Return a corrected output to the model.** Sparse blocks are not simply
-dropped. Sol-Attn carries a compact summary of the skipped contribution, while
-TeleFuser restores the attention-centering correction before the next
-transformer operation.
+~~~text
+base BF16 weights
+  -> merge the selected adapter
+  -> quantize the effective weight
+  -> build the device-local FP8 cache
+  -> release superseded storage
+~~~
 
-This organization removes conversions and layout hand-offs that would
-otherwise sit between independent framework features. It also keeps a clear
-fallback boundary: unsupported shapes can use a validated attention backend
-instead of silently entering an untested kernel path.
+Reversing the middle two operations would run stale base-model weights.
+Keeping both copies after the merge would make an FP8 model look artificially
+large in peak-memory measurements.
 
-The implementation spans several earlier TeleFuser changes, but the public
-interface is intentionally small. A MiniMax-H3 pipeline selects an FP8
-quantization policy, Sol-Attn, a sparsity threshold, optional smoothing, and a
-parallel topology. The complexity stays below that configuration layer.
+Multi-process execution adds another constraint. CUDA tensors created in a
+parent process cannot be inherited safely by workers started with
+`multiprocessing.spawn`. TeleFuser therefore starts multi-GPU MiniMax-H3 from
+CPU weights and materializes each FP8 cache lazily inside the worker that owns
+the target GPU. The Python module that exposes the external kernel is resolved
+at runtime rather than stored inside every `FP8Linear` object, so the model
+configuration remains pickleable during worker launch.
+
+## Keep dense transformer work in FP8
+
+The dominant projections and MLPs use cached FP8 weights with dynamically
+quantized activations. Higher-precision source weights are preparation state,
+not part of the steady-state data path. This distinction matters when reporting
+memory: parameter compression is real, but the end-to-end peak also includes
+text encoding, VAE state, activations, communication buffers, CUDA workspaces,
+and allocator reservations. FP8 should not be advertised as "half the total
+GPU memory" unless all those components are also halved.
+
+## Quantize QKV where the kernel can consume it
+
+Q/K normalization and rotary embedding remain in higher precision because
+their reductions and phase transforms are sensitive. After Ulysses
+redistribution, Q, K, and V have their final local-head/full-sequence meaning.
+TeleFuser prepares them jointly, producing FP8 tensors and scale metadata in
+the layout expected by Sol-Attn.
+
+The custom SM90 kernel then owns the complete sparse attention operation:
+
+1. summarize candidate key blocks and select them online;
+2. execute the selected QK tiles in FP8;
+3. apply the sparse softmax path and correction terms;
+4. execute the selected probability-value tiles;
+5. write the corrected output once.
+
+TMA moves tiled data while WGMMA executes tensor-core matrix operations. More
+important than the instruction names, the kernel avoids bouncing through
+generic attention formats between routing and compute. Dense-prefix
+replacement and sparse-output correction are merged into the same output pass,
+so enabling quality controls does not require writing and rereading a full
+attention tensor.
+
+Unsupported shapes retain a validated fallback. Hardware specialization is
+useful only when it fails explicitly; silently accepting an untested shape is
+not portability.
+
+This path solves the execution problem, but it also compounds two
+approximations. The next step is to make the kernel preserve the attention
+statistics that later denoising blocks expect.

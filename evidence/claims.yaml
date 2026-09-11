@@ -1,17 +1,29 @@
 claims:
-  headline_e2e_speedup:
-    status: pending
-    value: TBD--new experiment required
+  matched_denoise_time:
+    status: measured
+    value: 25.6836 percent lower than FastVideo BF16 Linear + FA4
     source: experiments/h100-4gpu-e2e/raw/summary.json
-  headline_throughput_gain:
-    status: pending
-    value: TBD--new experiment required
+  matched_dit_throughput:
+    status: measured
+    value: 34.5597 percent higher than FastVideo BF16 Linear + FA4
     source: experiments/h100-4gpu-e2e/raw/summary.json
-  headline_peak_memory_change:
-    status: pending
-    value: TBD--new experiment required
+  whole_process_peak_memory:
+    status: measured
+    value: 14.3363 percent lower than FastVideo BF16 Linear + FA4
     source: experiments/h100-4gpu-e2e/raw/summary.json
-  quality_acceptance:
-    status: pending
-    value: TBD--new experiment required
-    source: experiments/quality-suite/raw/summary.json
+  smoothing_tensor_error:
+    status: measured
+    value: K quantization MSE -21.65 percent; attention output MSE -8.18 percent
+    source: experiments/quality-suite/raw/real-h3-qkv-error.json
+  smoothing_video_quality:
+    status: measured_single_case
+    value: frame cosine, PSNR, and mean SSIM improve; audio metrics are mixed
+    source: experiments/quality-suite/raw/media-quality.json
+  distributed_overlap:
+    status: measured_separate_protocol
+    value: 3.539 percent lower mean request wall time with byte-identical outputs
+    source: https://github.com/Tele-AI/TeleFuser/pull/37
+forbidden_claims:
+  - a matched cross-framework E2E speedup from the recorded single-H100 runs
+  - perceptual equivalence from one prompt or full-reference metrics alone
+  - performance from excluded or incomplete runs

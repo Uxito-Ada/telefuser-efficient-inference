@@ -51,7 +51,7 @@
   <text class="step" x="957" y="178" text-anchor="middle">STAGE 4</text>
   <text class="head" x="926" y="222">Scale and correct</text>
   <text class="body" x="926" y="254">Attention smoothing</text>
-  <text class="body" x="926" y="279">TP2 x Ulysses SP2</text>
+  <text class="body" x="926" y="279">Ulysses + tensor parallel</text>
   <text class="body" x="926" y="304">Video + audio output</text>
 
   <line x1="64" y1="380" x2="1136" y2="380" stroke="#dce2e6"/>

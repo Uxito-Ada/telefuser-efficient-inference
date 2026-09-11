@@ -1,0 +1,7 @@
+{
+  "baseline": "experiments/h100-4gpu-e2e/raw/fastvideo-single-h100.json",
+  "denoise_time_reduction_percent": 25.683569270453475,
+  "dit_throughput_increase_percent": 34.559745426851165,
+  "peak_memory_change_percent": -14.336264050258517,
+  "telefuser": "experiments/h100-4gpu-e2e/raw/telefuser-single-h100.json"
+}

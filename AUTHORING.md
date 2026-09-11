@@ -19,27 +19,28 @@ the causal hand-off to the section before or after it.
 
 ## Claim policy
 
-- Final numbers must come from the new 4xH100 benchmark under
-  `experiments/h100-4gpu-e2e/`.
+- Final numbers must come from normalized benchmark records under
+  `experiments/h100-4gpu-e2e/`; the directory name is retained from the
+  original experiment plan.
 - Do not copy a historical PR number into a final chart.
 - A speedup claim requires the same checkpoint, adapter, task, output shape,
-  sampling work, GPU count, warm-up policy, and timing boundary.
+  sampling work, GPU count, warm-up policy, and timing boundary. If framework
+  cache policies differ, compare only the matched phase.
 - The primary performance baseline is an external framework, not another
   TeleFuser mode.
 - Use actual DiT forwards when describing denoising throughput. Scheduler
   points and transformer evaluations are not interchangeable.
-- Whole-process memory must be sampled after warm-up and must identify both
-  per-GPU maximum and aggregate maximum.
+- Whole-process memory must be measured after warm-up. Multi-GPU studies must
+  identify both per-GPU and aggregate maxima.
 - Paired PSNR, SSIM, LPIPS, cosine, or spectral error measure trajectory
   similarity to BF16. They do not by themselves prove perceptual equivalence.
 - A framework that OOMs, crashes, or produces invalid media is an excluded
   result, not a performance datapoint.
 
-## Placeholder policy
+## Claim provenance
 
-Until the new experiment exists, write `TBD--new experiment required`. Do not
-estimate a value from an old run or from another hardware generation. Every
-placeholder is tracked in `evidence/claims.yaml`.
+Do not estimate a value from an old run or from another hardware generation.
+Every headline value must remain linked to its raw report in the claim ledger.
 
 ## Media policy
 

@@ -1,7 +1,7 @@
 id: 05-lessons
-title: What We Learned
+title: What Carries Beyond This Benchmark
 status: draft
-incoming_premise: One matched experiment measures the complete system.
+incoming_premise: Matched external and diagnostic experiments expose performance and quality.
 outgoing_question: none
 evidence:
   - experiments/h100-4gpu-e2e/raw/summary.json

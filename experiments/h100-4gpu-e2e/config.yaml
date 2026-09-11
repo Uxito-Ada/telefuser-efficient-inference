@@ -1,41 +1,46 @@
 schema_version: 1
-status: planned
-hardware:
-  gpu: NVIDIA H100 80GB HBM3
-  count: 4
-workload:
-  model: MiniMaxAI/MiniMax-H3
-  adapter: FastH3 Dense/Data-Free
-  adapter_scale: 1.0
-  task: t2va
-  width: 1344
-  height: 768
-  frames: 124
-  fps: 24
-  duration_seconds: 5
-  sigma_points: 5
-  actual_dit_forwards: 4
-  batch_size: 1
-  concurrency: 1
-  seed: 1000
-  prompt: >-
-    integrated_multimodal_description: A red fox runs through fresh snow at
-    dawn. overall_soundscape: Fast pawsteps in snow, winter wind, and distant
-    birds.
-measurement:
-  warmups: 1
-  repeats: 5
-  statistic: median
-  memory_sample_interval_ms: 100
-  e2e_start: before prompt processing
-  e2e_end: after synchronized MP4 file close
-profiles:
-  - id: fastvideo-dense-fa4
-    role: primary-baseline
-    distributed: sp4
-  - id: telefuser-fp8-sol
-    role: proposed
-    distributed: tp2-ulysses-sp2
-  - id: fastvideo-vsa
-    role: related-sparse-reference
-    admission: official H100 path and valid media required
+status: complete
+primary_comparison:
+  hardware:
+    gpu: NVIDIA H100 80GB HBM3
+    count: 1
+  workload:
+    model: MiniMaxAI/MiniMax-H3
+    adapter: FastH3 Dense/Data-Free
+    adapter_scale: 1.0
+    task: t2va
+    width: 1344
+    height: 768
+    frames: 124
+    fps: 24
+    duration_seconds: 5
+    sigma_points: 5
+    actual_dit_forwards: 4
+    batch_size: 1
+    concurrency: 1
+    seed: 1000
+  measurement:
+    warmups: 1
+    repeats: 3
+    statistic: median
+    admitted_metrics:
+      - denoising_seconds
+      - actual_dit_forwards_per_second
+      - max_per_gpu_peak_mib
+    excluded_metric:
+      e2e_seconds: prompt-conditioning cache policy differs between frameworks
+  profiles:
+    - id: fastvideo-dense-fa4
+      role: primary_external_baseline
+      precision: BF16 Linear
+      attention: FlashAttention 4
+    - id: telefuser-fp8-sol
+      role: proposed
+      precision: FP8 Linear
+      attention: FP8 Sol-Attn with KV smoothing
+distributed_validation:
+  source: https://github.com/Tele-AI/TeleFuser/pull/37
+  hardware: 4x NVIDIA H100
+  topology: TP2 x Ulysses SP2
+  protocol: Base H3, 50 scheduler points, five prompt/seed cases
+  role: separate lossless scheduling validation
