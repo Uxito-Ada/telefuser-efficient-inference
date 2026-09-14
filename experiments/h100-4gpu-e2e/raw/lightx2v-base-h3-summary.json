@@ -1,0 +1,9 @@
+{
+  "denoise_speedup": 2.622325863696876,
+  "denoise_throughput_increase_percent": 162.23258636968762,
+  "denoise_time_reduction_percent": 61.86591400237993,
+  "generation_speedup": 2.6353104893698727,
+  "generation_time_reduction_percent": 62.05380716869118,
+  "peak_memory_reduction_percent": 40.340940260025235,
+  "source": "experiments/h100-4gpu-e2e/raw/lightx2v-base-h3-comparison.json"
+}

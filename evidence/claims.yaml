@@ -1,4 +1,28 @@
 claims:
+  four_gpu_generation:
+    status: measured
+    value: 2.6353x faster than LightX2V BF16 + SageAttention2
+    source: experiments/h100-4gpu-e2e/raw/lightx2v-base-h3-summary.json
+  four_gpu_denoise_throughput:
+    status: measured
+    value: 162.2326 percent higher than LightX2V BF16 + SageAttention2
+    source: experiments/h100-4gpu-e2e/raw/lightx2v-base-h3-summary.json
+  four_gpu_peak_memory:
+    status: measured
+    value: 40.3409 percent lower than LightX2V BF16 + SageAttention2
+    source: experiments/h100-4gpu-e2e/raw/lightx2v-base-h3-summary.json
+  turbo_denoise_time:
+    status: measured
+    value: 26.7287 percent lower than LightX2V resident BF16 + Sol
+    source: experiments/adapter-suite/raw/turbo-summary.json
+  turbo_denoise_throughput:
+    status: measured
+    value: 36.4791 percent higher than LightX2V resident BF16 + Sol
+    source: experiments/adapter-suite/raw/turbo-summary.json
+  turbo_peak_memory:
+    status: measured
+    value: 12.2601 percent lower than LightX2V resident BF16 + Sol
+    source: experiments/adapter-suite/raw/turbo-summary.json
   matched_denoise_time:
     status: measured
     value: 25.6836 percent lower than FastVideo BF16 Linear + FA4

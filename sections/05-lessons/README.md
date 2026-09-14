@@ -23,10 +23,12 @@ evaluations are needed; FP8 reduces the cost of dense transformer work; Sol-Attn
 reduces attention work; smoothing protects the resulting trajectory; and
 Ulysses carries the same path to multiple GPUs.
 
-On the matched FastH3 workload, TeleFuser delivers 25.7% lower denoising time,
-34.6% higher DiT throughput, and 14.3% lower peak GPU memory than the FastVideo
-BF16 + FA4 baseline. The accompanying tensor profiles and generated media show
-how the quality controls affect both numerical error and visible output.
+On the matched four-H100 Base H3 workload, TeleFuser is 2.64x faster in
+generation and uses 40.3% less representative peak memory than LightX2V while
+both run `TP2 x Ulysses SP2`. The adapter evaluations show that the same runtime
+also outperforms the working LightX2V Turbo and FastVideo FastH3 baselines. The
+accompanying tensor profiles and generated media cover numerical error, final
+video, and synchronized audio rather than performance alone.
 
 ## Further reading
 
@@ -34,4 +36,5 @@ how the quality controls affect both numerical error and visible output.
 - [MiniMax-H3 model and official pipeline](https://huggingface.co/MiniMaxAI/MiniMax-H3)
 - [Sol-Attn: on-the-fly attention sparsification](https://nvlabs.github.io/Sana/Sol-Attn/)
 - [FastVideo MiniMax-H3 cookbook](https://haoailab.com/FastVideo/cookbook/minimax-h3/)
+- [LightX2V MiniMax-H3 examples](https://github.com/ModelTC/LightX2V/tree/main/scripts/minimax_h3)
 - [TorchAO quantized inference workflows](https://docs.pytorch.org/ao/stable/workflows/inference.html)

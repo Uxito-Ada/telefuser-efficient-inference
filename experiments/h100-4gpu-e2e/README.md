@@ -1,33 +1,60 @@
-# MiniMax-H3 H100 Evidence
+# MiniMax-H3 H100 evidence
 
 Status: **complete for the claims published in the article**.
 
-The directory name records the original four-GPU experiment plan. The final
-article separates two questions whose timing boundaries can be defended:
+The article keeps three protocols separate: a four-H100 Base H3 framework
+comparison, a one-H100 FastH3 adapter comparison, and a TeleFuser-only
+communication-overlap regression. Results are combined only within a protocol.
 
-1. A matched single-H100 comparison against FastVideo isolates the FastH3
-   adapter denoising path.
-2. A separate four-H100 TeleFuser study validates the resident
-   `TP2 x Ulysses SP2` schedule and communication-compute overlap.
+## Primary four-H100 framework comparison
 
-Combining those results into one speedup would mix model schedules, framework
-cache policies, and timing boundaries, so the blog reports them separately.
+LightX2V and TeleFuser use:
 
-## Primary external comparison
+- MiniMax-H3 Base T2AV on four NVIDIA H100 80GB GPUs;
+- `TP2 x Ulysses SP2` in both frameworks;
+- the same prompt, seed 0, 1344 x 768 output, 124 frames, 24 FPS, and 50
+  configured sampling points;
+- feature cache disabled; and
+- one complete warm-up followed by one measured request.
 
-Both systems use MiniMax-H3, the FastH3 Dense/Data-Free adapter at strength
-1.0, the same prompt and seed, 1344 x 768 output, 124 frames at 24 FPS, five
-sigma points, four actual DiT forwards, one H100 80GB, one warm-up, and three
-measured requests. Neither DiT is CPU-offloaded during denoising.
+The working LightX2V baseline is BF16 + SageAttention2. TeleFuser uses
+tf-kernel W8A8 FP8 Linear + FP8 Sol-Attn with exact routing. The invalid
+LightX2V Base H3 Sol output is not used as a performance result.
+
+Normalized records:
+
+- `raw/lightx2v-base-h3-comparison.json`
+- `raw/lightx2v-base-h3-summary.json`
+
+Generate the chart with:
+
+```bash
+python experiments/h100-4gpu-e2e/scripts/plot_lightx2v_results.py \
+  --input experiments/h100-4gpu-e2e/raw/lightx2v-base-h3-comparison.json \
+  --figure sections/04-evaluation/assets/lightx2v-base-h3.svg \
+  --summary experiments/h100-4gpu-e2e/raw/lightx2v-base-h3-summary.json
+```
+
+The source machine had a fixed unrelated allocation on GPU 0 during both
+profiles. For that reason, the published memory result is the median peak from
+otherwise idle GPUs 1-3, not an asymmetric maximum polluted by another job.
+Both published MP4s pass the media gate: 124 decodable 1344 x 768 H.264 frames,
+finite 32kHz stereo AAC audio, and matching duration.
+
+## FastH3 adapter comparison
+
+Both systems use the MiniMax-H3 base, FastH3 Dense/Data-Free adapter at strength
+1.0, same prompt and seed, 1344 x 768 output, 124 frames at 24 FPS, five sigma
+points, four actual DiT forwards, one H100, one warm-up, and three measured
+requests. Neither DiT is CPU-offloaded during denoising.
 
 - FastVideo: BF16 Linear + FlashAttention 4.
-- TeleFuser: FP8 Linear + FP8 Sol-Attn, `tau=1.0`, exact routing, two dense
-  opening updates, two dense layers, KV smoothing, and V correction.
+- TeleFuser: FP8 Linear + FP8 Sol-Attn, `tau=1.0`, exact routing, quality-aware
+  FP8 attention, and selective dense computation.
 
-The chart uses only matched denoising time, actual DiT forwards per second, and
-whole-process peak GPU memory. It intentionally omits an E2E speedup: repeated
-FastVideo requests reused prompt conditioning, while the recorded TeleFuser
-requests encoded the prompt each time.
+The chart uses matched denoising time, actual DiT forwards per second, and
+whole-process peak GPU memory. It omits an end-to-end speedup because the
+recorded frameworks used different prompt-conditioning cache policies.
 
 Normalized records:
 
@@ -36,7 +63,7 @@ Normalized records:
 - `raw/telefuser-single-h100-source.json`
 - `raw/summary.json`
 
-Generate the publication chart with:
+Generate the chart with:
 
 ```bash
 python experiments/h100-4gpu-e2e/scripts/plot_results.py \
@@ -46,32 +73,16 @@ python experiments/h100-4gpu-e2e/scripts/plot_results.py \
   --summary experiments/h100-4gpu-e2e/raw/summary.json
 ```
 
-The original MP4s are published as `fastvideo-primary.mp4` and
-`telefuser-primary.mp4` under the evaluation section assets. Both must pass the
-media validity gate before a timing record is admitted: 124 decodable frames,
-1344 x 768 H.264 video, finite stereo AAC audio, and matching duration.
-
-## Separate four-H100 validation
+## Communication-overlap regression
 
 [TeleFuser PR 37](https://github.com/Tele-AI/TeleFuser/pull/37) reports five
-MiniMax-H3 prompt/seed cases on four H100s with resident
-`TP2 x Ulysses SP2`. Communication-compute overlap reduced mean request wall
-time from 78.546 to 75.766 seconds, or 3.539%, while the five synchronized MP4
-outputs remained byte-identical.
+Base H3 prompt/seed cases with resident `TP2 x Ulysses SP2`. Overlap reduced
+mean request wall time from 78.546 to 75.766 seconds, or 3.539%, while all five
+MP4 outputs remained byte-identical.
 
-This is evidence that the article's distributed path is exercised and that its
-scheduling optimization is lossless. It is not the external FastH3 baseline:
-the run uses a 50-point Base H3 protocol rather than the distilled five-point
-adapter protocol.
+This validates the scheduling optimization independently. It is not folded
+into the LightX2V speedup because it is a different run set.
 
-## Reusable distributed harnesses
-
-`scripts/benchmark_fastvideo.py` and `scripts/benchmark_telefuser.py` preserve
-the strict four-GPU protocol for a future run when four idle H100s are
-available. A result from either harness is not admitted automatically. It must
-use the same checkpoint, adapter hash, sampling work, output contract, GPU
-count, warm-up policy, and timing scope, and it must produce valid media.
-
-Failed two-GPU attempts made during this refresh are recorded in
-[`evidence/excluded-results.md`](../../evidence/excluded-results.md). Their
+Failed or invalid profiles remain documented in
+[`evidence/excluded-results.md`](../../evidence/excluded-results.md); their
 partial timings do not appear in any chart or claim.

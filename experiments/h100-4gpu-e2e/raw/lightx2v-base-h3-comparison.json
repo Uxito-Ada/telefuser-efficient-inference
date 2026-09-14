@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "matched_workload": {
+    "hardware": "4 x NVIDIA H100 80GB HBM3",
+    "parallelism": "TP2 x Ulysses SP2",
+    "task": "MiniMax-H3 T2AV",
+    "resolution": "1344x768",
+    "frames": 124,
+    "fps": 24,
+    "config_sampling_points": 50,
+    "actual_denoiser_updates": 49,
+    "seed": 0,
+    "prompt": "Steam rises from the ramen while the family talks in the background."
+  },
+  "results": {
+    "lightx2v_bf16_sageattention2": {
+      "generation_seconds": 137.75983863323927,
+      "denoise_seconds": 129.22054240852594,
+      "config_points_per_second": 0.3869353824713632,
+      "representative_peak_memory_mib": 72916,
+      "representative_memory_devices": [1, 2, 3]
+    },
+    "telefuser_bf16_flashattention4": {
+      "generation_seconds": 78.50636019185185,
+      "denoise_seconds": 75.47177096270025,
+      "config_points_per_second": 0.6624993605186642,
+      "representative_peak_memory_mib": 50907,
+      "representative_memory_devices": [1, 2, 3]
+    },
+    "telefuser_fp8_sol_exact": {
+      "generation_seconds": 52.274614011868834,
+      "denoise_seconds": 49.2770727686584,
+      "config_points_per_second": 1.0146706610340988,
+      "representative_peak_memory_mib": 43501,
+      "representative_memory_devices": [1, 2, 3]
+    }
+  },
+  "relative_to_lightx2v": {
+    "telefuser_bf16": {
+      "generation_speedup": 1.7547602295735691,
+      "denoise_speedup": 1.7121705342304672,
+      "representative_peak_memory_reduction_percent": 30.184047397004772
+    },
+    "telefuser_fp8_sol": {
+      "generation_speedup": 2.6353104893698727,
+      "denoise_speedup": 2.622325863696876,
+      "representative_peak_memory_reduction_percent": 40.340940260025235
+    }
+  }
+}

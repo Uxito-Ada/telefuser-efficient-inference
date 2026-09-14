@@ -4,9 +4,12 @@ status: complete
 incoming_premise: TeleFuser combines precision, sparsity, smoothing, adapters, and distributed execution.
 outgoing_question: What does this add to TeleFuser as a world-model runtime?
 evidence:
+  - experiments/h100-4gpu-e2e/raw/lightx2v-base-h3-comparison.json
+  - experiments/h100-4gpu-e2e/raw/lightx2v-base-h3-summary.json
+  - experiments/adapter-suite/raw/turbo-summary.json
   - experiments/h100-4gpu-e2e/raw/summary.json
   - experiments/quality-suite/raw/summary.json
-primary_baseline: FastVideo FastH3 Dense/Data-Free BF16 + FA4 on one H100
+primary_baseline: LightX2V BF16 + SageAttention2 with TP2 x Ulysses SP2 on four H100s
 forbidden_claims:
   - internal TeleFuser modes as headline baselines
   - unmatched GPU counts or output specifications in one comparison

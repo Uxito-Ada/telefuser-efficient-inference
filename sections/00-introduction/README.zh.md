@@ -19,7 +19,7 @@ TeleFuser 在一条推理路径中集成了：
 - Base、Turbo LoRA 与 FastH3 风格 Adapter；
 - Ulysses 序列并行、张量并行与通信计算重叠。
 
-在单张 H100 上对齐的 FastH3 Adapter 测试中，相比 FastVideo 的 BF16 Linear + FlashAttention 4，TeleFuser 将去噪时间降低 **25.7%**，DiT 吞吐提升 **34.6%**，峰值显存降低 **14.3%**。本文后续也直接展示两种方案生成的视频与音频。
+在对齐的四卡 Base H3 测试中，两套框架均运行 `TP2 x Ulysses SP2`，TeleFuser 的视频生成速度达到 LightX2V 的 **2.64 倍**，代表性单卡峰值显存降低 **40.3%**。随后，我们分别测试两种 Adapter，并与能够正确运行对应模型的外部框架比较，同时直接展示生成的视频与音频。
 
 全文围绕四个问题展开：
 

@@ -39,10 +39,11 @@ efficient world-model runtime must handle.</p>
 <li>base, Turbo LoRA, and FastH3-style adapter support;</li>
 <li>Ulysses sequence parallelism, tensor parallelism, and communication overlap.</li>
 </ul>
-<p>On the matched single-H100 FastH3 adapter workload, this path reduces denoising
-time by <strong>25.7%</strong>, raises DiT throughput by <strong>34.6%</strong>, and lowers peak GPU memory
-by <strong>14.3%</strong> against FastVideo BF16 Linear + FlashAttention 4. The generated
-video and audio are embedded below alongside the baseline.</p>
+<p>On the matched four-H100 Base H3 workload, with both frameworks running
+<code>TP2 x Ulysses SP2</code>, TeleFuser generates a video <strong>2.64x faster</strong> than LightX2V
+while using <strong>40.3% less</strong> representative peak GPU memory. We then test both
+supported adapter families against their working external baselines and embed
+the generated video and audio for direct comparison.</p>
 <p>The rest of this post follows four questions:</p>
 <ol>
 <li>Why do FP8 and sparse attention need to be designed together?</li>
@@ -194,57 +195,100 @@ with attention compute, which becomes increasingly valuable after FP8 and
 sparsity reduce arithmetic time.</p>
 <hr>
 <h1 id="results-on-h100">Results on H100</h1>
-<p>The primary comparison uses FastVideo&rsquo;s MiniMax-H3 FastH3 Dense/Data-Free
-adapter path as the external baseline. Both systems run on one H100 80GB with
-the same base checkpoint, adapter strength, prompt, seed, 1344 x 768 output,
-124 frames at 24 FPS, and a five-point schedule with four DiT evaluations.
-Each result is the median after one warm-up and three measured generations.</p>
-<p>FastVideo uses BF16 Linear + FlashAttention 4. TeleFuser uses FP8 Linear + FP8
-Sol-Attn with <code>tau=1.0</code>, two dense opening updates, two dense layers, KV
-smoothing, and V correction. Neither path offloads the DiT during denoising.</p>
-<p><img alt="Matched MiniMax-H3 adapter performance" src="../sections/04-evaluation/assets/end-to-end.svg"></p>
+<h2 id="base-h3-on-four-gpus">Base H3 on four GPUs</h2>
+<p>The primary framework comparison runs MiniMax-H3 Base on four H100 80GB GPUs.
+LightX2V and TeleFuser both use <code>TP2 x Ulysses SP2</code>, the same prompt and seed,
+1344 x 768 output, 124 frames at 24 FPS, and the same 50-point schedule. Feature
+cache is disabled. LightX2V uses its valid BF16 + SageAttention2 path;
+TeleFuser uses FP8 Linear + quality-aware FP8 Sol-Attn.</p>
+<p><img alt="Four-H100 MiniMax-H3 Base performance" src="../sections/04-evaluation/assets/lightx2v-base-h3.svg"></p>
 <div class="result-summary">
-  <div><strong>25.7% lower</strong><span>denoise time than FastVideo BF16 + FA4</span></div>
+  <div><strong>2.64x faster</strong><span>generation than LightX2V</span></div>
+  <div><strong>2.62x faster</strong><span>denoising, or 162.2% higher step throughput</span></div>
+  <div><strong>40.3% lower</strong><span>representative peak GPU memory</span></div>
+</div>
+
+<p>Generation time falls from 137.76 to 52.27 seconds, while denoising falls from
+129.22 to 49.28 seconds. This is the main end-to-end result: the external
+baseline and TeleFuser use the same four-GPU parallel topology rather than
+comparing a distributed path with a single-GPU run.</p>
+<div class="video-pair" data-sync-group="base-h3">
+  <figure>
+    <figcaption>LightX2V: BF16 + SageAttention2, TP2 x Ulysses SP2</figcaption>
+    <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/lightx2v-base-h3.mp4" data-result-slot="lightx2v-base-h3"></video>
+  </figure>
+  <figure>
+    <figcaption>TeleFuser: FP8 Linear + quality-aware FP8 Sol, TP2 x Ulysses SP2</figcaption>
+    <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/telefuser-base-h3.mp4" data-result-slot="telefuser-base-h3"></video>
+  </figure>
+</div>
+
+<p>Both files contain a coherent 124-frame ramen scene with synchronized stereo
+audio. The performance record uses one warm-up and one measured request; the
+memory figure is the representative peak across otherwise idle GPUs because
+GPU 0 had a fixed unrelated allocation during both runs.</p>
+<h2 id="adapter-workloads">Adapter workloads</h2>
+<p>TeleFuser supports both MiniMax-H3 Turbo LoRA and FastH3&rsquo;s dense hybrid
+adapter. Each is compared with the external framework that provides a working
+reference path for that adapter, using matched model inputs, output shape, and
+DiT work.</p>
+<h3 id="minimax-h3-turbo-lora">MiniMax-H3 Turbo LoRA</h3>
+<p>The Turbo comparison uses one H100, the 8-step v1.0 768p adapter, eight DiT
+updates, and resident DiT weights in both frameworks. LightX2V runs BF16 + Sol;
+TeleFuser merges the LoRA before FP8 conversion and runs FP8 Linear + FP8 Sol.
+CPU block-offload measurements are not included in the chart.</p>
+<p><img alt="MiniMax-H3 Turbo adapter performance" src="../sections/04-evaluation/assets/turbo-performance.svg"></p>
+<div class="result-summary">
+  <div><strong>26.7% lower</strong><span>denoise time than LightX2V</span></div>
+  <div><strong>36.5% higher</strong><span>8-step denoise throughput</span></div>
+  <div><strong>12.3% lower</strong><span>whole-process peak GPU memory</span></div>
+</div>
+
+<div class="video-pair" data-sync-group="turbo">
+  <figure>
+    <figcaption>LightX2V: MiniMax-H3 Turbo, resident BF16 DiT + Sol</figcaption>
+    <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/turbo-lightx2v.mp4" data-result-slot="turbo-lightx2v"></video>
+  </figure>
+  <figure>
+    <figcaption>TeleFuser: MiniMax-H3 Turbo, FP8 Linear + FP8 Sol</figcaption>
+    <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/turbo-telefuser.mp4" data-result-slot="turbo-telefuser"></video>
+  </figure>
+</div>
+
+<h3 id="fasth3-dense-adapter">FastH3 dense adapter</h3>
+<p>For FastH3, both systems run one H100 with the same dense adapter, prompt,
+seed, 1344 x 768 output, 124 frames, and four actual DiT evaluations. FastVideo
+uses BF16 Linear + FlashAttention 4; TeleFuser uses FP8 Linear + quality-aware
+FP8 Sol-Attn. Neither path offloads the DiT during denoising. Results are the
+median after one warm-up and three measured generations.</p>
+<p><img alt="Matched FastH3 adapter performance" src="../sections/04-evaluation/assets/end-to-end.svg"></p>
+<div class="result-summary">
+  <div><strong>25.7% lower</strong><span>denoise time than FastVideo</span></div>
   <div><strong>34.6% higher</strong><span>actual DiT-forward throughput</span></div>
   <div><strong>14.3% lower</strong><span>whole-process peak GPU memory</span></div>
 </div>
 
-<p>Median denoising time falls from 21.685 to 16.116 seconds. With four actual DiT
-evaluations per video, throughput rises from 0.184 to 0.248 forwards per second.
-Whole-process peak memory falls from 79.03 to 67.70 GiB. The memory reduction is
-smaller than the FP8 weight ratio because text and media encoders, non-Linear
-weights, activations, and workspaces remain part of the process peak.</p>
-<p>The chart compares the matched denoising region rather than whole-request
-latency because the recorded frameworks used different prompt-conditioning
-cache policies.</p>
-<h2 id="generated-output">Generated output</h2>
-<p>Both outputs contain 124 frames of 1344 x 768 H.264 video and 32kHz stereo AAC
-audio. The HTML players are synchronized for direct comparison.</p>
-<div class="video-pair" data-sync-group="primary">
+<div class="video-pair" data-sync-group="fasth3">
   <figure>
-    <figcaption>FastVideo: BF16 Linear + FlashAttention 4</figcaption>
+    <figcaption>FastVideo: FastH3, BF16 Linear + FlashAttention 4</figcaption>
     <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/fastvideo-primary.mp4" data-result-slot="fastvideo-primary"></video>
   </figure>
   <figure>
-    <figcaption>TeleFuser: FP8 Linear + smoothed FP8 Sol-Attn</figcaption>
+    <figcaption>TeleFuser: FastH3, FP8 Linear + quality-aware FP8 Sol</figcaption>
     <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/telefuser-primary.mp4" data-result-slot="telefuser-primary"></video>
   </figure>
 </div>
 
-<p>The earlier 50-step ablation provides the controlled quality comparison among
-BF16, unsmoothed FP8, and smoothed FP8. The FastH3 pair above shows the final
-adapter-enabled path producing complete video and audio under the performance
-configuration.</p>
-<h2 id="multi-gpu-execution">Multi-GPU execution</h2>
-<p>A separate Base H3 validation exercises TeleFuser&rsquo;s resident
-<code>TP2 x Ulysses SP2</code> topology on four H100s. Across five prompt/seed cases,
-communication-compute overlap reduced mean request wall time from 78.546 to
-75.766 seconds, a <strong>3.539%</strong> improvement, while all five generated MP4 files
-remained byte-identical.</p>
-<p>This result is shown separately because it uses the 50-point Base H3 schedule,
-whereas the external comparison uses the five-point FastH3 adapter. Together,
-the two experiments cover the optimized single-GPU path and TeleFuser&rsquo;s
-distributed execution capability.</p>
+<p>The chart compares the matched denoising region rather than whole-request
+latency because the recorded frameworks used different prompt-conditioning
+cache policies. All four adapter outputs above contain 124 H.264 frames at
+1344 x 768 and 32kHz stereo AAC audio.</p>
+<h2 id="communication-overlap">Communication overlap</h2>
+<p>The four-GPU Base path also benefits from TeleFuser&rsquo;s communication-compute
+overlap. In a separate five-case regression, it reduced mean request wall time
+from 78.546 to 75.766 seconds, a <strong>3.539%</strong> improvement, while every generated
+MP4 remained byte-identical. This optimization is part of the same distributed
+execution path used by the main Base H3 result.</p>
 <hr>
 <h1 id="a-unified-efficient-inference-path-in-telefuser">A Unified Efficient-Inference Path in TeleFuser</h1>
 <p>This work expands TeleFuser from supporting MiniMax-H3 execution to optimizing
@@ -260,16 +304,19 @@ the complete DiT path on H100. The framework now combines:</p>
 evaluations are needed; FP8 reduces the cost of dense transformer work; Sol-Attn
 reduces attention work; smoothing protects the resulting trajectory; and
 Ulysses carries the same path to multiple GPUs.</p>
-<p>On the matched FastH3 workload, TeleFuser delivers 25.7% lower denoising time,
-34.6% higher DiT throughput, and 14.3% lower peak GPU memory than the FastVideo
-BF16 + FA4 baseline. The accompanying tensor profiles and generated media show
-how the quality controls affect both numerical error and visible output.</p>
+<p>On the matched four-H100 Base H3 workload, TeleFuser is 2.64x faster in
+generation and uses 40.3% less representative peak memory than LightX2V while
+both run <code>TP2 x Ulysses SP2</code>. The adapter evaluations show that the same runtime
+also outperforms the working LightX2V Turbo and FastVideo FastH3 baselines. The
+accompanying tensor profiles and generated media cover numerical error, final
+video, and synchronized audio rather than performance alone.</p>
 <h2 id="further-reading">Further reading</h2>
 <ul>
 <li><a href="https://github.com/Tele-AI/TeleFuser">TeleFuser</a></li>
 <li><a href="https://huggingface.co/MiniMaxAI/MiniMax-H3">MiniMax-H3 model and official pipeline</a></li>
 <li><a href="https://nvlabs.github.io/Sana/Sol-Attn/">Sol-Attn: on-the-fly attention sparsification</a></li>
 <li><a href="https://haoailab.com/FastVideo/cookbook/minimax-h3/">FastVideo MiniMax-H3 cookbook</a></li>
+<li><a href="https://github.com/ModelTC/LightX2V/tree/main/scripts/minimax_h3">LightX2V MiniMax-H3 examples</a></li>
 <li><a href="https://docs.pytorch.org/ao/stable/workflows/inference.html">TorchAO quantized inference workflows</a></li>
 </ul></article>
   </main>

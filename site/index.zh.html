@@ -29,7 +29,7 @@
 <li>Base、Turbo LoRA 与 FastH3 风格 Adapter；</li>
 <li>Ulysses 序列并行、张量并行与通信计算重叠。</li>
 </ul>
-<p>在单张 H100 上对齐的 FastH3 Adapter 测试中，相比 FastVideo 的 BF16 Linear + FlashAttention 4，TeleFuser 将去噪时间降低 <strong>25.7%</strong>，DiT 吞吐提升 <strong>34.6%</strong>，峰值显存降低 <strong>14.3%</strong>。本文后续也直接展示两种方案生成的视频与音频。</p>
+<p>在对齐的四卡 Base H3 测试中，两套框架均运行 <code>TP2 x Ulysses SP2</code>，TeleFuser 的视频生成速度达到 LightX2V 的 <strong>2.64 倍</strong>，代表性单卡峰值显存降低 <strong>40.3%</strong>。随后，我们分别测试两种 Adapter，并与能够正确运行对应模型的外部框架比较，同时直接展示生成的视频与音频。</p>
 <p>全文围绕四个问题展开：</p>
 <ol>
 <li>为什么 FP8 与稀疏注意力必须协同设计？</li>
@@ -115,34 +115,73 @@
 <p>TeleFuser 将 Ulysses 序列并行与张量并行组合，用于长序列和宽 Transformer 的分布式执行。质量统计基于 Ulysses 建立的 attention 视图计算，从而保持单卡与多卡语义一致。运行时还支持重叠 Ulysses 通信与 attention 计算；当 FP8 和稀疏计算减少算术时间后，这项优化会更加重要。</p>
 <hr>
 <h1 id="h100-results">H100 Results：性能与效果</h1>
-<p>主要对比选择 FastVideo 的 MiniMax-H3 FastH3 Dense/Data-Free Adapter 作为外部 baseline。两种方案均使用单张 H100 80GB，以及相同的 Base checkpoint、Adapter strength、prompt、seed、1344 x 768 分辨率、124 帧、24 FPS 和包含四次 DiT 执行的五点 schedule。每组结果均经过一次完整 warm-up，并取三次正式生成的中位数。</p>
-<p>FastVideo 使用 BF16 Linear + FlashAttention 4；TeleFuser 使用 FP8 Linear + FP8 Sol-Attn，并配置 <code>tau=1.0</code>、两个 dense opening update、两个 dense layer、KV smoothing 和 V correction。两种方案在去噪期间都没有将 DiT offload 到 CPU。</p>
-<p><img alt="MiniMax-H3 Adapter 对齐性能测试" src="../sections/04-evaluation/assets/end-to-end.svg"></p>
+<h2 id="base-h3">四卡 Base H3</h2>
+<p>主要框架对比在四张 H100 80GB 上运行 MiniMax-H3 Base。LightX2V 与 TeleFuser 均使用 <code>TP2 x Ulysses SP2</code>，并对齐 prompt、seed、1344 x 768 输出、124 帧、24 FPS 和 50-point schedule，同时关闭 feature cache。LightX2V 使用输出正确的 BF16 + SageAttention2 路径；TeleFuser 使用 FP8 Linear + 质量感知 FP8 Sol-Attn。</p>
+<p><img alt="四卡 MiniMax-H3 Base 性能" src="../sections/04-evaluation/assets/lightx2v-base-h3.svg"></p>
 <div class="result-summary">
-  <div><strong>降低 25.7%</strong><span>相比 FastVideo BF16 + FA4 的去噪时间</span></div>
+  <div><strong>快 2.64 倍</strong><span>相比 LightX2V 的生成时间</span></div>
+  <div><strong>快 2.62 倍</strong><span>去噪速度，step 吞吐提升 162.2%</span></div>
+  <div><strong>降低 40.3%</strong><span>代表性单卡峰值显存</span></div>
+</div>
+
+<p>生成时间从 137.76 秒降至 52.27 秒，去噪时间从 129.22 秒降至 49.28 秒。这是本文主要的端到端结果：外部 baseline 与 TeleFuser 使用相同的四卡并行拓扑，而不是用分布式结果与单卡结果比较。</p>
+<div class="video-pair" data-sync-group="base-h3">
+  <figure>
+    <figcaption>LightX2V：BF16 + SageAttention2，TP2 x Ulysses SP2</figcaption>
+    <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/lightx2v-base-h3.mp4" data-result-slot="lightx2v-base-h3"></video>
+  </figure>
+  <figure>
+    <figcaption>TeleFuser：FP8 Linear + 质量感知 FP8 Sol，TP2 x Ulysses SP2</figcaption>
+    <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/telefuser-base-h3.mp4" data-result-slot="telefuser-base-h3"></video>
+  </figure>
+</div>
+
+<p>两段视频均生成了连贯的 124 帧拉面场景和同步双声道音频。性能记录包含一次 warm-up 和一次正式测量；由于 GPU 0 在两次测试期间都存在固定的无关占用，显存采用其余空闲 GPU 的代表性峰值。</p>
+<h2 id="adapter_1">Adapter 工作负载</h2>
+<p>TeleFuser 同时支持 MiniMax-H3 Turbo LoRA 与 FastH3 dense hybrid adapter。两组测试分别选择能够正确运行对应 Adapter 的外部框架，并对齐模型输入、输出规格与 DiT 计算量。</p>
+<h3 id="minimax-h3-turbo-lora">MiniMax-H3 Turbo LoRA</h3>
+<p>Turbo 测试使用单张 H100、8-step v1.0 768p Adapter 和八次 DiT update，两种框架均将 DiT 常驻 GPU。LightX2V 使用 BF16 + Sol；TeleFuser 在 FP8 转换前合并 LoRA，再运行 FP8 Linear + FP8 Sol。图中不包含 CPU block offload 数据。</p>
+<p><img alt="MiniMax-H3 Turbo Adapter 性能" src="../sections/04-evaluation/assets/turbo-performance.svg"></p>
+<div class="result-summary">
+  <div><strong>降低 26.7%</strong><span>相比 LightX2V 的去噪时间</span></div>
+  <div><strong>提升 36.5%</strong><span>8-step 去噪吞吐</span></div>
+  <div><strong>降低 12.3%</strong><span>进程峰值 GPU 显存</span></div>
+</div>
+
+<div class="video-pair" data-sync-group="turbo">
+  <figure>
+    <figcaption>LightX2V：MiniMax-H3 Turbo，常驻 BF16 DiT + Sol</figcaption>
+    <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/turbo-lightx2v.mp4" data-result-slot="turbo-lightx2v"></video>
+  </figure>
+  <figure>
+    <figcaption>TeleFuser：MiniMax-H3 Turbo，FP8 Linear + FP8 Sol</figcaption>
+    <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/turbo-telefuser.mp4" data-result-slot="turbo-telefuser"></video>
+  </figure>
+</div>
+
+<h3 id="fasth3-dense-adapter">FastH3 dense adapter</h3>
+<p>FastH3 测试在单张 H100 上对齐 dense adapter、prompt、seed、1344 x 768 输出、124 帧和四次实际 DiT 执行。FastVideo 使用 BF16 Linear + FlashAttention 4；TeleFuser 使用 FP8 Linear + 质量感知 FP8 Sol-Attn。两者在去噪阶段都没有 offload DiT。结果经过一次 warm-up，并取三次正式生成的中位数。</p>
+<p><img alt="FastH3 Adapter 对齐性能" src="../sections/04-evaluation/assets/end-to-end.svg"></p>
+<div class="result-summary">
+  <div><strong>降低 25.7%</strong><span>相比 FastVideo 的去噪时间</span></div>
   <div><strong>提升 34.6%</strong><span>实际 DiT forward 吞吐</span></div>
   <div><strong>降低 14.3%</strong><span>进程峰值 GPU 显存</span></div>
 </div>
 
-<p>去噪时间中位数从 21.685 秒降至 16.116 秒。每段视频实际执行四次 DiT，因此吞吐从每秒 0.184 次 forward 提升至 0.248 次。整个进程的峰值显存从 79.03 GiB 降至 67.70 GiB。显存并没有按 FP8 权重比例减半，是因为文本与媒体编码器、非 Linear 权重、activation 和 workspace 仍包含在进程峰值中。</p>
-<p>图中只比较口径一致的去噪阶段；两次记录使用了不同的 prompt-conditioning cache 策略，因此没有将 whole-request latency 合并为加速比。</p>
-<h2 id="_3">生成效果</h2>
-<p>两段输出均包含 124 帧 1344 x 768 H.264 视频和 32kHz 双声道 AAC 音频。HTML 播放器会同步两段视频，便于直接比较。</p>
-<div class="video-pair" data-sync-group="primary">
+<div class="video-pair" data-sync-group="fasth3">
   <figure>
-    <figcaption>FastVideo：BF16 Linear + FlashAttention 4</figcaption>
+    <figcaption>FastVideo：FastH3，BF16 Linear + FlashAttention 4</figcaption>
     <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/fastvideo-primary.mp4" data-result-slot="fastvideo-primary"></video>
   </figure>
   <figure>
-    <figcaption>TeleFuser：FP8 Linear + 高质量 FP8 Sol-Attn</figcaption>
+    <figcaption>TeleFuser：FastH3，FP8 Linear + 质量感知 FP8 Sol</figcaption>
     <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/telefuser-primary.mp4" data-result-slot="telefuser-primary"></video>
   </figure>
 </div>
 
-<p>前面的 50-step ablation 在同一运行时中对比了 BF16、普通 FP8 和质量感知 FP8。这里的 FastH3 视频则展示了最终 Adapter 配置在性能测试条件下生成的完整视频与音频。</p>
-<h2 id="gpu_2">多 GPU 执行</h2>
-<p>另一组 Base H3 测试在四张 H100 上运行 TeleFuser 的常驻 <code>TP2 x Ulysses SP2</code> 配置。在五组 prompt/seed 中，通信计算重叠将平均请求时间从 78.546 秒降低至 75.766 秒，提升 <strong>3.539%</strong>，五段 MP4 输出均保持 byte-identical。</p>
-<p>这组结果使用 50-point Base H3 schedule，因此与五点 FastH3 Adapter 外部对比分开呈现。两组实验分别覆盖 TeleFuser 的单卡低精度稀疏性能和多卡分布式能力。</p>
+<p>FastH3 图只比较口径一致的去噪阶段，因为两套记录使用了不同的 prompt-conditioning cache 策略。以上四段 Adapter 输出都包含 124 帧 1344 x 768 H.264 视频和 32kHz 双声道 AAC 音频。</p>
+<h2 id="_3">通信计算重叠</h2>
+<p>TeleFuser 的四卡 Base 路径还包含通信计算重叠。在另一组五 case 回归测试中，该优化将平均请求时间从 78.546 秒降低到 75.766 秒，提升 <strong>3.539%</strong>，全部 MP4 均保持 byte-identical。它与正文四卡 Base H3 主结果使用同一条分布式执行路径。</p>
 <hr>
 <h1 id="telefuser_1">TeleFuser 的统一高效推理路径</h1>
 <p>这项工作让 TeleFuser 从支持 MiniMax-H3 推理，进一步扩展到在 H100 上优化完整 DiT 路径。当前框架可以组合使用：</p>
@@ -154,13 +193,14 @@
 <li>Ulysses 序列并行、张量并行与通信计算重叠。</li>
 </ul>
 <p>这些能力的价值在于可以协同工作：蒸馏 Adapter 减少 DiT 执行次数，FP8 降低稠密 Transformer 成本，Sol-Attn 减少 attention 计算，质量修正保持生成轨迹，Ulysses 再将同一条路径扩展到多张 GPU。</p>
-<p>在对齐的 FastH3 工作负载中，相比 FastVideo BF16 + FA4 baseline，TeleFuser 的去噪时间降低 25.7%，DiT 吞吐提升 34.6%，峰值显存降低 14.3%。Tensor profile 和生成视频进一步展示了质量保持策略对数值误差与最终画面的影响。</p>
+<p>在对齐的四卡 Base H3 工作负载中，两套框架均运行 <code>TP2 x Ulysses SP2</code>，TeleFuser 的生成速度达到 LightX2V 的 2.64 倍，代表性峰值显存降低 40.3%。Adapter 评测进一步表明，同一套运行时也优于可正确运行的 LightX2V Turbo 与 FastVideo FastH3 baseline。配套的 tensor profile、视频与同步音频同时覆盖数值误差和最终效果，而不只展示性能。</p>
 <h2 id="_4">延伸阅读</h2>
 <ul>
 <li><a href="https://github.com/Tele-AI/TeleFuser">TeleFuser</a></li>
 <li><a href="https://huggingface.co/MiniMaxAI/MiniMax-H3">MiniMax-H3 模型与官方 Pipeline</a></li>
 <li><a href="https://nvlabs.github.io/Sana/Sol-Attn/">Sol-Attn：在线注意力稀疏化</a></li>
 <li><a href="https://haoailab.com/FastVideo/cookbook/minimax-h3/">FastVideo MiniMax-H3 Cookbook</a></li>
+<li><a href="https://github.com/ModelTC/LightX2V/tree/main/scripts/minimax_h3">LightX2V MiniMax-H3 示例</a></li>
 <li><a href="https://docs.pytorch.org/ao/stable/workflows/inference.html">TorchAO 量化推理工作流</a></li>
 </ul></article>
   </main>

@@ -32,10 +32,11 @@ TeleFuser now brings those pieces together with:
 - base, Turbo LoRA, and FastH3-style adapter support;
 - Ulysses sequence parallelism, tensor parallelism, and communication overlap.
 
-On the matched single-H100 FastH3 adapter workload, this path reduces denoising
-time by **25.7%**, raises DiT throughput by **34.6%**, and lowers peak GPU memory
-by **14.3%** against FastVideo BF16 Linear + FlashAttention 4. The generated
-video and audio are embedded below alongside the baseline.
+On the matched four-H100 Base H3 workload, with both frameworks running
+`TP2 x Ulysses SP2`, TeleFuser generates a video **2.64x faster** than LightX2V
+while using **40.3% less** representative peak GPU memory. We then test both
+supported adapter families against their working external baselines and embed
+the generated video and audio for direct comparison.
 
 The rest of this post follows four questions:
 

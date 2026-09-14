@@ -1,0 +1,9 @@
+{
+  "denoise_throughput_increase_percent": 36.47908917922849,
+  "denoise_time_reduction_percent": 26.728702102725098,
+  "peak_memory_reduction_percent": 12.260052723424797,
+  "source": [
+    "experiments/adapter-suite/raw/turbo-lightx2v-bf16-resident.json",
+    "experiments/adapter-suite/raw/turbo-telefuser-fp8.json"
+  ]
+}
