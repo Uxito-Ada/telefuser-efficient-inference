@@ -13,10 +13,10 @@ The MiniMax-H3 work extends TeleFuser at three levels: dense DiT compute,
 long-sequence attention, and model-scale execution. Users select one supported
 inference profile that brings these capabilities together.
 
-## H100-native FP8 sparse attention
+## Hardware-aware FP8 sparse attention
 
 TeleFuser applies FP8 to the DiT projections and MLPs, then carries the same
-low-precision objective into attention with an SM90 implementation of
+low-precision objective into attention with a hardware-aware implementation of
 Sol-Attn. Sol-Attn selects important attention regions online; the TeleFuser
 path combines that sparsity with FP8 QKV compute instead of returning to a
 BF16 attention backend.

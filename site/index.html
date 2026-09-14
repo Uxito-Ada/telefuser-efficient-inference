@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="TeleFuser's quality-aware FP8, sparse attention, adapter, and multi-GPU optimization stack for world models.">
-  <title>TeleFuser: Fast and Faithful World Model Inference</title>
+  <meta name="description" content="Q-SPA combines quality-aware FP8, sparse attention, adapters, and multi-GPU execution for world models with TeleFuser.">
+  <title>Q-SPA: Efficient World Model Inference with TeleFuser</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -12,20 +12,21 @@
     <a class="brand" href="../README.md">TeleFuser Engineering</a>
     <nav aria-label="Article links">
       <a href="#telefusers-optimization-stack">System</a>
-      <a href="#results-on-h100">Results</a>
+      <a href="#results">Results</a>
       <a href="https://github.com/Tele-AI/TeleFuser">Code</a>
       <a href="index.zh.html">中文</a>
     </nav>
   </header>
   <main>
-    <article><h1 id="telefuser-fast-and-faithful-world-model-inference">TeleFuser: Fast and Faithful World Model Inference</h1>
-<p><em>Co-designing FP8, sparse attention, adapters, and multi-GPU execution on H100</em></p>
+    <article><h1 id="q-spa-efficient-world-model-inference-with-telefuser">Q-SPA: Efficient World Model Inference with TeleFuser</h1>
+<p><em>Quality-Aware Quantization, Sparse Attention, Parallelism, and Adapters</em></p>
 <p><a href="https://github.com/Tele-AI/TeleFuser">TeleFuser</a> is an open-source streaming
 inference and serving framework for real-time world models and multimodal
 generation. It brings model execution, distributed GPU inference, stateful
-serving, and streaming delivery into one runtime. This post focuses on a major
-addition to its inference optimization stack: a quality-aware FP8 sparse path
-for compute-intensive diffusion transformers.</p>
+serving, and streaming delivery into one runtime. This post introduces Q-SPA,
+an optimization stack that combines quality-aware FP8 quantization, sparse
+attention, parallelism, and adapters for compute-intensive diffusion
+transformers.</p>
 <p>We use MiniMax-H3 as the proving ground. Its DiT jointly generates
 high-resolution video and synchronized audio, so acceleration cannot come at
 the cost of unstable motion, lost visual detail, or broken audio events. The
@@ -34,12 +35,12 @@ adapters, and multi-GPU execution. It exposes exactly the interactions an
 efficient world-model runtime must handle.</p>
 <p>TeleFuser now brings those pieces together with:</p>
 <ul>
-<li>FP8 Linear compute and an H100-native FP8 Sol-Attn path;</li>
+<li>FP8 Linear compute and a hardware-aware FP8 Sol-Attn path;</li>
 <li>quality-aware FP8 attention and selective dense computation;</li>
 <li>base, Turbo LoRA, and FastH3-style adapter support;</li>
 <li>Ulysses sequence parallelism, tensor parallelism, and communication overlap.</li>
 </ul>
-<p>On the matched four-H100 Base H3 workload, with both frameworks running
+<p>On the matched four-GPU Base H3 workload, with both frameworks running
 <code>TP2 x Ulysses SP2</code>, TeleFuser generates a video <strong>2.64x faster</strong> than LightX2V
 while using <strong>40.3% less</strong> representative peak GPU memory. We then test both
 supported adapter families against their working external baselines and embed
@@ -47,7 +48,7 @@ the generated video and audio for direct comparison.</p>
 <p>The rest of this post follows four questions:</p>
 <ol>
 <li>Why do FP8 and sparse attention need to be designed together?</li>
-<li>What did TeleFuser add to make that combination practical on H100?</li>
+<li>What did TeleFuser add to make that combination practical in one runtime?</li>
 <li>How does attention smoothing recover quality without giving back the speed?</li>
 <li>How do adapters and multi-GPU execution fit into the same optimized path?</li>
 </ol>
@@ -95,14 +96,14 @@ GPU generation. Sparse implementations may still expect BF16 QKV, erasing part
 of the gain through format conversion. Sequence parallelism changes how
 attention data is distributed, and adapters change the effective model weights
 that low-precision execution must represent.</p>
-<p>Hardware support sharpens the issue. Hopper provides strong FP8 tensor-core
-performance, but newer MXFP8 or NVFP4 solutions do not automatically provide an
-equivalent SM90 path. A framework-level &ldquo;FP8 enabled&rdquo; switch therefore says
-little about whether dense DiT compute and sparse attention can remain in low
-precision together.</p>
+<p>Hardware support sharpens the issue. Low-precision formats and kernels do not
+have uniform coverage across GPU generations: a path optimized for newer
+hardware does not automatically provide an equivalent implementation on SM90.
+A framework-level &ldquo;FP8 enabled&rdquo; switch therefore says little about whether
+dense DiT compute and sparse attention can remain in low precision together.</p>
 <p>TeleFuser addresses the combination as one system feature. Sensitive
 normalization and positional transforms remain in higher precision, while the
-dominant Linear work and Sol attention run through an H100-specific FP8 path.
+dominant Linear work and Sol attention run through a hardware-matched FP8 path.
 Sparse routing, QKV precision, quality correction, adapter loading, and
 distributed execution share the same model contract. That common contract is
 what lets the individual optimizations add up instead of interfering with one
@@ -112,9 +113,9 @@ another.</p>
 <p>The MiniMax-H3 work extends TeleFuser at three levels: dense DiT compute,
 long-sequence attention, and model-scale execution. Users select one supported
 inference profile that brings these capabilities together.</p>
-<h2 id="h100-native-fp8-sparse-attention">H100-native FP8 sparse attention</h2>
+<h2 id="hardware-aware-fp8-sparse-attention">Hardware-aware FP8 sparse attention</h2>
 <p>TeleFuser applies FP8 to the DiT projections and MLPs, then carries the same
-low-precision objective into attention with an SM90 implementation of
+low-precision objective into attention with a hardware-aware implementation of
 Sol-Attn. Sol-Attn selects important attention regions online; the TeleFuser
 path combines that sparsity with FP8 QKV compute instead of returning to a
 BF16 attention backend.</p>
@@ -194,14 +195,16 @@ paths consistent. The runtime also supports overlapping Ulysses communication
 with attention compute, which becomes increasingly valuable after FP8 and
 sparsity reduce arithmetic time.</p>
 <hr>
-<h1 id="results-on-h100">Results on H100</h1>
+<h1 id="results">Performance and Output Quality</h1>
+<p>The measurements below use the H100 80GB GPUs available for this study. The
+hardware is part of the reproducibility record, not the scope of Q-SPA.</p>
 <h2 id="base-h3-on-four-gpus">Base H3 on four GPUs</h2>
-<p>The primary framework comparison runs MiniMax-H3 Base on four H100 80GB GPUs.
+<p>The primary framework comparison runs MiniMax-H3 Base on four GPUs.
 LightX2V and TeleFuser both use <code>TP2 x Ulysses SP2</code>, the same prompt and seed,
 1344 x 768 output, 124 frames at 24 FPS, and the same 50-point schedule. Feature
 cache is disabled. LightX2V uses its valid BF16 + SageAttention2 path;
 TeleFuser uses FP8 Linear + quality-aware FP8 Sol-Attn.</p>
-<p><img alt="Four-H100 MiniMax-H3 Base performance" src="../sections/04-evaluation/assets/lightx2v-base-h3.svg"></p>
+<p><img alt="Four-GPU MiniMax-H3 Base performance" src="../sections/04-evaluation/assets/lightx2v-base-h3.svg"></p>
 <div class="result-summary">
   <div><strong>2.64x faster</strong><span>generation than LightX2V</span></div>
   <div><strong>2.62x faster</strong><span>denoising, or 162.2% higher step throughput</span></div>
@@ -233,7 +236,7 @@ adapter. Each is compared with the external framework that provides a working
 reference path for that adapter, using matched model inputs, output shape, and
 DiT work.</p>
 <h3 id="minimax-h3-turbo-lora">MiniMax-H3 Turbo LoRA</h3>
-<p>The Turbo comparison uses one H100, the 8-step v1.0 768p adapter, eight DiT
+<p>The Turbo comparison uses one GPU, the 8-step v1.0 768p adapter, eight DiT
 updates, and resident DiT weights in both frameworks. LightX2V runs BF16 + Sol;
 TeleFuser merges the LoRA before FP8 conversion and runs FP8 Linear + FP8 Sol.
 CPU block-offload measurements are not included in the chart.</p>
@@ -256,7 +259,7 @@ CPU block-offload measurements are not included in the chart.</p>
 </div>
 
 <h3 id="fasth3-dense-adapter">FastH3 dense adapter</h3>
-<p>For FastH3, both systems run one H100 with the same dense adapter, prompt,
+<p>For FastH3, both systems run one GPU with the same dense adapter, prompt,
 seed, 1344 x 768 output, 124 frames, and four actual DiT evaluations. FastVideo
 uses BF16 Linear + FlashAttention 4; TeleFuser uses FP8 Linear + quality-aware
 FP8 Sol-Attn. Neither path offloads the DiT during denoising. Results are the
@@ -291,8 +294,8 @@ MP4 remained byte-identical. This optimization is part of the same distributed
 execution path used by the main Base H3 result.</p>
 <hr>
 <h1 id="a-unified-efficient-inference-path-in-telefuser">A Unified Efficient-Inference Path in TeleFuser</h1>
-<p>This work expands TeleFuser from supporting MiniMax-H3 execution to optimizing
-the complete DiT path on H100. The framework now combines:</p>
+<p>Q-SPA expands TeleFuser from supporting MiniMax-H3 execution to optimizing the
+complete DiT path. The framework now combines:</p>
 <ul>
 <li>FP8 Linear and FP8 Sol sparse attention;</li>
 <li>quality-aware FP8 attention;</li>
@@ -304,7 +307,7 @@ the complete DiT path on H100. The framework now combines:</p>
 evaluations are needed; FP8 reduces the cost of dense transformer work; Sol-Attn
 reduces attention work; smoothing protects the resulting trajectory; and
 Ulysses carries the same path to multiple GPUs.</p>
-<p>On the matched four-H100 Base H3 workload, TeleFuser is 2.64x faster in
+<p>On the matched four-GPU Base H3 workload, TeleFuser is 2.64x faster in
 generation and uses 40.3% less representative peak memory than LightX2V while
 both run <code>TP2 x Ulysses SP2</code>. The adapter evaluations show that the same runtime
 also outperforms the working LightX2V Turbo and FastVideo FastH3 baselines. The
@@ -321,7 +324,7 @@ video, and synchronized audio rather than performance alone.</p>
 </ul></article>
   </main>
   <footer>
-    <span>TeleFuser Engineering | MiniMax-H3 on NVIDIA H100</span>
+    <span>Q-SPA | Efficient World Model Inference with TeleFuser</span>
     <a href="../experiments/h100-4gpu-e2e/README.md">Reproduce the benchmark</a>
   </footer>
   <script src="video-sync.js"></script>

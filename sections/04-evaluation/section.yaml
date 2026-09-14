@@ -1,5 +1,5 @@
 id: 04-evaluation
-title: Results on H100
+title: Performance and Output Quality
 status: complete
 incoming_premise: TeleFuser combines precision, sparsity, smoothing, adapters, and distributed execution.
 outgoing_question: What does this add to TeleFuser as a world-model runtime?

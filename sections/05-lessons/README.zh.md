@@ -6,7 +6,7 @@ language: zh-CN
 
 # TeleFuser 的统一高效推理路径
 
-这项工作让 TeleFuser 从支持 MiniMax-H3 推理，进一步扩展到在 H100 上优化完整 DiT 路径。当前框架可以组合使用：
+Q-SPA 让 TeleFuser 从支持 MiniMax-H3 推理，进一步扩展到优化完整 DiT 路径。当前框架可以组合使用：
 
 - FP8 Linear 与 FP8 Sol 稀疏 attention；
 - 质量感知的 FP8 attention；

@@ -4,13 +4,13 @@ id: 05-lessons
 incoming_premise: TeleFuser's combined path improves performance while retaining measurable output quality.
 outgoing_question: none
 evidence: final benchmark and quality records
-do_not_claim: Portability beyond the tested MiniMax-H3 and H100 contract.
+do_not_claim: Performance portability beyond the tested MiniMax-H3 configurations.
 -->
 
 # A Unified Efficient-Inference Path in TeleFuser
 
-This work expands TeleFuser from supporting MiniMax-H3 execution to optimizing
-the complete DiT path on H100. The framework now combines:
+Q-SPA expands TeleFuser from supporting MiniMax-H3 execution to optimizing the
+complete DiT path. The framework now combines:
 
 - FP8 Linear and FP8 Sol sparse attention;
 - quality-aware FP8 attention;
@@ -23,7 +23,7 @@ evaluations are needed; FP8 reduces the cost of dense transformer work; Sol-Attn
 reduces attention work; smoothing protects the resulting trajectory; and
 Ulysses carries the same path to multiple GPUs.
 
-On the matched four-H100 Base H3 workload, TeleFuser is 2.64x faster in
+On the matched four-GPU Base H3 workload, TeleFuser is 2.64x faster in
 generation and uses 40.3% less representative peak memory than LightX2V while
 both run `TP2 x Ulysses SP2`. The adapter evaluations show that the same runtime
 also outperforms the working LightX2V Turbo and FastVideo FastH3 baselines. The

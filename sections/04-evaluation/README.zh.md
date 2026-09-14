@@ -4,13 +4,15 @@ id: 04-evaluation
 language: zh-CN
 -->
 
-# H100 Results：性能与效果
+# 性能与生成效果 {#results}
+
+以下测试使用本次实验可用的 H100 80GB GPU。硬件型号属于复现配置，并不限定 Q-SPA 的技术定位。
 
 ## 四卡 Base H3
 
-主要框架对比在四张 H100 80GB 上运行 MiniMax-H3 Base。LightX2V 与 TeleFuser 均使用 `TP2 x Ulysses SP2`，并对齐 prompt、seed、1344 x 768 输出、124 帧、24 FPS 和 50-point schedule，同时关闭 feature cache。LightX2V 使用输出正确的 BF16 + SageAttention2 路径；TeleFuser 使用 FP8 Linear + 质量感知 FP8 Sol-Attn。
+主要框架对比在四张 GPU 上运行 MiniMax-H3 Base。LightX2V 与 TeleFuser 均使用 `TP2 x Ulysses SP2`，并对齐 prompt、seed、1344 x 768 输出、124 帧、24 FPS 和 50-point schedule，同时关闭 feature cache。LightX2V 使用输出正确的 BF16 + SageAttention2 路径；TeleFuser 使用 FP8 Linear + 质量感知 FP8 Sol-Attn。
 
-![四卡 MiniMax-H3 Base 性能](assets/lightx2v-base-h3.svg)
+![四 GPU MiniMax-H3 Base 性能](assets/lightx2v-base-h3.svg)
 
 <div class="result-summary">
   <div><strong>快 2.64 倍</strong><span>相比 LightX2V 的生成时间</span></div>
@@ -39,7 +41,7 @@ TeleFuser 同时支持 MiniMax-H3 Turbo LoRA 与 FastH3 dense hybrid adapter。�
 
 ### MiniMax-H3 Turbo LoRA
 
-Turbo 测试使用单张 H100、8-step v1.0 768p Adapter 和八次 DiT update，两种框架均将 DiT 常驻 GPU。LightX2V 使用 BF16 + Sol；TeleFuser 在 FP8 转换前合并 LoRA，再运行 FP8 Linear + FP8 Sol。图中不包含 CPU block offload 数据。
+Turbo 测试使用单张 GPU、8-step v1.0 768p Adapter 和八次 DiT update，两种框架均将 DiT 常驻 GPU。LightX2V 使用 BF16 + Sol；TeleFuser 在 FP8 转换前合并 LoRA，再运行 FP8 Linear + FP8 Sol。图中不包含 CPU block offload 数据。
 
 ![MiniMax-H3 Turbo Adapter 性能](assets/turbo-performance.svg)
 
@@ -62,7 +64,7 @@ Turbo 测试使用单张 H100、8-step v1.0 768p Adapter 和八次 DiT update，
 
 ### FastH3 dense adapter
 
-FastH3 测试在单张 H100 上对齐 dense adapter、prompt、seed、1344 x 768 输出、124 帧和四次实际 DiT 执行。FastVideo 使用 BF16 Linear + FlashAttention 4；TeleFuser 使用 FP8 Linear + 质量感知 FP8 Sol-Attn。两者在去噪阶段都没有 offload DiT。结果经过一次 warm-up，并取三次正式生成的中位数。
+FastH3 测试在单张 GPU 上对齐 dense adapter、prompt、seed、1344 x 768 输出、124 帧和四次实际 DiT 执行。FastVideo 使用 BF16 Linear + FlashAttention 4；TeleFuser 使用 FP8 Linear + 质量感知 FP8 Sol-Attn。两者在去噪阶段都没有 offload DiT。结果经过一次 warm-up，并取三次正式生成的中位数。
 
 ![FastH3 Adapter 对齐性能](assets/end-to-end.svg)
 

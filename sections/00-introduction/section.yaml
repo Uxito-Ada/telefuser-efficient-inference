@@ -1,5 +1,5 @@
 id: 00-introduction
-title: TeleFuser: Fast and Faithful World Model Inference
+title: Q-SPA: Efficient World Model Inference with TeleFuser
 status: complete
 incoming_premise: none
 outgoing_question: Why do low precision and sparse attention need one design?

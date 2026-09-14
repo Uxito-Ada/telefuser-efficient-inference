@@ -1,11 +1,10 @@
-# TeleFuser Efficient Inference
+# Q-SPA: Efficient World Model Inference with TeleFuser
 
-**A community technical blog about TeleFuser's quality-aware FP8, sparse
-attention, adapter, and multi-GPU optimization stack.**
+**Quality-Aware Quantization, Sparse Attention, Parallelism, and Adapters.**
 
 TeleFuser is an open-source streaming inference and serving framework for
 real-time world models and multimodal generation. This article uses
-MiniMax-H3 to show how its H100 optimization stack combines FP8 Linear, FP8
+MiniMax-H3 to show how its Q-SPA optimization stack combines FP8 Linear, FP8
 Sol-Attn, attention smoothing, adapters, and distributed execution.
 
 - [Read the English article](BLOG.md)

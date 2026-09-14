@@ -7,17 +7,20 @@ evidence: normalized records under experiments/h100-4gpu-e2e/raw and experiments
 do_not_claim: Do not combine incomparable schedules or present invalid media as measurements.
 -->
 
-# Results on H100
+# Performance and Output Quality {#results}
+
+The measurements below use the H100 80GB GPUs available for this study. The
+hardware is part of the reproducibility record, not the scope of Q-SPA.
 
 ## Base H3 on four GPUs
 
-The primary framework comparison runs MiniMax-H3 Base on four H100 80GB GPUs.
+The primary framework comparison runs MiniMax-H3 Base on four GPUs.
 LightX2V and TeleFuser both use `TP2 x Ulysses SP2`, the same prompt and seed,
 1344 x 768 output, 124 frames at 24 FPS, and the same 50-point schedule. Feature
 cache is disabled. LightX2V uses its valid BF16 + SageAttention2 path;
 TeleFuser uses FP8 Linear + quality-aware FP8 Sol-Attn.
 
-![Four-H100 MiniMax-H3 Base performance](assets/lightx2v-base-h3.svg)
+![Four-GPU MiniMax-H3 Base performance](assets/lightx2v-base-h3.svg)
 
 <div class="result-summary">
   <div><strong>2.64x faster</strong><span>generation than LightX2V</span></div>
@@ -55,7 +58,7 @@ DiT work.
 
 ### MiniMax-H3 Turbo LoRA
 
-The Turbo comparison uses one H100, the 8-step v1.0 768p adapter, eight DiT
+The Turbo comparison uses one GPU, the 8-step v1.0 768p adapter, eight DiT
 updates, and resident DiT weights in both frameworks. LightX2V runs BF16 + Sol;
 TeleFuser merges the LoRA before FP8 conversion and runs FP8 Linear + FP8 Sol.
 CPU block-offload measurements are not included in the chart.
@@ -81,7 +84,7 @@ CPU block-offload measurements are not included in the chart.
 
 ### FastH3 dense adapter
 
-For FastH3, both systems run one H100 with the same dense adapter, prompt,
+For FastH3, both systems run one GPU with the same dense adapter, prompt,
 seed, 1344 x 768 output, 124 frames, and four actual DiT evaluations. FastVideo
 uses BF16 Linear + FlashAttention 4; TeleFuser uses FP8 Linear + quality-aware
 FP8 Sol-Attn. Neither path offloads the DiT during denoising. Results are the

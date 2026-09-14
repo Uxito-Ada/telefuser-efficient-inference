@@ -6,17 +6,17 @@ id: 00-introduction
 language: zh-CN
 -->
 
-# TeleFuser：高性能、高质量的世界模型推理
+# Q-SPA：使用 TeleFuser 的高效世界模型推理
 
-*在 H100 上协同优化 FP8、稀疏注意力、Adapter 与多 GPU 执行*
+*质量感知量化、稀疏注意力、并行执行与 Adapter*
 
-[TeleFuser](https://github.com/Tele-AI/TeleFuser) 是一个面向实时世界模型与多模态生成的开源流式推理和服务框架。它在同一套运行时中提供模型执行、分布式 GPU 推理、有状态服务与流式传输。本文介绍 TeleFuser 推理优化栈的一项重要进展：面向计算密集型 Diffusion Transformer 的高质量 FP8 稀疏推理方案。
+[TeleFuser](https://github.com/Tele-AI/TeleFuser) 是一个面向实时世界模型与多模态生成的开源流式推理和服务框架。它在同一套运行时中提供模型执行、分布式 GPU 推理、有状态服务与流式传输。本文介绍 Q-SPA：TeleFuser 面向计算密集型 Diffusion Transformer，将质量感知 FP8 量化、稀疏注意力、并行执行与 Adapter 组合在一起的推理优化方案。
 
 我们选择 MiniMax-H3 作为验证模型。它通过一个 DiT 联合生成高分辨率视频和同步音频，对运动稳定性、画面细节与音画事件一致性都有较高要求。同时，它包含大规模稠密计算、长序列注意力、Adapter 和多 GPU 执行，能够充分检验世界模型推理框架中不同优化能否真正协同工作。
 
 TeleFuser 在一条推理路径中集成了：
 
-- FP8 Linear 与面向 H100 的 FP8 Sol-Attn；
+- FP8 Linear 与硬件感知的 FP8 Sol-Attn；
 - 质量感知的 FP8 attention 与选择性稠密计算；
 - Base、Turbo LoRA 与 FastH3 风格 Adapter；
 - Ulysses 序列并行、张量并行与通信计算重叠。
@@ -26,7 +26,7 @@ TeleFuser 在一条推理路径中集成了：
 全文围绕四个问题展开：
 
 1. 为什么 FP8 与稀疏注意力必须协同设计？
-2. TeleFuser 为 H100 增加了哪些关键能力？
+2. TeleFuser 如何让这些能力在同一运行时中协同工作？
 3. TeleFuser FP8 如何在保持速度的同时维持生成质量？
 4. Adapter 与多 GPU 执行如何进入同一条优化路径？
 
@@ -53,9 +53,9 @@ language: zh-CN
 
 直接把这些功能全部打开并不能得到最优方案。通用量化库通常能够加速 Linear，却不一定包含目标 GPU 所需的稀疏 attention kernel；一些稀疏实现仍要求 BF16 QKV，格式转换会抵消部分收益。序列并行改变 attention 数据在不同 GPU 上的分布方式，而 Adapter 又改变了低精度推理所表示的实际模型权重。
 
-硬件差异进一步放大了这个问题。Hopper 具有很强的 FP8 Tensor Core 能力，但面向更新架构的 MXFP8 或 NVFP4 方案并不会自动提供等价的 SM90 实现。因此，框架层面标记“已开启 FP8”，并不代表稠密 DiT 计算和稀疏 attention 都能保持低精度执行。
+硬件差异进一步放大了这个问题。低精度格式与 kernel 并不能统一覆盖所有 GPU 架构；面向更新硬件优化的 MXFP8 或 NVFP4 方案也不会自动提供等价的 SM90 实现。因此，框架层面标记“已开启 FP8”，并不代表稠密 DiT 计算和稀疏 attention 都能保持低精度执行。
 
-TeleFuser 将这种组合视为一个完整的系统能力。对数值敏感的归一化和位置变换保持较高精度，主要 Linear 计算与 Sol attention 则使用 H100 专用的 FP8 路径。稀疏路由、QKV 精度、质量修正、Adapter 加载和分布式执行遵循同一份模型契约，使不同优化可以叠加，而不是相互抵消。
+TeleFuser 将这种组合视为一个完整的系统能力。对数值敏感的归一化和位置变换保持较高精度，主要 Linear 计算与 Sol attention 则使用与硬件匹配的 FP8 路径。稀疏路由、QKV 精度、质量修正、Adapter 加载和分布式执行遵循同一份模型契约，使不同优化可以叠加，而不是相互抵消。
 
 ---
 
@@ -69,9 +69,9 @@ language: zh-CN
 
 这次 MiniMax-H3 工作从三个层面扩展了 TeleFuser：DiT 稠密计算、长序列 attention 和模型级分布式执行。用户只需选择受支持的推理配置，即可组合使用这些能力。
 
-## 面向 H100 的 FP8 稀疏 attention
+## 硬件感知的 FP8 稀疏 attention
 
-TeleFuser 使用 FP8 加速 DiT 中的投影层与 MLP，并通过 SM90 版本的 Sol-Attn 将低精度扩展到 attention。Sol-Attn 在运行时选择重要的 attention 区域，TeleFuser 则让稀疏 attention 继续使用 FP8 QKV 计算，而不是重新回到 BF16 backend。
+TeleFuser 使用 FP8 加速 DiT 中的投影层与 MLP，并通过硬件感知的 Sol-Attn 实现将低精度扩展到 attention。Sol-Attn 在运行时选择重要的 attention 区域，TeleFuser 则让稀疏 attention 继续使用 FP8 QKV 计算，而不是重新回到 BF16 backend。
 
 精度和稀疏性由同一个 attention 实现负责，减少了量化 Transformer 与稀疏 attention 之间的格式转换。对于尚未覆盖的情况，TeleFuser 会使用经过验证的稠密 fallback。
 
@@ -138,13 +138,15 @@ id: 04-evaluation
 language: zh-CN
 -->
 
-# H100 Results：性能与效果
+# 性能与生成效果 {#results}
+
+以下测试使用本次实验可用的 H100 80GB GPU。硬件型号属于复现配置，并不限定 Q-SPA 的技术定位。
 
 ## 四卡 Base H3
 
-主要框架对比在四张 H100 80GB 上运行 MiniMax-H3 Base。LightX2V 与 TeleFuser 均使用 `TP2 x Ulysses SP2`，并对齐 prompt、seed、1344 x 768 输出、124 帧、24 FPS 和 50-point schedule，同时关闭 feature cache。LightX2V 使用输出正确的 BF16 + SageAttention2 路径；TeleFuser 使用 FP8 Linear + 质量感知 FP8 Sol-Attn。
+主要框架对比在四张 GPU 上运行 MiniMax-H3 Base。LightX2V 与 TeleFuser 均使用 `TP2 x Ulysses SP2`，并对齐 prompt、seed、1344 x 768 输出、124 帧、24 FPS 和 50-point schedule，同时关闭 feature cache。LightX2V 使用输出正确的 BF16 + SageAttention2 路径；TeleFuser 使用 FP8 Linear + 质量感知 FP8 Sol-Attn。
 
-![四卡 MiniMax-H3 Base 性能](sections/04-evaluation/assets/lightx2v-base-h3.svg)
+![四 GPU MiniMax-H3 Base 性能](sections/04-evaluation/assets/lightx2v-base-h3.svg)
 
 <div class="result-summary">
   <div><strong>快 2.64 倍</strong><span>相比 LightX2V 的生成时间</span></div>
@@ -173,7 +175,7 @@ TeleFuser 同时支持 MiniMax-H3 Turbo LoRA 与 FastH3 dense hybrid adapter。�
 
 ### MiniMax-H3 Turbo LoRA
 
-Turbo 测试使用单张 H100、8-step v1.0 768p Adapter 和八次 DiT update，两种框架均将 DiT 常驻 GPU。LightX2V 使用 BF16 + Sol；TeleFuser 在 FP8 转换前合并 LoRA，再运行 FP8 Linear + FP8 Sol。图中不包含 CPU block offload 数据。
+Turbo 测试使用单张 GPU、8-step v1.0 768p Adapter 和八次 DiT update，两种框架均将 DiT 常驻 GPU。LightX2V 使用 BF16 + Sol；TeleFuser 在 FP8 转换前合并 LoRA，再运行 FP8 Linear + FP8 Sol。图中不包含 CPU block offload 数据。
 
 ![MiniMax-H3 Turbo Adapter 性能](sections/04-evaluation/assets/turbo-performance.svg)
 
@@ -196,7 +198,7 @@ Turbo 测试使用单张 H100、8-step v1.0 768p Adapter 和八次 DiT update，
 
 ### FastH3 dense adapter
 
-FastH3 测试在单张 H100 上对齐 dense adapter、prompt、seed、1344 x 768 输出、124 帧和四次实际 DiT 执行。FastVideo 使用 BF16 Linear + FlashAttention 4；TeleFuser 使用 FP8 Linear + 质量感知 FP8 Sol-Attn。两者在去噪阶段都没有 offload DiT。结果经过一次 warm-up，并取三次正式生成的中位数。
+FastH3 测试在单张 GPU 上对齐 dense adapter、prompt、seed、1344 x 768 输出、124 帧和四次实际 DiT 执行。FastVideo 使用 BF16 Linear + FlashAttention 4；TeleFuser 使用 FP8 Linear + 质量感知 FP8 Sol-Attn。两者在去噪阶段都没有 offload DiT。结果经过一次 warm-up，并取三次正式生成的中位数。
 
 ![FastH3 Adapter 对齐性能](sections/04-evaluation/assets/end-to-end.svg)
 
@@ -233,7 +235,7 @@ language: zh-CN
 
 # TeleFuser 的统一高效推理路径
 
-这项工作让 TeleFuser 从支持 MiniMax-H3 推理，进一步扩展到在 H100 上优化完整 DiT 路径。当前框架可以组合使用：
+Q-SPA 让 TeleFuser 从支持 MiniMax-H3 推理，进一步扩展到优化完整 DiT 路径。当前框架可以组合使用：
 
 - FP8 Linear 与 FP8 Sol 稀疏 attention；
 - 质量感知的 FP8 attention；

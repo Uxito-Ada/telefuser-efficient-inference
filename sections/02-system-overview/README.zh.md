@@ -8,9 +8,9 @@ language: zh-CN
 
 这次 MiniMax-H3 工作从三个层面扩展了 TeleFuser：DiT 稠密计算、长序列 attention 和模型级分布式执行。用户只需选择受支持的推理配置，即可组合使用这些能力。
 
-## 面向 H100 的 FP8 稀疏 attention
+## 硬件感知的 FP8 稀疏 attention
 
-TeleFuser 使用 FP8 加速 DiT 中的投影层与 MLP，并通过 SM90 版本的 Sol-Attn 将低精度扩展到 attention。Sol-Attn 在运行时选择重要的 attention 区域，TeleFuser 则让稀疏 attention 继续使用 FP8 QKV 计算，而不是重新回到 BF16 backend。
+TeleFuser 使用 FP8 加速 DiT 中的投影层与 MLP，并通过硬件感知的 Sol-Attn 实现将低精度扩展到 attention。Sol-Attn 在运行时选择重要的 attention 区域，TeleFuser 则让稀疏 attention 继续使用 FP8 QKV 计算，而不是重新回到 BF16 backend。
 
 精度和稀疏性由同一个 attention 实现负责，减少了量化 Transformer 与稀疏 attention 之间的格式转换。对于尚未覆盖的情况，TeleFuser 会使用经过验证的稠密 fallback。
 
