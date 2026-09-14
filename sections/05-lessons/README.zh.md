@@ -4,19 +4,17 @@ id: 05-lessons
 language: zh-CN
 -->
 
-# TeleFuser 的统一高效推理路径
+# 结语
 
-Q-SPA 让 TeleFuser 从支持 MiniMax-H3 推理，进一步扩展到优化完整 DiT 路径。当前框架可以组合使用：
+Q-SPA 在 TeleFuser 中解决了三个直接相关的问题：
 
-- FP8 Linear 与 FP8 Sol 稀疏 attention；
-- 质量感知的 FP8 attention；
-- 可配置的质量敏感稠密区域；
-- Base、Turbo LoRA 与 FastH3 风格 Adapter；
-- Ulysses 序列并行、张量并行与通信计算重叠。
+- FP8 scale 与动态稀疏 block 的布局对齐；
+- FP8 和稀疏共同作用时的生成误差控制；
+- 稀疏 FP8 attention 在 Ulysses SP 与 Tensor Parallel 下的多卡执行。
 
-这些能力的价值在于可以协同工作：蒸馏 Adapter 减少 DiT 执行次数，FP8 降低稠密 Transformer 成本，Sol-Attn 减少 attention 计算，质量修正保持生成轨迹，Ulysses 再将同一条路径扩展到多张 GPU。
+TeleFuser 可以直接运行 Base H3，也可以先合并 Turbo LoRA 或 FastH3 Adapter，再生成对应的 FP8 权重。Adapter 决定模型和采样方式，Q-SPA 降低每次 DiT 执行的成本。
 
-在对齐的四卡 Base H3 工作负载中，两套框架均运行 `TP2 x Ulysses SP2`，TeleFuser 的生成速度达到 LightX2V 的 2.64 倍，代表性峰值显存降低 40.3%。Adapter 评测进一步表明，同一套运行时也优于可正确运行的 LightX2V Turbo 与 FastVideo FastH3 baseline。配套的 tensor profile、视频与同步音频同时覆盖数值误差和最终效果，而不只展示性能。
+四卡 Base H3 测试中，LightX2V 和 TeleFuser 都使用 `TP2 x Ulysses SP2`。TeleFuser 的生成速度是 LightX2V 的 2.64 倍，代表性峰值显存低 40.3%。Turbo LoRA 与 FastH3 的测试也分别优于对应的 LightX2V 和 FastVideo 对照。除了性能图，正文保留了 tensor 误差、完整视频和同步音频，方便同时检查速度与结果质量。
 
 ## 延伸阅读
 

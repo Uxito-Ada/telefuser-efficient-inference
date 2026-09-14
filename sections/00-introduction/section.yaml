@@ -1,5 +1,5 @@
 id: 00-introduction
-title: Q-SPA: Efficient World Model Inference with TeleFuser
+title: Q-SPA: Quantized Sparse-Parallel Attention for World Models with TeleFuser
 status: complete
 incoming_premise: none
 outgoing_question: Why do low precision and sparse attention need one design?

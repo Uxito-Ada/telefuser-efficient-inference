@@ -1,11 +1,11 @@
-# Q-SPA: Efficient World Model Inference with TeleFuser
+# Q-SPA: Quantized Sparse-Parallel Attention for World Models with TeleFuser
 
-**Quality-Aware Quantization, Sparse Attention, Parallelism, and Adapters.**
+**Co-designing FP8 quantization, dynamic block sparsity, and distributed attention.**
 
 TeleFuser is an open-source streaming inference and serving framework for
 real-time world models and multimodal generation. This article uses
-MiniMax-H3 to show how its Q-SPA optimization stack combines FP8 Linear, FP8
-Sol-Attn, attention smoothing, adapters, and distributed execution.
+MiniMax-H3 to show how Q-SPA combines FP8 Linear, FP8 Sol-Attn, attention
+smoothing, and distributed execution across Base H3 and adapter variants.
 
 - [Read the English article](BLOG.md)
 - [阅读中文版](BLOG.zh.md)
@@ -20,7 +20,7 @@ Sol-Attn, attention smoothing, adapters, and distributed execution.
 |---|---|
 | [Introduction](sections/00-introduction/README.md) | TeleFuser and the MiniMax-H3 optimization result |
 | [Why co-design](sections/01-why-co-design/README.md) | Why FP8 and sparse attention need one design |
-| [Optimization stack](sections/02-system-overview/README.md) | FP8 Sol-Attn, adapters, and distributed execution |
+| [Q-SPA implementation](sections/02-system-overview/README.md) | Layout-aware FP8 Sol-Attn and distributed execution |
 | [Quality and scale](sections/03-quality-and-scale/README.md) | Quality-aware FP8, sparse policy, and Ulysses |
 | [Results](sections/04-evaluation/README.md) | External performance baseline and generated output |
 | [Conclusion](sections/05-lessons/README.md) | The unified TeleFuser inference path |

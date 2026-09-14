@@ -1,5 +1,5 @@
 id: 02-system-overview
-title: TeleFuser's Optimization Stack
+title: Q-SPA in TeleFuser
 status: complete
 incoming_premise: FP8 and sparse attention need one hardware-aware model contract.
 outgoing_question: How does TeleFuser keep the combined approximation stable?

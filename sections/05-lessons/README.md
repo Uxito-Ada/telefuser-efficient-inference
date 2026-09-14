@@ -7,21 +7,18 @@ evidence: final benchmark and quality records
 do_not_claim: Performance portability beyond the tested MiniMax-H3 configurations.
 -->
 
-# A Unified Efficient-Inference Path in TeleFuser
+# Q-SPA in TeleFuser
 
-Q-SPA expands TeleFuser from supporting MiniMax-H3 execution to optimizing the
-complete DiT path. The framework now combines:
+Q-SPA addresses three connected problems in TeleFuser:
 
-- FP8 Linear and FP8 Sol sparse attention;
-- quality-aware FP8 attention;
-- configurable dense regions for quality-sensitive computation;
-- base, Turbo LoRA, and FastH3-style adapters;
-- Ulysses sequence parallelism, tensor parallelism, and communication overlap.
+- aligning FP8 scale groups with dynamically selected attention blocks;
+- controlling error when FP8 and sparsity affect the same denoising trajectory;
+- running sparse FP8 attention with Ulysses SP, tensor parallelism, and
+  communication overlap.
 
-The key outcome is composition. Distilled adapters reduce how many DiT
-evaluations are needed; FP8 reduces the cost of dense transformer work; Sol-Attn
-reduces attention work; smoothing protects the resulting trajectory; and
-Ulysses carries the same path to multiple GPUs.
+TeleFuser can also run Base H3 or merge a Turbo LoRA or FastH3 adapter before
+creating the FP8 weights. The adapter defines the model and sampling schedule;
+Q-SPA reduces the cost of each DiT evaluation.
 
 On the matched four-GPU Base H3 workload, TeleFuser is 2.64x faster in
 generation and uses 40.3% less representative peak memory than LightX2V while

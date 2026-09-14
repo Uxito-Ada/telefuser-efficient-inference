@@ -4,24 +4,24 @@ id: 02-system-overview
 language: zh-CN
 -->
 
-# TeleFuser Optimization Stack：三层优化
+# Q-SPA 在 TeleFuser 中的实现 {#q-spa-system}
 
-这次 MiniMax-H3 工作从三个层面扩展了 TeleFuser：DiT 稠密计算、长序列 attention 和模型级分布式执行。用户只需选择受支持的推理配置，即可组合使用这些能力。
+在 MiniMax-H3 上，Q-SPA 改动了三层执行逻辑：DiT 的稠密计算、长序列 attention，以及多卡上的 tensor 布局。
 
-## 硬件感知的 FP8 稀疏 attention
+## 让 FP8 和稀疏 block 使用同一份布局
 
-TeleFuser 使用 FP8 加速 DiT 中的投影层与 MLP，并通过硬件感知的 Sol-Attn 实现将低精度扩展到 attention。Sol-Attn 在运行时选择重要的 attention 区域，TeleFuser 则让稀疏 attention 继续使用 FP8 QKV 计算，而不是重新回到 BF16 backend。
+TeleFuser 先把 FP8 用到 DiT 的投影层和 MLP，再把低精度执行延伸到 Sol-Attn。这里的关键不是同时打开两个配置项，而是让稀疏 block 索引、量化 scale 和 attention kernel 消费的 tile 遵守同一份布局约定。这样，选中的 QKV block 可以继续以 FP8 参与计算，不需要先还原成 BF16。
 
-精度和稀疏性由同一个 attention 实现负责，减少了量化 Transformer 与稀疏 attention 之间的格式转换。对于尚未覆盖的情况，TeleFuser 会使用经过验证的稠密 fallback。
+没有被当前 kernel 覆盖的 shape 会走经过验证的 dense fallback，不会静默进入错误路径。
 
-## 支持 Adapter 的低精度推理
+## 把 attention 拆到多张 GPU
 
-MiniMax-H3 既可以运行 Base 模型，也可以叠加加速或风格 Adapter。TeleFuser 支持官方 Turbo LoRA，以及 FastH3 风格的 LoRA 和 Dense Adapter。Adapter 的变化会进入模型最终使用的 FP8 表示，从而保证低精度执行对应用户实际选择的模型。
+Ulysses 序列并行负责拆分长序列，Tensor Parallel 负责拆分较宽的 Transformer 层。TeleFuser 支持 MiniMax-H3 双卡和四卡配置，包括 `TP2 x Ulysses SP2`；Ulysses 的通信还能与 attention 计算重叠。
 
-这项支持带来的不只是兼容性。蒸馏 Adapter 减少 DiT 的执行次数，FP8 与稀疏 attention 则降低每次执行的成本，TeleFuser 可以在同一个请求中叠加两类加速。
+稀疏选择所需的统计量按照 Ulysses 建立的 attention 视图计算，因此单卡和多卡使用相同的 block 语义。FP8 减少算术时间后，通信占比会变高，通信计算重叠也就更重要。
 
-## 面向长序列的分布式执行
+## 覆盖不同 H3 模型变体
 
-在更大规模的部署中，Ulysses 序列并行负责拆分长序列 attention，张量并行负责拆分较宽的 Transformer 层。TeleFuser 支持 MiniMax-H3 的双卡和四卡配置，包括 `TP2 x Ulysses SP2`，并支持将 Ulysses 通信与 attention 计算重叠。
+MiniMax-H3 除了 Base 模型，还有 Turbo LoRA 和 FastH3 一类加速 Adapter。TeleFuser 会先把 Adapter 合并到有效权重，再建立可复用的 FP8 表示，避免量化的仍是原始 Base 权重。
 
-由此，减少 DiT 执行次数、FP8 稠密计算、FP8 稀疏 attention 和多 GPU 执行被组合为一套优化方案。由于 FP8 舍入与稀疏计算会共同影响去噪轨迹，生成质量的保持也成为这条路径的一部分。
+蒸馏 Adapter 可以减少 DiT 调用次数，Q-SPA 则降低每次调用的成本。TeleFuser 可以在一次请求中同时使用两者。

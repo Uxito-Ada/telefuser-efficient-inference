@@ -20,13 +20,19 @@ make attention expensive. No single optimization addresses both costs.
 | Sol-Attn | fewer attention blocks | dense transformer layers |
 | Ulysses SP | lower per-GPU sequence state | communication between GPUs |
 
-The natural answer is to combine them, but existing features do not
-automatically compose. General quantization libraries often accelerate Linear
-layers without supplying the sparse-attention kernel required by a particular
-GPU generation. Sparse implementations may still expect BF16 QKV, erasing part
-of the gain through format conversion. Sequence parallelism changes how
-attention data is distributed, and adapters change the effective model weights
-that low-precision execution must represent.
+The difficulty is not simply that separate libraries expose separate APIs.
+Quantization scales are defined over a fixed partition of the tensor: per
+tensor, row, group, or block. Sol-Attn, Top-K, and Top-P sparsity select and
+evict attention blocks at runtime. The surviving K/V blocks are gathered,
+compacted, or re-indexed, so their physical tiles no longer line up with the
+scale groups assumed by a dense quantized kernel. Dequantizing the selected
+blocks back to BF16 restores compatibility but gives up much of the intended
+bandwidth and compute benefit.
+
+Sequence parallelism adds another layout transformation. Tokens and attention
+statistics are split across ranks, while sparse selection still needs a
+consistent global meaning. Quantization metadata, sparse block indices, and
+the per-rank tensor layout therefore have to be designed together.
 
 Hardware support sharpens the issue. Low-precision formats and kernels do not
 have uniform coverage across GPU generations: a path optimized for newer
@@ -34,10 +40,7 @@ hardware does not automatically provide an equivalent implementation on SM90.
 A framework-level "FP8 enabled" switch therefore says little about whether
 dense DiT compute and sparse attention can remain in low precision together.
 
-TeleFuser addresses the combination as one system feature. Sensitive
-normalization and positional transforms remain in higher precision, while the
-dominant Linear work and Sol attention run through a hardware-matched FP8 path.
-Sparse routing, QKV precision, quality correction, adapter loading, and
-distributed execution share the same model contract. That common contract is
-what lets the individual optimizations add up instead of interfering with one
-another.
+Q-SPA makes sparse routing, quantization metadata, and distributed attention
+share one layout contract. Sensitive normalization and positional transforms
+remain in higher precision, while the dominant Linear work and selected
+attention blocks stay on the hardware-matched FP8 path.

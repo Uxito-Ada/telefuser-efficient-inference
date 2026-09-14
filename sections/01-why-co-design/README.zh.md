@@ -4,19 +4,23 @@ id: 01-why-co-design
 language: zh-CN
 -->
 
-# 为什么 FP8 与稀疏注意力需要协同设计
+# 为什么量化和稀疏 attention 不能直接拼在一起
 
-世界模型通过更高的计算成本换取输出质量。在 MiniMax-H3 中，大规模投影层与 MLP 让 DiT 具有很高的稠密计算量；视觉、音频与条件 token 又带来了昂贵的长序列注意力。单一优化无法同时解决两类开销。
+世界模型对算力的需求主要来自两处：Linear/MLP 的稠密计算，以及视觉、音频和条件 token 带来的长序列 attention。FP8 擅长降低前者的计算量和带宽，Sol-Attn 则通过跳过 attention block 来减少后者的工作量。要进一步提速，自然会想到把两者同时打开。
 
-| 技术 | 主要收益 | 尚未解决的开销 |
+| 方法 | 主要作用 | 没有解决的问题 |
 |---|---|---|
-| FP8 Linear | 降低投影层与 MLP 开销 | 长序列注意力 |
-| FP8 attention | 降低 QK/PV 精度与带宽 | 稠密 token pair |
-| Sol-Attn | 减少参与计算的 attention block | 稠密 Transformer 层 |
-| Ulysses SP | 降低单卡序列状态与计算 | GPU 间通信 |
+| FP8 Linear | 降低投影层和 MLP 开销 | 长序列 attention |
+| FP8 attention | 降低 QK/PV 精度和带宽 | 仍会计算全部 token pair |
+| Sol-Attn | 跳过不重要的 attention block | 其余 Transformer 计算 |
+| Ulysses SP | 将序列拆到多张 GPU | 跨卡通信 |
 
-直接把这些功能全部打开并不能得到最优方案。通用量化库通常能够加速 Linear，却不一定包含目标 GPU 所需的稀疏 attention kernel；一些稀疏实现仍要求 BF16 QKV，格式转换会抵消部分收益。序列并行改变 attention 数据在不同 GPU 上的分布方式，而 Adapter 又改变了低精度推理所表示的实际模型权重。
+真正的冲突在数据布局上。量化会按照 tensor、row、group 或 block 划分数据，并为每个量化单元保存对应的 scale。这个划分通常假设 tensor 的布局是固定的。Sol-Attn、Top-K、Top-P 一类方法却会在运行时选择并淘汰 attention block；保留下来的 K/V 需要 gather、压紧或重新编号。经过这一步，物理 tile 与原来的量化分组不再天然对齐，dense FP8 kernel 也就不能直接拿原有 scale 去计算。
 
-硬件差异进一步放大了这个问题。低精度格式与 kernel 并不能统一覆盖所有 GPU 架构；面向更新硬件优化的 MXFP8 或 NVFP4 方案也不会自动提供等价的 SM90 实现。因此，框架层面标记“已开启 FP8”，并不代表稠密 DiT 计算和稀疏 attention 都能保持低精度执行。
+一种简单做法是把选中的 block 反量化回 BF16，再交给稀疏 kernel。但这样会重新引入数据搬运和高精度计算，量化本来想节省的开销又回来了。因此，问题不是“缺少一个开关”，而是稀疏索引、量化 scale 和 kernel tile 必须采用兼容的布局。
 
-TeleFuser 将这种组合视为一个完整的系统能力。对数值敏感的归一化和位置变换保持较高精度，主要 Linear 计算与 Sol attention 则使用与硬件匹配的 FP8 路径。稀疏路由、QKV 精度、质量修正、Adapter 加载和分布式执行遵循同一份模型契约，使不同优化可以叠加，而不是相互抵消。
+序列并行又增加了一层约束。token 被切到不同 rank 后，每张卡看到的是局部 tensor，而稀疏选择仍要保持全局一致的含义。量化元数据、稀疏 block 编号和 rank 内布局必须一起设计，否则单卡能跑通的 kernel 到多卡就会失效。
+
+硬件差异是另一个问题。低精度格式和 kernel 并不覆盖所有 GPU 架构；为更新硬件准备的 MXFP8、NVFP4 实现也不会自动在 SM90 上工作。因此，框架显示“FP8 已开启”，不等于 Linear、稀疏 attention 和多卡分片已经连成一条低精度执行链。
+
+Q-SPA 的出发点就是统一这几份布局约定。归一化、位置编码等敏感计算保留高精度，主要 Linear 和被选中的 attention block 则继续使用与硬件匹配的 FP8 kernel。
