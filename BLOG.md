@@ -31,6 +31,16 @@ TeleFuser now brings three execution dimensions together:
 - Sol-Attn sparsity with selective dense computation;
 - Ulysses sequence parallelism, tensor parallelism, and communication overlap.
 
+Three observations motivate this co-design. First, quantization and sparsity
+are complementary rather than exclusive: when the FP8 representation is
+consumed directly by the sparse attention kernel, their gains compound. Second,
+general-purpose quantization paths can be unstable on world-model DiTs;
+attention layouts, activation ranges, and hardware-specific kernels require a
+targeted reconstruction of the execution path rather than a drop-in quantizer.
+Third, fitting a model on one GPU does not remove the value of distribution.
+DiT denoising is compute-bound, so sequence/tensor parallelism can spread the
+work and overlap communication even when the weights fit in device memory.
+
 We evaluate the same execution path on Base H3, Turbo LoRA, and FastH3 model
 variants.
 
@@ -266,9 +276,12 @@ comparing a distributed path with a single-GPU run.
 </div>
 
 Both files contain a coherent 124-frame ramen scene with synchronized stereo
-audio. The performance record uses one warm-up and one measured request; the
-memory figure is the representative peak across otherwise idle GPUs because
-GPU 0 had a fixed unrelated allocation during both runs.
+audio. The performance record uses the matched prompt and seed described above;
+the displayed TeleFuser sample uses a separate, camera-stable presentation
+prompt and is included for qualitative inspection rather than a paired quality
+score. The benchmark uses one warm-up and one measured request; the memory
+figure is the representative peak across otherwise idle GPUs because GPU 0 had
+a fixed unrelated allocation during both runs.
 
 ## Adapter workloads
 
@@ -302,6 +315,11 @@ CPU block-offload measurements are not included in the chart.
     <video controls playsinline preload="metadata" data-result-slot="turbo-telefuser"></video>
   </figure>
 </div>
+
+The performance workload remains prompt-matched. The displayed TeleFuser Turbo
+sample uses a camera-stable presentation prompt: a level tripod shot, a subtle
+push-in, and explicit suppression of orbit, roll, and spinning. This isolates
+the adapter's subject motion without inviting unstable camera transforms.
 
 ### FastH3 dense adapter
 
@@ -373,6 +391,21 @@ both run `TP2 x Ulysses SP2`. The adapter evaluations show that the same runtime
 also outperforms the working LightX2V Turbo and FastVideo FastH3 baselines. The
 accompanying tensor profiles and generated media cover numerical error, final
 video, and synchronized audio rather than performance alone.
+
+## Engineering takeaways
+
+The MiniMax-H3 experiments lead to three practical conclusions:
+
+- FP8 and sparse attention should be designed as one path. Applying either in
+  isolation leaves substantial DiT work on the table; matching the quantized
+  representation to the sparse kernel allows both optimizations to contribute.
+- World-model quality is not guaranteed by a generic quantization wrapper.
+  The long-sequence attention layout and activation statistics make a
+  hardware-specific, quality-aware implementation necessary.
+- Distributed execution remains useful after the model fits on one GPU.
+  MiniMax-H3 spends most of its denoising time in compute-bound DiT blocks, so
+  Ulysses SP and tensor parallelism reduce per-device work and expose overlap
+  opportunities.
 
 ## Further reading
 

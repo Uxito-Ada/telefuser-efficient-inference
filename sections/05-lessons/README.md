@@ -27,6 +27,21 @@ also outperforms the working LightX2V Turbo and FastVideo FastH3 baselines. The
 accompanying tensor profiles and generated media cover numerical error, final
 video, and synchronized audio rather than performance alone.
 
+## Engineering takeaways
+
+The MiniMax-H3 experiments lead to three practical conclusions:
+
+- FP8 and sparse attention should be designed as one path. Applying either in
+  isolation leaves substantial DiT work on the table; matching the quantized
+  representation to the sparse kernel allows both optimizations to contribute.
+- World-model quality is not guaranteed by a generic quantization wrapper.
+  The long-sequence attention layout and activation statistics make a
+  hardware-specific, quality-aware implementation necessary.
+- Distributed execution remains useful after the model fits on one GPU.
+  MiniMax-H3 spends most of its denoising time in compute-bound DiT blocks, so
+  Ulysses SP and tensor parallelism reduce per-device work and expose overlap
+  opportunities.
+
 ## Further reading
 
 - [TeleFuser](https://github.com/Tele-AI/TeleFuser)

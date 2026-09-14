@@ -37,6 +37,15 @@ efficient world-model runtime must handle.</p>
 <li>Sol-Attn sparsity with selective dense computation;</li>
 <li>Ulysses sequence parallelism, tensor parallelism, and communication overlap.</li>
 </ul>
+<p>Three observations motivate this co-design. First, quantization and sparsity
+are complementary rather than exclusive: when the FP8 representation is
+consumed directly by the sparse attention kernel, their gains compound. Second,
+general-purpose quantization paths can be unstable on world-model DiTs;
+attention layouts, activation ranges, and hardware-specific kernels require a
+targeted reconstruction of the execution path rather than a drop-in quantizer.
+Third, fitting a model on one GPU does not remove the value of distribution.
+DiT denoising is compute-bound, so sequence/tensor parallelism can spread the
+work and overlap communication even when the weights fit in device memory.</p>
 <p>We evaluate the same execution path on Base H3, Turbo LoRA, and FastH3 model
 variants.</p>
 <p>On the matched four-GPU Base H3 workload, with both frameworks running
@@ -221,9 +230,12 @@ comparing a distributed path with a single-GPU run.</p>
 </div>
 
 <p>Both files contain a coherent 124-frame ramen scene with synchronized stereo
-audio. The performance record uses one warm-up and one measured request; the
-memory figure is the representative peak across otherwise idle GPUs because
-GPU 0 had a fixed unrelated allocation during both runs.</p>
+audio. The performance record uses the matched prompt and seed described above;
+the displayed TeleFuser sample uses a separate, camera-stable presentation
+prompt and is included for qualitative inspection rather than a paired quality
+score. The benchmark uses one warm-up and one measured request; the memory
+figure is the representative peak across otherwise idle GPUs because GPU 0 had
+a fixed unrelated allocation during both runs.</p>
 <h2 id="adapter-workloads">Adapter workloads</h2>
 <p>TeleFuser supports both MiniMax-H3 Turbo LoRA and FastH3&rsquo;s dense hybrid
 adapter. Each is compared with the external framework that provides a working
@@ -252,6 +264,10 @@ CPU block-offload measurements are not included in the chart.</p>
   </figure>
 </div>
 
+<p>The performance workload remains prompt-matched. The displayed TeleFuser Turbo
+sample uses a camera-stable presentation prompt: a level tripod shot, a subtle
+push-in, and explicit suppression of orbit, roll, and spinning. This isolates
+the adapter&rsquo;s subject motion without inviting unstable camera transforms.</p>
 <h3 id="fasth3-dense-adapter">FastH3 dense adapter</h3>
 <p>For FastH3, both systems run one GPU with the same dense adapter, prompt,
 seed, 1344 x 768 output, 124 frames, and four actual DiT evaluations. Each
@@ -304,6 +320,20 @@ both run <code>TP2 x Ulysses SP2</code>. The adapter evaluations show that the s
 also outperforms the working LightX2V Turbo and FastVideo FastH3 baselines. The
 accompanying tensor profiles and generated media cover numerical error, final
 video, and synchronized audio rather than performance alone.</p>
+<h2 id="engineering-takeaways">Engineering takeaways</h2>
+<p>The MiniMax-H3 experiments lead to three practical conclusions:</p>
+<ul>
+<li>FP8 and sparse attention should be designed as one path. Applying either in
+  isolation leaves substantial DiT work on the table; matching the quantized
+  representation to the sparse kernel allows both optimizations to contribute.</li>
+<li>World-model quality is not guaranteed by a generic quantization wrapper.
+  The long-sequence attention layout and activation statistics make a
+  hardware-specific, quality-aware implementation necessary.</li>
+<li>Distributed execution remains useful after the model fits on one GPU.
+  MiniMax-H3 spends most of its denoising time in compute-bound DiT blocks, so
+  Ulysses SP and tensor parallelism reduce per-device work and expose overlap
+  opportunities.</li>
+</ul>
 <h2 id="further-reading">Further reading</h2>
 <ul>
 <li><a href="https://github.com/Tele-AI/TeleFuser">TeleFuser</a></li>

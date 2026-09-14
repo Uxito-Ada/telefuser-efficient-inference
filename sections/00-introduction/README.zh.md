@@ -16,6 +16,13 @@ Q-SPA 包含三个相互关联的执行维度：
 - 基于 Sol-Attn 的动态 block 稀疏，以及质量敏感区域的稠密计算；
 - Ulysses SP、Tensor Parallel 与通信计算重叠。
 
+这套协同设计建立在三个观察之上。第一，量化与稀疏并非互斥：当稀疏
+attention kernel 可以直接消费 FP8 表示时，两者的收益能够叠加。第二，通用
+量化路径在 world model 的 DiT 上并不总是稳定；长序列 attention 的数据布局、
+激活范围以及硬件相关 kernel 需要针对模型重新设计执行路径，而不是简单套用
+量化封装。第三，即使模型权重能够放入单卡，分布式执行仍然有价值。DiT 去噪
+主要受计算吞吐限制，序列并行与张量并行可以分摊工作，并为通信计算重叠创造空间。
+
 Turbo LoRA 和 FastH3 Adapter 作为模型变体，用于验证量化、稀疏和并行实现对不同 H3 推理配置的兼容性。
 
 在四卡 Base H3 对比中，LightX2V 和 TeleFuser 均使用 `TP2 x Ulysses SP2`。TeleFuser 的生成速度达到 LightX2V 的 **2.64 倍**，代表性单卡峰值显存降低 **40.3%**。Turbo LoRA 和 FastH3 Adapter 的性能结果与完整生成视频将在评测章节中分别展示。

@@ -29,6 +29,16 @@ TeleFuser now brings three execution dimensions together:
 - Sol-Attn sparsity with selective dense computation;
 - Ulysses sequence parallelism, tensor parallelism, and communication overlap.
 
+Three observations motivate this co-design. First, quantization and sparsity
+are complementary rather than exclusive: when the FP8 representation is
+consumed directly by the sparse attention kernel, their gains compound. Second,
+general-purpose quantization paths can be unstable on world-model DiTs;
+attention layouts, activation ranges, and hardware-specific kernels require a
+targeted reconstruction of the execution path rather than a drop-in quantizer.
+Third, fitting a model on one GPU does not remove the value of distribution.
+DiT denoising is compute-bound, so sequence/tensor parallelism can spread the
+work and overlap communication even when the weights fit in device memory.
+
 We evaluate the same execution path on Base H3, Turbo LoRA, and FastH3 model
 variants.
 

@@ -18,6 +18,13 @@ Q-SPA 包含三个相互关联的执行维度：
 - 基于 Sol-Attn 的动态 block 稀疏，以及质量敏感区域的稠密计算；
 - Ulysses SP、Tensor Parallel 与通信计算重叠。
 
+这套协同设计建立在三个观察之上。第一，量化与稀疏并非互斥：当稀疏
+attention kernel 可以直接消费 FP8 表示时，两者的收益能够叠加。第二，通用
+量化路径在 world model 的 DiT 上并不总是稳定；长序列 attention 的数据布局、
+激活范围以及硬件相关 kernel 需要针对模型重新设计执行路径，而不是简单套用
+量化封装。第三，即使模型权重能够放入单卡，分布式执行仍然有价值。DiT 去噪
+主要受计算吞吐限制，序列并行与张量并行可以分摊工作，并为通信计算重叠创造空间。
+
 Turbo LoRA 和 FastH3 Adapter 作为模型变体，用于验证量化、稀疏和并行实现对不同 H3 推理配置的兼容性。
 
 在四卡 Base H3 对比中，LightX2V 和 TeleFuser 均使用 `TP2 x Ulysses SP2`。TeleFuser 的生成速度达到 LightX2V 的 **2.64 倍**，代表性单卡峰值显存降低 **40.3%**。Turbo LoRA 和 FastH3 Adapter 的性能结果与完整生成视频将在评测章节中分别展示。
@@ -166,7 +173,7 @@ language: zh-CN
   </figure>
 </div>
 
-两段输出都是 124 帧拉面场景，并带有同步双声道音频。每个框架先 warm-up 一次，再记录一次正式请求。GPU 0 当时有一份固定的无关显存占用，因此图中的显存取其余三张空闲卡的峰值中位数。
+两段输出都是 124 帧拉面场景，并带有同步双声道音频。性能数据采用上文所述的相同 prompt 与 seed；页面中的 TeleFuser 视频另用稳定镜头 prompt 生成，仅用于观察输出效果，不作为成对画质指标。每个框架先 warm-up 一次，再记录一次正式请求。GPU 0 当时有一份固定的无关显存占用，因此图中的显存取其余三张空闲卡的峰值中位数。
 
 ## Adapter 工作负载
 
@@ -194,6 +201,8 @@ Turbo 测试使用单张 GPU 和 8-step v1.0 768p Adapter，共执行八次 DiT�
     <video controls playsinline preload="metadata" data-result-slot="turbo-telefuser"></video>
   </figure>
 </div>
+
+性能测试仍使用两端一致的 prompt。页面中的 TeleFuser Turbo 视频采用稳定镜头展示 prompt：保持水平三脚架机位，只做轻微推近，并明确抑制环绕、滚转和旋转，使画面运动集中在人物动作上。
 
 ### FastH3 dense adapter
 
@@ -243,6 +252,18 @@ Q-SPA 在 TeleFuser 中解决了三个直接相关的问题：
 TeleFuser 支持直接运行 Base H3，也支持在合并 Turbo LoRA 或 FastH3 Adapter 后生成相应的 FP8 权重。Adapter 决定模型与采样方式，Q-SPA 降低单次 DiT 执行成本。
 
 四卡 Base H3 测试中，LightX2V 和 TeleFuser 均使用 `TP2 x Ulysses SP2`。TeleFuser 的生成速度达到 LightX2V 的 2.64 倍，代表性峰值显存降低 40.3%。Turbo LoRA 与 FastH3 测试也分别优于对应的 LightX2V 和 FastVideo 对照。评测同时提供性能图、tensor 误差、完整视频和同步音频，用于综合检查性能与输出质量。
+
+## 工程结论
+
+MiniMax-H3 的实验结果归纳出三点工程结论：
+
+- FP8 与稀疏 attention 应当作为一条执行路径共同设计。单独使用任一优化
+  仍会留下大量 DiT 计算；让稀疏 kernel 直接消费量化表示，才能同时获得两者的收益。
+- 通用量化封装不能保证 world model 的生成质量。长序列 attention 的布局和
+  激活统计具有模型与硬件相关性，需要重新设计面向质量的量化与 kernel 实现。
+- 模型能够放入单卡，并不意味着分布式执行没有意义。MiniMax-H3 的去噪时间
+  主要消耗在计算密集的 DiT block，Ulysses SP 与 Tensor Parallel 可以降低单卡
+  工作量，并暴露通信计算重叠的机会。
 
 ## 延伸阅读
 
