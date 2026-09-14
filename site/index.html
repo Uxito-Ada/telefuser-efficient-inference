@@ -37,15 +37,17 @@ efficient world-model runtime must handle.</p>
 <li>Sol-Attn sparsity with selective dense computation;</li>
 <li>Ulysses sequence parallelism, tensor parallelism, and communication overlap.</li>
 </ul>
-<p>Three observations motivate this co-design. First, quantization and sparsity
-are complementary rather than exclusive: when the FP8 representation is
-consumed directly by the sparse attention kernel, their gains compound. Second,
-general-purpose quantization paths can be unstable on world-model DiTs;
-attention layouts, activation ranges, and hardware-specific kernels require a
-targeted reconstruction of the execution path rather than a drop-in quantizer.
-Third, fitting a model on one GPU does not remove the value of distribution.
-DiT denoising is compute-bound, so sequence/tensor parallelism can spread the
-work and overlap communication even when the weights fit in device memory.</p>
+<h2 id="insights">Insights</h2>
+<ul>
+<li>Quantization and sparsity are complementary. When a sparse attention kernel
+  consumes FP8 directly, both optimizations contribute to the speedup.</li>
+<li>General-purpose quantization is often unstable on world-model DiTs. Their
+  attention layouts, activation ranges, and hardware-specific kernels require
+  targeted reconstruction rather than a drop-in quantizer.</li>
+<li>A model fitting on one GPU does not make distributed execution redundant.
+  Compute-bound DiT denoising benefits from dividing work across devices and
+  overlapping communication with computation.</li>
+</ul>
 <p>We evaluate the same execution path on Base H3, Turbo LoRA, and FastH3 model
 variants.</p>
 <p>On the matched four-GPU Base H3 workload, with both frameworks running
@@ -317,8 +319,8 @@ both run <code>TP2 x Ulysses SP2</code>. The adapter evaluations show that the s
 also outperforms the working LightX2V Turbo and FastVideo FastH3 baselines. The
 accompanying tensor profiles and generated media cover numerical error, final
 video, and synchronized audio rather than performance alone.</p>
-<h2 id="engineering-takeaways">Engineering takeaways</h2>
-<p>The MiniMax-H3 experiments lead to three practical conclusions:</p>
+<h2 id="insights_1">Insights</h2>
+<p>The results reinforce the three observations from the opening:</p>
 <ul>
 <li>FP8 and sparse attention should be designed as one path. Applying either in
   isolation leaves substantial DiT work on the table; matching the quantized

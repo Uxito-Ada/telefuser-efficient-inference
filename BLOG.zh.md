@@ -18,12 +18,14 @@ Q-SPA 包含三个相互关联的执行维度：
 - 基于 Sol-Attn 的动态 block 稀疏，以及质量敏感区域的稠密计算；
 - Ulysses SP、Tensor Parallel 与通信计算重叠。
 
-这套协同设计建立在三个观察之上。第一，量化与稀疏并非互斥：当稀疏
-attention kernel 可以直接消费 FP8 表示时，两者的收益能够叠加。第二，通用
-量化路径在 world model 的 DiT 上并不总是稳定；长序列 attention 的数据布局、
-激活范围以及硬件相关 kernel 需要针对模型重新设计执行路径，而不是简单套用
-量化封装。第三，即使模型权重能够放入单卡，分布式执行仍然有价值。DiT 去噪
-主要受计算吞吐限制，序列并行与张量并行可以分摊工作，并为通信计算重叠创造空间。
+## Insights
+
+- 量化与稀疏可以同时使用。稀疏 attention kernel 直接消费 FP8 表示时，两项
+  优化能够共同贡献加速收益。
+- 通用量化方案在 world model 的 DiT 上容易出现质量波动。attention 布局、
+  激活范围和硬件相关 kernel 需要有针对性的重构，而不是套用通用量化封装。
+- 模型能够放入单卡，不代表分布式执行没有意义。DiT 去噪受计算吞吐限制，
+  多卡可以分摊计算，并通过通信计算重叠进一步降低延迟。
 
 Turbo LoRA 和 FastH3 Adapter 作为模型变体，用于验证量化、稀疏和并行实现对不同 H3 推理配置的兼容性。
 
@@ -253,9 +255,9 @@ TeleFuser 支持直接运行 Base H3，也支持在合并 Turbo LoRA 或 FastH3 
 
 四卡 Base H3 测试中，LightX2V 和 TeleFuser 均使用 `TP2 x Ulysses SP2`。TeleFuser 的生成速度达到 LightX2V 的 2.64 倍，代表性峰值显存降低 40.3%。Turbo LoRA 与 FastH3 测试也分别优于对应的 LightX2V 和 FastVideo 对照。评测同时提供性能图、tensor 误差、完整视频和同步音频，用于综合检查性能与输出质量。
 
-## 工程结论
+## Insights
 
-MiniMax-H3 的实验结果归纳出三点工程结论：
+实验结果与开头的三点观察相互印证：
 
 - FP8 与稀疏 attention 应当作为一条执行路径共同设计。单独使用任一优化
   仍会留下大量 DiT 计算；让稀疏 kernel 直接消费量化表示，才能同时获得两者的收益。

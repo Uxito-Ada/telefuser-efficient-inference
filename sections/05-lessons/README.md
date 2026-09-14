@@ -27,9 +27,9 @@ also outperforms the working LightX2V Turbo and FastVideo FastH3 baselines. The
 accompanying tensor profiles and generated media cover numerical error, final
 video, and synchronized audio rather than performance alone.
 
-## Engineering takeaways
+## Insights
 
-The MiniMax-H3 experiments lead to three practical conclusions:
+The results reinforce the three observations from the opening:
 
 - FP8 and sparse attention should be designed as one path. Applying either in
   isolation leaves substantial DiT work on the table; matching the quantized

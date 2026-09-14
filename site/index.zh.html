@@ -27,12 +27,15 @@
 <li>基于 Sol-Attn 的动态 block 稀疏，以及质量敏感区域的稠密计算；</li>
 <li>Ulysses SP、Tensor Parallel 与通信计算重叠。</li>
 </ul>
-<p>这套协同设计建立在三个观察之上。第一，量化与稀疏并非互斥：当稀疏
-attention kernel 可以直接消费 FP8 表示时，两者的收益能够叠加。第二，通用
-量化路径在 world model 的 DiT 上并不总是稳定；长序列 attention 的数据布局、
-激活范围以及硬件相关 kernel 需要针对模型重新设计执行路径，而不是简单套用
-量化封装。第三，即使模型权重能够放入单卡，分布式执行仍然有价值。DiT 去噪
-主要受计算吞吐限制，序列并行与张量并行可以分摊工作，并为通信计算重叠创造空间。</p>
+<h2 id="insights">Insights</h2>
+<ul>
+<li>量化与稀疏可以同时使用。稀疏 attention kernel 直接消费 FP8 表示时，两项
+  优化能够共同贡献加速收益。</li>
+<li>通用量化方案在 world model 的 DiT 上容易出现质量波动。attention 布局、
+  激活范围和硬件相关 kernel 需要有针对性的重构，而不是套用通用量化封装。</li>
+<li>模型能够放入单卡，不代表分布式执行没有意义。DiT 去噪受计算吞吐限制，
+  多卡可以分摊计算，并通过通信计算重叠进一步降低延迟。</li>
+</ul>
 <p>Turbo LoRA 和 FastH3 Adapter 作为模型变体，用于验证量化、稀疏和并行实现对不同 H3 推理配置的兼容性。</p>
 <p>在四卡 Base H3 对比中，LightX2V 和 TeleFuser 均使用 <code>TP2 x Ulysses SP2</code>。TeleFuser 的生成速度达到 LightX2V 的 <strong>2.64 倍</strong>，代表性单卡峰值显存降低 <strong>40.3%</strong>。Turbo LoRA 和 FastH3 Adapter 的性能结果与完整生成视频将在评测章节中分别展示。</p>
 <p>后续章节依次讨论四个问题：</p>
@@ -199,8 +202,8 @@ attention kernel 可以直接消费 FP8 表示时，两者的收益能够叠加�
 </ul>
 <p>TeleFuser 支持直接运行 Base H3，也支持在合并 Turbo LoRA 或 FastH3 Adapter 后生成相应的 FP8 权重。Adapter 决定模型与采样方式，Q-SPA 降低单次 DiT 执行成本。</p>
 <p>四卡 Base H3 测试中，LightX2V 和 TeleFuser 均使用 <code>TP2 x Ulysses SP2</code>。TeleFuser 的生成速度达到 LightX2V 的 2.64 倍，代表性峰值显存降低 40.3%。Turbo LoRA 与 FastH3 测试也分别优于对应的 LightX2V 和 FastVideo 对照。评测同时提供性能图、tensor 误差、完整视频和同步音频，用于综合检查性能与输出质量。</p>
-<h2 id="_5">工程结论</h2>
-<p>MiniMax-H3 的实验结果归纳出三点工程结论：</p>
+<h2 id="insights_1">Insights</h2>
+<p>实验结果与开头的三点观察相互印证：</p>
 <ul>
 <li>FP8 与稀疏 attention 应当作为一条执行路径共同设计。单独使用任一优化
   仍会留下大量 DiT 计算；让稀疏 kernel 直接消费量化表示，才能同时获得两者的收益。</li>
@@ -210,7 +213,7 @@ attention kernel 可以直接消费 FP8 表示时，两者的收益能够叠加�
   主要消耗在计算密集的 DiT block，Ulysses SP 与 Tensor Parallel 可以降低单卡
   工作量，并暴露通信计算重叠的机会。</li>
 </ul>
-<h2 id="_6">延伸阅读</h2>
+<h2 id="_5">延伸阅读</h2>
 <ul>
 <li><a href="https://github.com/Tele-AI/TeleFuser">TeleFuser</a></li>
 <li><a href="https://huggingface.co/MiniMaxAI/MiniMax-H3">MiniMax-H3 模型与官方 Pipeline</a></li>
