@@ -55,6 +55,8 @@ variants.</p>
 while using <strong>40.3% less</strong> representative peak GPU memory. We then test both
 supported adapter families against their working external baselines and embed
 the generated video and audio for direct comparison.</p>
+<p>Within TeleFuser, moving the same Base H3 FP8+Sol request from one GPU to four
+GPUs raises denoise throughput by <strong>3.40x</strong> and cuts denoise time by <strong>70.6%</strong>.</p>
 <p>The rest of this post follows four questions:</p>
 <ol>
 <li>Why do quantization and block-sparse attention conflict in existing kernels?</li>
@@ -204,6 +206,25 @@ with attention compute, which becomes increasingly valuable after FP8 and
 sparsity reduce arithmetic time.</p>
 <hr>
 <h1 id="results">Performance and Output Quality</h1>
+<h2 id="scaling-base-h3-from-one-to-four-gpus">Scaling Base H3 from one to four GPUs</h2>
+<p>The distributed result is not only a four-GPU deployment point. We reran the
+same MiniMax-H3 Base request on one GPU and compared it with TeleFuser&rsquo;s
+four-GPU <code>TP2 x Ulysses SP2</code> profile. Both endpoints use the same prompt, seed,
+1344 x 768 output, 124 frames, 50-point schedule, FP8 Linear, FP8 Sol-Attn, and
+disabled feature cache.</p>
+<p><img alt="TeleFuser MiniMax-H3 Base one-to-four GPU scaling" src="../sections/04-evaluation/assets/base-scaling.svg"></p>
+<div class="result-summary">
+  <div><strong>3.40x higher</strong><span>denoise throughput on four GPUs</span></div>
+  <div><strong>70.6% lower</strong><span>denoise time, from 167.41 to 49.28 seconds</span></div>
+  <div><strong>37.2% lower</strong><span>representative peak memory per GPU</span></div>
+</div>
+
+<p>This scaling result directly exercises the distributed Q-SPA path described
+above: Ulysses splits the long attention sequence while tensor parallelism
+splits the wide transformer layers. It shows why distributed execution remains
+useful even when the FP8 model fits on one device. The scaling run disables KV
+smoothing at both endpoints to isolate parallel execution; quality-aware
+smoothing is evaluated separately below.</p>
 <h2 id="base-h3-on-four-gpus">Base H3 on four GPUs</h2>
 <p>The primary framework comparison runs MiniMax-H3 Base on four GPUs.
 LightX2V and TeleFuser both use <code>TP2 x Ulysses SP2</code>, the same prompt and seed,
@@ -331,7 +352,8 @@ video, and synchronized audio rather than performance alone.</p>
 <li>Distributed execution remains useful after the model fits on one GPU.
   MiniMax-H3 spends most of its denoising time in compute-bound DiT blocks, so
   Ulysses SP and tensor parallelism reduce per-device work and expose overlap
-  opportunities.</li>
+  opportunities. The measured one-to-four GPU path improves denoise throughput
+  by 3.40x and reduces denoise time by 70.6%.</li>
 </ul>
 <h2 id="further-reading">Further reading</h2>
 <ul>

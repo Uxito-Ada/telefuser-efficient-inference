@@ -6,6 +6,26 @@ language: zh-CN
 
 # 性能与生成效果 {#results}
 
+## Base H3 从单卡扩展到四卡
+
+分布式结果不应只有一个四卡部署点。我们用相同的 MiniMax-H3 Base 请求重新
+测量单卡，并与 TeleFuser 的四卡 `TP2 x Ulysses SP2` 配置比较。两个端点采用
+相同的 prompt、seed、1344 x 768 输出、124 帧、50-point schedule、FP8 Linear、
+FP8 Sol-Attn，并关闭 feature cache。
+
+![TeleFuser MiniMax-H3 Base 单卡至四卡扩展性能](assets/base-scaling.svg)
+
+<div class="result-summary">
+  <div><strong>提升 3.40 倍</strong><span>四卡去噪吞吐</span></div>
+  <div><strong>降低 70.6%</strong><span>去噪时间由 167.41 秒降至 49.28 秒</span></div>
+  <div><strong>降低 37.2%</strong><span>代表性单卡峰值显存</span></div>
+</div>
+
+这组扩展结果直接覆盖前文介绍的分布式 Q-SPA 路径：Ulysses 切分长 attention
+序列，Tensor Parallel 切分宽层计算。即使 FP8 模型能够装入单卡，多卡并行仍能
+显著缓解 DiT 的计算压力。为单独测量并行收益，两个端点均关闭 KV smoothing；
+质量保护效果在后文单独评测。
+
 ## 四卡 Base H3
 
 主测试在四张 GPU 上运行 MiniMax-H3 Base。LightX2V 和 TeleFuser 均启用 `TP2 x Ulysses SP2`，并采用相同的 prompt、seed、分辨率、帧数、帧率和 50-point schedule，同时关闭 feature cache。两套框架均采用各自经过验证的优化配置。

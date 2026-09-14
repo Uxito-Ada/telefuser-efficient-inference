@@ -9,6 +9,29 @@ do_not_claim: Do not combine incomparable schedules or present invalid media as 
 
 # Performance and Output Quality {#results}
 
+## Scaling Base H3 from one to four GPUs
+
+The distributed result is not only a four-GPU deployment point. We reran the
+same MiniMax-H3 Base request on one GPU and compared it with TeleFuser's
+four-GPU `TP2 x Ulysses SP2` profile. Both endpoints use the same prompt, seed,
+1344 x 768 output, 124 frames, 50-point schedule, FP8 Linear, FP8 Sol-Attn, and
+disabled feature cache.
+
+![TeleFuser MiniMax-H3 Base one-to-four GPU scaling](assets/base-scaling.svg)
+
+<div class="result-summary">
+  <div><strong>3.40x higher</strong><span>denoise throughput on four GPUs</span></div>
+  <div><strong>70.6% lower</strong><span>denoise time, from 167.41 to 49.28 seconds</span></div>
+  <div><strong>37.2% lower</strong><span>representative peak memory per GPU</span></div>
+</div>
+
+This scaling result directly exercises the distributed Q-SPA path described
+above: Ulysses splits the long attention sequence while tensor parallelism
+splits the wide transformer layers. It shows why distributed execution remains
+useful even when the FP8 model fits on one device. The scaling run disables KV
+smoothing at both endpoints to isolate parallel execution; quality-aware
+smoothing is evaluated separately below.
+
 ## Base H3 on four GPUs
 
 The primary framework comparison runs MiniMax-H3 Base on four GPUs.

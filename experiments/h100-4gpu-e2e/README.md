@@ -6,6 +6,25 @@ The article keeps three protocols separate: a four-H100 Base H3 framework
 comparison, a one-H100 FastH3 adapter comparison, and a TeleFuser-only
 communication-overlap regression. Results are combined only within a protocol.
 
+## TeleFuser one-to-four GPU scaling
+
+The scaling comparison uses the same MiniMax-H3 Base prompt, seed, output
+shape, 50-point schedule, and FP8 Linear + FP8 Sol profile at both endpoints.
+KV smoothing is disabled at both endpoints so this protocol isolates scaling;
+the four-GPU run uses `TP2 x Ulysses SP2`. The normalized record is
+`raw/telefuser-base-h3-scaling.json`; the complete new one-GPU measurement is
+`raw/telefuser-base-h3-1gpu.json`.
+
+The two-GPU rerun was rejected by the host sandbox while opening the
+cross-worker CUDA IPC handle (`pidfd_getfd: Operation not permitted`). It is
+excluded rather than estimated. Generate the admitted endpoint chart with:
+
+```bash
+python experiments/h100-4gpu-e2e/scripts/plot_scaling.py \
+  --input experiments/h100-4gpu-e2e/raw/telefuser-base-h3-scaling.json \
+  --figure sections/04-evaluation/assets/base-scaling.svg
+```
+
 ## Primary four-H100 framework comparison
 
 LightX2V and TeleFuser use:

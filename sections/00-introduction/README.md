@@ -49,6 +49,9 @@ while using **40.3% less** representative peak GPU memory. We then test both
 supported adapter families against their working external baselines and embed
 the generated video and audio for direct comparison.
 
+Within TeleFuser, moving the same Base H3 FP8+Sol request from one GPU to four
+GPUs raises denoise throughput by **3.40x** and cuts denoise time by **70.6%**.
+
 The rest of this post follows four questions:
 
 1. Why do quantization and block-sparse attention conflict in existing kernels?

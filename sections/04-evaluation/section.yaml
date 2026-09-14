@@ -4,6 +4,7 @@ status: complete
 incoming_premise: TeleFuser combines precision, sparsity, smoothing, adapters, and distributed execution.
 outgoing_question: What does this add to TeleFuser as a world-model runtime?
 evidence:
+  - experiments/h100-4gpu-e2e/raw/telefuser-base-h3-scaling.json
   - experiments/h100-4gpu-e2e/raw/lightx2v-base-h3-comparison.json
   - experiments/h100-4gpu-e2e/raw/lightx2v-base-h3-summary.json
   - experiments/adapter-suite/raw/turbo-summary.json

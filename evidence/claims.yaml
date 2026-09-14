@@ -1,4 +1,12 @@
 claims:
+  one_to_four_gpu_denoise:
+    status: measured
+    value: 3.3974x higher denoise throughput and 70.5659 percent lower denoise time
+    source: experiments/h100-4gpu-e2e/raw/telefuser-base-h3-scaling.json
+  one_to_four_gpu_peak_memory:
+    status: measured
+    value: 37.2343 percent lower representative peak memory per GPU
+    source: experiments/h100-4gpu-e2e/raw/telefuser-base-h3-scaling.json
   four_gpu_generation:
     status: measured
     value: 2.6353x faster than LightX2V BF16 + SageAttention2

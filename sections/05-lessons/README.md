@@ -40,7 +40,8 @@ The results reinforce the three observations from the opening:
 - Distributed execution remains useful after the model fits on one GPU.
   MiniMax-H3 spends most of its denoising time in compute-bound DiT blocks, so
   Ulysses SP and tensor parallelism reduce per-device work and expose overlap
-  opportunities.
+  opportunities. The measured one-to-four GPU path improves denoise throughput
+  by 3.40x and reduces denoise time by 70.6%.
 
 ## Further reading
 

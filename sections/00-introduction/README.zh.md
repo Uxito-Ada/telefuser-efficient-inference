@@ -29,6 +29,9 @@ Turbo LoRA 和 FastH3 Adapter 作为模型变体，用于验证量化、稀疏�
 
 在四卡 Base H3 对比中，LightX2V 和 TeleFuser 均使用 `TP2 x Ulysses SP2`。TeleFuser 的生成速度达到 LightX2V 的 **2.64 倍**，代表性单卡峰值显存降低 **40.3%**。Turbo LoRA 和 FastH3 Adapter 的性能结果与完整生成视频将在评测章节中分别展示。
 
+在 TeleFuser 内部，相同的 Base H3 FP8+Sol 请求从单卡扩展到四卡后，去噪吞吐
+提升 **3.40 倍**，去噪时间降低 **70.6%**。
+
 后续章节依次讨论四个问题：
 
 1. 为什么现有量化 kernel 很难直接接上动态稀疏 attention？

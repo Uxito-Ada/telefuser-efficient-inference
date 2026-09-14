@@ -1,0 +1,64 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 640" width="1200" height="640">
+  <rect x="0" y="0" width="1200" height="640" fill="#FFFFFF" />
+  <style>text { font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; }</style>
+  <text x="210.0" y="42" text-anchor="middle" font-size="20" font-weight="700" fill="#16232C">Denoise time</text>
+  <text x="60" y="76" font-size="14" fill="#65727B">seconds / video</text>
+  <line x1="60" y1="475.0" x2="360" y2="475.0" stroke="#E7ECEF" stroke-width="1" />
+  <text x="50" y="480.0" text-anchor="end" font-size="12" fill="#74818A">0.0</text>
+  <line x1="60" y1="381.25" x2="360" y2="381.25" stroke="#E7ECEF" stroke-width="1" />
+  <text x="50" y="386.25" text-anchor="end" font-size="12" fill="#74818A">49.4</text>
+  <line x1="60" y1="287.5" x2="360" y2="287.5" stroke="#E7ECEF" stroke-width="1" />
+  <text x="50" y="292.5" text-anchor="end" font-size="12" fill="#74818A">98.8</text>
+  <line x1="60" y1="193.75" x2="360" y2="193.75" stroke="#E7ECEF" stroke-width="1" />
+  <text x="50" y="198.75" text-anchor="end" font-size="12" fill="#74818A">148.2</text>
+  <line x1="60" y1="100.0" x2="360" y2="100.0" stroke="#E7ECEF" stroke-width="1" />
+  <text x="50" y="105.0" text-anchor="end" font-size="12" fill="#74818A">197.5</text>
+  <rect x="129.0" y="157.20338983050846" width="52" height="317.79661016949154" rx="2" fill="#6C8FA8" />
+  <text x="155" y="145.20338983050846" text-anchor="middle" font-size="14" font-weight="700" fill="#26343D">167.41</text>
+  <text x="155" y="506" text-anchor="middle" font-size="14" font-weight="600" fill="#38464F">1 GPU</text>
+  <rect x="249.0" y="381.45933271596397" width="52" height="93.54066728403602" rx="2" fill="#167D6B" />
+  <text x="275" y="369.45933271596397" text-anchor="middle" font-size="14" font-weight="700" fill="#26343D">49.28</text>
+  <text x="275" y="506" text-anchor="middle" font-size="14" font-weight="600" fill="#38464F">4 GPUs</text>
+  <line x1="60" y1="475" x2="360" y2="475" stroke="#CBD5DA" stroke-width="1" />
+  <text x="600.0" y="42" text-anchor="middle" font-size="20" font-weight="700" fill="#16232C">Denoise throughput</text>
+  <text x="450" y="76" font-size="14" fill="#65727B">steps / second</text>
+  <line x1="450" y1="475.0" x2="750" y2="475.0" stroke="#E7ECEF" stroke-width="1" />
+  <text x="440" y="480.0" text-anchor="end" font-size="12" fill="#74818A">0.0</text>
+  <line x1="450" y1="381.25" x2="750" y2="381.25" stroke="#E7ECEF" stroke-width="1" />
+  <text x="440" y="386.25" text-anchor="end" font-size="12" fill="#74818A">0.3</text>
+  <line x1="450" y1="287.5" x2="750" y2="287.5" stroke="#E7ECEF" stroke-width="1" />
+  <text x="440" y="292.5" text-anchor="end" font-size="12" fill="#74818A">0.6</text>
+  <line x1="450" y1="193.75" x2="750" y2="193.75" stroke="#E7ECEF" stroke-width="1" />
+  <text x="440" y="198.75" text-anchor="end" font-size="12" fill="#74818A">0.9</text>
+  <line x1="450" y1="100.0" x2="750" y2="100.0" stroke="#E7ECEF" stroke-width="1" />
+  <text x="440" y="105.0" text-anchor="end" font-size="12" fill="#74818A">1.2</text>
+  <rect x="519.0" y="381.45933271596397" width="52" height="93.54066728403602" rx="2" fill="#6C8FA8" />
+  <text x="545" y="369.45933271596397" text-anchor="middle" font-size="14" font-weight="700" fill="#26343D">0.30</text>
+  <text x="545" y="506" text-anchor="middle" font-size="14" font-weight="600" fill="#38464F">1 GPU</text>
+  <rect x="639.0" y="157.20338983050846" width="52" height="317.79661016949154" rx="2" fill="#167D6B" />
+  <text x="665" y="145.20338983050846" text-anchor="middle" font-size="14" font-weight="700" fill="#26343D">1.01</text>
+  <text x="665" y="506" text-anchor="middle" font-size="14" font-weight="600" fill="#38464F">4 GPUs</text>
+  <line x1="450" y1="475" x2="750" y2="475" stroke="#CBD5DA" stroke-width="1" />
+  <text x="990.0" y="42" text-anchor="middle" font-size="20" font-weight="700" fill="#16232C">Peak memory</text>
+  <text x="840" y="76" font-size="14" fill="#65727B">GiB / GPU</text>
+  <line x1="840" y1="475.0" x2="1140" y2="475.0" stroke="#E7ECEF" stroke-width="1" />
+  <text x="830" y="480.0" text-anchor="end" font-size="12" fill="#74818A">0.0</text>
+  <line x1="840" y1="381.25" x2="1140" y2="381.25" stroke="#E7ECEF" stroke-width="1" />
+  <text x="830" y="386.25" text-anchor="end" font-size="12" fill="#74818A">20.0</text>
+  <line x1="840" y1="287.5" x2="1140" y2="287.5" stroke="#E7ECEF" stroke-width="1" />
+  <text x="830" y="292.5" text-anchor="end" font-size="12" fill="#74818A">39.9</text>
+  <line x1="840" y1="193.75" x2="1140" y2="193.75" stroke="#E7ECEF" stroke-width="1" />
+  <text x="830" y="198.75" text-anchor="end" font-size="12" fill="#74818A">59.9</text>
+  <line x1="840" y1="100.0" x2="1140" y2="100.0" stroke="#E7ECEF" stroke-width="1" />
+  <text x="830" y="105.0" text-anchor="end" font-size="12" fill="#74818A">79.9</text>
+  <rect x="909.0" y="157.20338983050846" width="52" height="317.79661016949154" rx="2" fill="#6C8FA8" />
+  <text x="935" y="145.20338983050846" text-anchor="middle" font-size="14" font-weight="700" fill="#26343D">67.68</text>
+  <text x="935" y="506" text-anchor="middle" font-size="14" font-weight="600" fill="#38464F">1 GPU</text>
+  <rect x="1029.0" y="275.5328417189742" width="52" height="199.46715828102577" rx="2" fill="#167D6B" />
+  <text x="1055" y="263.5328417189742" text-anchor="middle" font-size="14" font-weight="700" fill="#26343D">42.48</text>
+  <text x="1055" y="506" text-anchor="middle" font-size="14" font-weight="600" fill="#38464F">4 GPUs</text>
+  <line x1="840" y1="475" x2="1140" y2="475" stroke="#CBD5DA" stroke-width="1" />
+  <text x="600.0" y="555" text-anchor="middle" font-size="15" font-weight="600" fill="#4D5B64">MiniMax-H3 Base · 1344 × 768 · 124 frames · 50 steps · FP8 Linear + FP8 Sol</text>
+  <text x="600.0" y="585" text-anchor="middle" font-size="14" fill="#69767F">4 GPUs: TP2 × Ulysses SP2 · feature cache disabled · warm request</text>
+</svg>

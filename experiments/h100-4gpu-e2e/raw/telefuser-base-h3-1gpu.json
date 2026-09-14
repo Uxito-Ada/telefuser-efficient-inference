@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "framework": "TeleFuser",
+  "profile": "fp8-linear+fp8-sol",
+  "hardware": "1 x NVIDIA H100 80GB HBM3",
+  "physical_devices": [
+    2
+  ],
+  "parallelism": {
+    "world_size": 1,
+    "ulysses_degree": 1,
+    "tp_degree": 1
+  },
+  "workload": {
+    "model": "MiniMax-H3 Base",
+    "prompt": "Steam rises from the ramen while the family talks in the background.",
+    "seed": 0,
+    "resolution": [
+      1344,
+      768
+    ],
+    "frames": 124,
+    "fps": 24,
+    "duration_seconds": 5,
+    "sampling_points": 50,
+    "actual_dit_updates": 49
+  },
+  "configuration": {
+    "linear": "tf-kernel FP8 W8A8",
+    "attention": "FP8 Sol-Attn",
+    "dense_steps": 10,
+    "dense_layers": 2,
+    "tau": 1.0,
+    "threshold": "exact",
+    "smoothing": "none",
+    "v_bias_correction": false,
+    "feature_cache": false
+  },
+  "measurement": {
+    "load_seconds": 4.492510199546814,
+    "warmup_seconds": 295.826548140496,
+    "generation_seconds": 225.09281468763947,
+    "denoising_seconds": 167.41474205441773,
+    "actual_dit_updates_per_second": 0.29268629153382847,
+    "resident_memory_mib": [
+      20927
+    ],
+    "peak_memory_mib": [
+      69307
+    ],
+    "max_per_gpu_peak_mib": 69307
+  },
+  "runtime_metrics": {
+    "denoising_seconds": 167.41474205441773,
+    "peak_allocated_bytes": 28563624448,
+    "peak_reserved_bytes": 29267853312,
+    "feature_cache_computed_steps": 49,
+    "feature_cache_skipped_steps": 0,
+    "media_preparation_seconds": 0.00014502741396427155,
+    "text_encoding_seconds": 45.47798506356776,
+    "visual_encoding_seconds": 0.0,
+    "audio_encoding_seconds": 0.0,
+    "denoising_stage_seconds": 167.43617794848979,
+    "video_decoding_seconds": 10.51328487507999,
+    "audio_decoding_seconds": 0.5442725550383329,
+    "pipeline_seconds": 224.78702135942876
+  },
+  "output": "work_dirs/latest_media/base-scaling-1gpu-unsmoothed.mp4"
+}

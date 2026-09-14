@@ -31,6 +31,9 @@ Turbo LoRA 和 FastH3 Adapter 作为模型变体，用于验证量化、稀疏�
 
 在四卡 Base H3 对比中，LightX2V 和 TeleFuser 均使用 `TP2 x Ulysses SP2`。TeleFuser 的生成速度达到 LightX2V 的 **2.64 倍**，代表性单卡峰值显存降低 **40.3%**。Turbo LoRA 和 FastH3 Adapter 的性能结果与完整生成视频将在评测章节中分别展示。
 
+在 TeleFuser 内部，相同的 Base H3 FP8+Sol 请求从单卡扩展到四卡后，去噪吞吐
+提升 **3.40 倍**，去噪时间降低 **70.6%**。
+
 后续章节依次讨论四个问题：
 
 1. 为什么现有量化 kernel 很难直接接上动态稀疏 attention？
@@ -150,6 +153,26 @@ language: zh-CN
 
 # 性能与生成效果 {#results}
 
+## Base H3 从单卡扩展到四卡
+
+分布式结果不应只有一个四卡部署点。我们用相同的 MiniMax-H3 Base 请求重新
+测量单卡，并与 TeleFuser 的四卡 `TP2 x Ulysses SP2` 配置比较。两个端点采用
+相同的 prompt、seed、1344 x 768 输出、124 帧、50-point schedule、FP8 Linear、
+FP8 Sol-Attn，并关闭 feature cache。
+
+![TeleFuser MiniMax-H3 Base 单卡至四卡扩展性能](sections/04-evaluation/assets/base-scaling.svg)
+
+<div class="result-summary">
+  <div><strong>提升 3.40 倍</strong><span>四卡去噪吞吐</span></div>
+  <div><strong>降低 70.6%</strong><span>去噪时间由 167.41 秒降至 49.28 秒</span></div>
+  <div><strong>降低 37.2%</strong><span>代表性单卡峰值显存</span></div>
+</div>
+
+这组扩展结果直接覆盖前文介绍的分布式 Q-SPA 路径：Ulysses 切分长 attention
+序列，Tensor Parallel 切分宽层计算。即使 FP8 模型能够装入单卡，多卡并行仍能
+显著缓解 DiT 的计算压力。为单独测量并行收益，两个端点均关闭 KV smoothing；
+质量保护效果在后文单独评测。
+
 ## 四卡 Base H3
 
 主测试在四张 GPU 上运行 MiniMax-H3 Base。LightX2V 和 TeleFuser 均启用 `TP2 x Ulysses SP2`，并采用相同的 prompt、seed、分辨率、帧数、帧率和 50-point schedule，同时关闭 feature cache。两套框架均采用各自经过验证的优化配置。
@@ -265,7 +288,8 @@ TeleFuser 支持直接运行 Base H3，也支持在合并 Turbo LoRA 或 FastH3 
   激活统计具有模型与硬件相关性，需要重新设计面向质量的量化与 kernel 实现。
 - 模型能够放入单卡，并不意味着分布式执行没有意义。MiniMax-H3 的去噪时间
   主要消耗在计算密集的 DiT block，Ulysses SP 与 Tensor Parallel 可以降低单卡
-  工作量，并暴露通信计算重叠的机会。
+  工作量，并暴露通信计算重叠的机会。实测从单卡扩展到四卡后，去噪吞吐提升
+  3.40 倍，去噪时间降低 70.6%。
 
 ## 延伸阅读
 

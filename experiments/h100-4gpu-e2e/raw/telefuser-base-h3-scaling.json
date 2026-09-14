@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "framework": "TeleFuser",
+  "workload": {
+    "model": "MiniMax-H3 Base",
+    "task": "T2AV",
+    "resolution": "1344x768",
+    "frames": 124,
+    "fps": 24,
+    "duration_seconds": 5,
+    "sampling_points": 50,
+    "seed": 0,
+    "prompt": "Steam rises from the ramen while the family talks in the background.",
+    "feature_cache": false
+  },
+  "profile": {
+    "linear": "tf-kernel FP8 W8A8",
+    "attention": "FP8 Sol-Attn",
+    "dense_steps": 10,
+    "dense_layers": 2,
+    "tau": 1.0,
+    "threshold": "exact",
+    "smoothing": "none"
+  },
+  "results": {
+    "1_gpu": {
+      "parallelism": "single GPU",
+      "denoise_seconds": 167.41474205441773,
+      "config_points_per_second": 0.29865948115696783,
+      "representative_peak_memory_mib": 69307,
+      "source": "telefuser-base-h3-1gpu.json"
+    },
+    "4_gpu": {
+      "parallelism": "TP2 x Ulysses SP2",
+      "denoise_seconds": 49.2770727686584,
+      "config_points_per_second": 1.0146706610340988,
+      "representative_peak_memory_mib": 43501,
+      "source": "lightx2v-base-h3-comparison.json"
+    }
+  },
+  "relative_1_to_4_gpu": {
+    "denoise_speedup": 3.397416539744183,
+    "denoise_time_reduction_percent": 70.56587002795666,
+    "throughput_increase_percent": 239.74165397441834,
+    "representative_peak_memory_reduction_percent": 37.23433419423724
+  },
+  "excluded": {
+    "2_gpu": "The run was not admitted because the host sandbox denied CUDA IPC handle transfer with pidfd_getfd: Operation not permitted. No value was estimated or interpolated."
+  }
+}
