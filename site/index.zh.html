@@ -142,7 +142,7 @@ attention kernel 可以直接消费 FP8 表示时，两者的收益能够叠加�
   </figure>
 </div>
 
-<p>两段输出都是 124 帧拉面场景，并带有同步双声道音频。性能数据采用上文所述的相同 prompt 与 seed；页面中的 TeleFuser 视频另用稳定镜头 prompt 生成，仅用于观察输出效果，不作为成对画质指标。每个框架先 warm-up 一次，再记录一次正式请求。GPU 0 当时有一份固定的无关显存占用，因此图中的显存取其余三张空闲卡的峰值中位数。</p>
+<p>两段输出都是 124 帧拉面场景，并带有同步双声道音频。每个框架先 warm-up 一次，再记录一次正式请求。GPU 0 当时有一份固定的无关显存占用，因此图中的显存取其余三张空闲卡的峰值中位数。</p>
 <h2 id="adapter">Adapter 工作负载</h2>
 <p>Adapter 评测覆盖 MiniMax-H3 Turbo LoRA 和 FastH3 dense hybrid adapter。每组测试均选择支持对应模型的外部框架作为对照，并对齐输入、输出规格和 DiT 调用次数。</p>
 <h3 id="minimax-h3-turbo-lora">MiniMax-H3 Turbo LoRA</h3>

@@ -276,12 +276,9 @@ comparing a distributed path with a single-GPU run.
 </div>
 
 Both files contain a coherent 124-frame ramen scene with synchronized stereo
-audio. The performance record uses the matched prompt and seed described above;
-the displayed TeleFuser sample uses a separate, camera-stable presentation
-prompt and is included for qualitative inspection rather than a paired quality
-score. The benchmark uses one warm-up and one measured request; the memory
-figure is the representative peak across otherwise idle GPUs because GPU 0 had
-a fixed unrelated allocation during both runs.
+audio. The performance record uses one warm-up and one measured request; the
+memory figure is the representative peak across otherwise idle GPUs because
+GPU 0 had a fixed unrelated allocation during both runs.
 
 ## Adapter workloads
 
