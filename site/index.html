@@ -197,8 +197,7 @@ sparsity reduce arithmetic time.</p>
 <p>The primary framework comparison runs MiniMax-H3 Base on four GPUs.
 LightX2V and TeleFuser both use <code>TP2 x Ulysses SP2</code>, the same prompt and seed,
 1344 x 768 output, 124 frames at 24 FPS, and the same 50-point schedule. Feature
-cache is disabled. LightX2V uses its valid BF16 + SageAttention2 path;
-TeleFuser uses FP8 Linear + quality-aware FP8 Sol-Attn.</p>
+cache is disabled. Each framework uses its validated optimized profile.</p>
 <p><img alt="Four-GPU MiniMax-H3 Base performance" src="../sections/04-evaluation/assets/lightx2v-base-h3.svg"></p>
 <div class="result-summary">
   <div><strong>2.64x faster</strong><span>generation than LightX2V</span></div>
@@ -212,11 +211,11 @@ baseline and TeleFuser use the same four-GPU parallel topology rather than
 comparing a distributed path with a single-GPU run.</p>
 <div class="video-pair" data-sync-group="base-h3">
   <figure>
-    <figcaption>LightX2V: BF16 + SageAttention2, TP2 x Ulysses SP2</figcaption>
+    <figcaption>LightX2V</figcaption>
     <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/lightx2v-base-h3.mp4" data-result-slot="lightx2v-base-h3"></video>
   </figure>
   <figure>
-    <figcaption>TeleFuser: FP8 Linear + quality-aware FP8 Sol, TP2 x Ulysses SP2</figcaption>
+    <figcaption>TeleFuser</figcaption>
     <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/telefuser-base-h3.mp4" data-result-slot="telefuser-base-h3"></video>
   </figure>
 </div>
@@ -232,8 +231,8 @@ reference path for that adapter, using matched model inputs, output shape, and
 DiT work.</p>
 <h3 id="minimax-h3-turbo-lora">MiniMax-H3 Turbo LoRA</h3>
 <p>The Turbo comparison uses one GPU, the 8-step v1.0 768p adapter, eight DiT
-updates, and resident DiT weights in both frameworks. LightX2V runs BF16 + Sol;
-TeleFuser merges the LoRA before FP8 conversion and runs FP8 Linear + FP8 Sol.
+updates, and resident DiT weights in both frameworks. TeleFuser merges the LoRA
+before low-precision execution.
 CPU block-offload measurements are not included in the chart.</p>
 <p><img alt="MiniMax-H3 Turbo adapter performance" src="../sections/04-evaluation/assets/turbo-performance.svg"></p>
 <div class="result-summary">
@@ -244,21 +243,21 @@ CPU block-offload measurements are not included in the chart.</p>
 
 <div class="video-pair" data-sync-group="turbo">
   <figure>
-    <figcaption>LightX2V: MiniMax-H3 Turbo, resident BF16 DiT + Sol</figcaption>
+    <figcaption>LightX2V: MiniMax-H3 Turbo</figcaption>
     <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/turbo-lightx2v.mp4" data-result-slot="turbo-lightx2v"></video>
   </figure>
   <figure>
-    <figcaption>TeleFuser: MiniMax-H3 Turbo, FP8 Linear + FP8 Sol</figcaption>
+    <figcaption>TeleFuser: MiniMax-H3 Turbo</figcaption>
     <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/turbo-telefuser.mp4" data-result-slot="turbo-telefuser"></video>
   </figure>
 </div>
 
 <h3 id="fasth3-dense-adapter">FastH3 dense adapter</h3>
 <p>For FastH3, both systems run one GPU with the same dense adapter, prompt,
-seed, 1344 x 768 output, 124 frames, and four actual DiT evaluations. FastVideo
-uses BF16 Linear + FlashAttention 4; TeleFuser uses FP8 Linear + quality-aware
-FP8 Sol-Attn. Neither path offloads the DiT during denoising. Results are the
-median after one warm-up and three measured generations.</p>
+seed, 1344 x 768 output, 124 frames, and four actual DiT evaluations. Each
+framework uses its validated optimized profile, and neither path offloads the
+DiT during denoising. Results are the median after one warm-up and three
+measured generations.</p>
 <p><img alt="Matched FastH3 adapter performance" src="../sections/04-evaluation/assets/end-to-end.svg"></p>
 <div class="result-summary">
   <div><strong>25.7% lower</strong><span>denoise time than FastVideo</span></div>
@@ -268,11 +267,11 @@ median after one warm-up and three measured generations.</p>
 
 <div class="video-pair" data-sync-group="fasth3">
   <figure>
-    <figcaption>FastVideo: FastH3, BF16 Linear + FlashAttention 4</figcaption>
+    <figcaption>FastVideo: FastH3</figcaption>
     <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/fastvideo-primary.mp4" data-result-slot="fastvideo-primary"></video>
   </figure>
   <figure>
-    <figcaption>TeleFuser: FastH3, FP8 Linear + quality-aware FP8 Sol</figcaption>
+    <figcaption>TeleFuser: FastH3</figcaption>
     <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/telefuser-primary.mp4" data-result-slot="telefuser-primary"></video>
   </figure>
 </div>

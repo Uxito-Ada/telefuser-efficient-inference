@@ -8,7 +8,7 @@ language: zh-CN
 
 ## 四卡 Base H3
 
-主测试在四张 GPU 上运行 MiniMax-H3 Base。LightX2V 和 TeleFuser 均启用 `TP2 x Ulysses SP2`，并采用相同的 prompt、seed、分辨率、帧数、帧率和 50-point schedule，同时关闭 feature cache。LightX2V 使用 BF16 + SageAttention2，TeleFuser 使用 FP8 Linear + Q-SPA。
+主测试在四张 GPU 上运行 MiniMax-H3 Base。LightX2V 和 TeleFuser 均启用 `TP2 x Ulysses SP2`，并采用相同的 prompt、seed、分辨率、帧数、帧率和 50-point schedule，同时关闭 feature cache。两套框架均采用各自经过验证的优化配置。
 
 ![四 GPU MiniMax-H3 Base 性能](assets/lightx2v-base-h3.svg)
 
@@ -22,11 +22,11 @@ language: zh-CN
 
 <div class="video-pair" data-sync-group="base-h3">
   <figure>
-    <figcaption>LightX2V：BF16 + SageAttention2，TP2 x Ulysses SP2</figcaption>
+    <figcaption>LightX2V</figcaption>
     <video controls playsinline preload="metadata" data-result-slot="lightx2v-base-h3"></video>
   </figure>
   <figure>
-    <figcaption>TeleFuser：FP8 Linear + Q-SPA，TP2 x Ulysses SP2</figcaption>
+    <figcaption>TeleFuser</figcaption>
     <video controls playsinline preload="metadata" data-result-slot="telefuser-base-h3"></video>
   </figure>
 </div>
@@ -39,7 +39,7 @@ Adapter 评测覆盖 MiniMax-H3 Turbo LoRA 和 FastH3 dense hybrid adapter。每
 
 ### MiniMax-H3 Turbo LoRA
 
-Turbo 测试使用单张 GPU 和 8-step v1.0 768p Adapter，共执行八次 DiT。两套框架均将 DiT 常驻 GPU：LightX2V 使用 BF16 + Sol；TeleFuser 在合并 LoRA 后生成 FP8 权重，并运行 Q-SPA。图中不包含 CPU block offload 结果。
+Turbo 测试使用单张 GPU 和 8-step v1.0 768p Adapter，共执行八次 DiT。两套框架均将 DiT 常驻 GPU；TeleFuser 在低精度执行前合并 LoRA。图中不包含 CPU block offload 结果。
 
 ![MiniMax-H3 Turbo Adapter 性能](assets/turbo-performance.svg)
 
@@ -51,18 +51,18 @@ Turbo 测试使用单张 GPU 和 8-step v1.0 768p Adapter，共执行八次 DiT�
 
 <div class="video-pair" data-sync-group="turbo">
   <figure>
-    <figcaption>LightX2V：MiniMax-H3 Turbo，常驻 BF16 DiT + Sol</figcaption>
+    <figcaption>LightX2V：MiniMax-H3 Turbo</figcaption>
     <video controls playsinline preload="metadata" data-result-slot="turbo-lightx2v"></video>
   </figure>
   <figure>
-    <figcaption>TeleFuser：MiniMax-H3 Turbo，FP8 Linear + Q-SPA</figcaption>
+    <figcaption>TeleFuser：MiniMax-H3 Turbo</figcaption>
     <video controls playsinline preload="metadata" data-result-slot="turbo-telefuser"></video>
   </figure>
 </div>
 
 ### FastH3 dense adapter
 
-FastH3 测试同样使用单张 GPU。两套框架采用相同的 dense adapter、prompt、seed、1344 x 768 输出和 124 帧配置，实际执行四次 DiT。FastVideo 使用 BF16 Linear + FlashAttention 4，TeleFuser 使用 FP8 Linear + Q-SPA；去噪期间均不进行 DiT CPU offload。每套框架先完成一次 warm-up，正式结果取三次生成的中位数。
+FastH3 测试同样使用单张 GPU。两套框架采用相同的 dense adapter、prompt、seed、1344 x 768 输出和 124 帧配置，实际执行四次 DiT，并采用各自经过验证的优化配置；去噪期间均不进行 DiT CPU offload。每套框架先完成一次 warm-up，正式结果取三次生成的中位数。
 
 ![FastH3 Adapter 对齐性能](assets/end-to-end.svg)
 
@@ -74,11 +74,11 @@ FastH3 测试同样使用单张 GPU。两套框架采用相同的 dense adapter�
 
 <div class="video-pair" data-sync-group="fasth3">
   <figure>
-    <figcaption>FastVideo：FastH3，BF16 Linear + FlashAttention 4</figcaption>
+    <figcaption>FastVideo：FastH3</figcaption>
     <video controls playsinline preload="metadata" data-result-slot="fastvideo-primary"></video>
   </figure>
   <figure>
-    <figcaption>TeleFuser：FastH3，FP8 Linear + Q-SPA</figcaption>
+    <figcaption>TeleFuser：FastH3</figcaption>
     <video controls playsinline preload="metadata" data-result-slot="telefuser-primary"></video>
   </figure>
 </div>

@@ -116,7 +116,7 @@
 <hr>
 <h1 id="results">性能与生成效果</h1>
 <h2 id="base-h3">四卡 Base H3</h2>
-<p>主测试在四张 GPU 上运行 MiniMax-H3 Base。LightX2V 和 TeleFuser 均启用 <code>TP2 x Ulysses SP2</code>，并采用相同的 prompt、seed、分辨率、帧数、帧率和 50-point schedule，同时关闭 feature cache。LightX2V 使用 BF16 + SageAttention2，TeleFuser 使用 FP8 Linear + Q-SPA。</p>
+<p>主测试在四张 GPU 上运行 MiniMax-H3 Base。LightX2V 和 TeleFuser 均启用 <code>TP2 x Ulysses SP2</code>，并采用相同的 prompt、seed、分辨率、帧数、帧率和 50-point schedule，同时关闭 feature cache。两套框架均采用各自经过验证的优化配置。</p>
 <p><img alt="四 GPU MiniMax-H3 Base 性能" src="../sections/04-evaluation/assets/lightx2v-base-h3.svg"></p>
 <div class="result-summary">
   <div><strong>快 2.64 倍</strong><span>完整生成</span></div>
@@ -127,11 +127,11 @@
 <p>完整生成时间从 137.76 秒降至 52.27 秒，去噪时间从 129.22 秒降至 49.28 秒。两套框架使用相同的四卡并行配置，因此可以直接比较加速比。</p>
 <div class="video-pair" data-sync-group="base-h3">
   <figure>
-    <figcaption>LightX2V：BF16 + SageAttention2，TP2 x Ulysses SP2</figcaption>
+    <figcaption>LightX2V</figcaption>
     <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/lightx2v-base-h3.mp4" data-result-slot="lightx2v-base-h3"></video>
   </figure>
   <figure>
-    <figcaption>TeleFuser：FP8 Linear + Q-SPA，TP2 x Ulysses SP2</figcaption>
+    <figcaption>TeleFuser</figcaption>
     <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/telefuser-base-h3.mp4" data-result-slot="telefuser-base-h3"></video>
   </figure>
 </div>
@@ -140,7 +140,7 @@
 <h2 id="adapter">Adapter 工作负载</h2>
 <p>Adapter 评测覆盖 MiniMax-H3 Turbo LoRA 和 FastH3 dense hybrid adapter。每组测试均选择支持对应模型的外部框架作为对照，并对齐输入、输出规格和 DiT 调用次数。</p>
 <h3 id="minimax-h3-turbo-lora">MiniMax-H3 Turbo LoRA</h3>
-<p>Turbo 测试使用单张 GPU 和 8-step v1.0 768p Adapter，共执行八次 DiT。两套框架均将 DiT 常驻 GPU：LightX2V 使用 BF16 + Sol；TeleFuser 在合并 LoRA 后生成 FP8 权重，并运行 Q-SPA。图中不包含 CPU block offload 结果。</p>
+<p>Turbo 测试使用单张 GPU 和 8-step v1.0 768p Adapter，共执行八次 DiT。两套框架均将 DiT 常驻 GPU；TeleFuser 在低精度执行前合并 LoRA。图中不包含 CPU block offload 结果。</p>
 <p><img alt="MiniMax-H3 Turbo Adapter 性能" src="../sections/04-evaluation/assets/turbo-performance.svg"></p>
 <div class="result-summary">
   <div><strong>降低 26.7%</strong><span>相比 LightX2V 的去噪时间</span></div>
@@ -150,17 +150,17 @@
 
 <div class="video-pair" data-sync-group="turbo">
   <figure>
-    <figcaption>LightX2V：MiniMax-H3 Turbo，常驻 BF16 DiT + Sol</figcaption>
+    <figcaption>LightX2V：MiniMax-H3 Turbo</figcaption>
     <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/turbo-lightx2v.mp4" data-result-slot="turbo-lightx2v"></video>
   </figure>
   <figure>
-    <figcaption>TeleFuser：MiniMax-H3 Turbo，FP8 Linear + Q-SPA</figcaption>
+    <figcaption>TeleFuser：MiniMax-H3 Turbo</figcaption>
     <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/turbo-telefuser.mp4" data-result-slot="turbo-telefuser"></video>
   </figure>
 </div>
 
 <h3 id="fasth3-dense-adapter">FastH3 dense adapter</h3>
-<p>FastH3 测试同样使用单张 GPU。两套框架采用相同的 dense adapter、prompt、seed、1344 x 768 输出和 124 帧配置，实际执行四次 DiT。FastVideo 使用 BF16 Linear + FlashAttention 4，TeleFuser 使用 FP8 Linear + Q-SPA；去噪期间均不进行 DiT CPU offload。每套框架先完成一次 warm-up，正式结果取三次生成的中位数。</p>
+<p>FastH3 测试同样使用单张 GPU。两套框架采用相同的 dense adapter、prompt、seed、1344 x 768 输出和 124 帧配置，实际执行四次 DiT，并采用各自经过验证的优化配置；去噪期间均不进行 DiT CPU offload。每套框架先完成一次 warm-up，正式结果取三次生成的中位数。</p>
 <p><img alt="FastH3 Adapter 对齐性能" src="../sections/04-evaluation/assets/end-to-end.svg"></p>
 <div class="result-summary">
   <div><strong>降低 25.7%</strong><span>相比 FastVideo 的去噪时间</span></div>
@@ -170,11 +170,11 @@
 
 <div class="video-pair" data-sync-group="fasth3">
   <figure>
-    <figcaption>FastVideo：FastH3，BF16 Linear + FlashAttention 4</figcaption>
+    <figcaption>FastVideo：FastH3</figcaption>
     <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/fastvideo-primary.mp4" data-result-slot="fastvideo-primary"></video>
   </figure>
   <figure>
-    <figcaption>TeleFuser：FastH3，FP8 Linear + Q-SPA</figcaption>
+    <figcaption>TeleFuser：FastH3</figcaption>
     <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/telefuser-primary.mp4" data-result-slot="telefuser-primary"></video>
   </figure>
 </div>

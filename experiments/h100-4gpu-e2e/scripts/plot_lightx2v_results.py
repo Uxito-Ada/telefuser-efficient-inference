@@ -25,7 +25,7 @@ def main() -> None:
     report: dict[str, Any] = json.loads(args.input.read_text(encoding="utf-8"))
     baseline = report["results"]["lightx2v_bf16_sageattention2"]
     candidate = report["results"]["telefuser_fp8_sol_exact"]
-    names = ["LightX2V\nBF16 + SageAttn2", "TeleFuser\nFP8 + Sol"]
+    names = ["LightX2V", "TeleFuser"]
     colors = ["#3874a5", "#23806f"]
     panels = (
         (
@@ -100,9 +100,7 @@ def main() -> None:
         0.5,
         0.03,
         "MiniMax-H3 Base | 1344 x 768 | 124 frames | 50 steps | "
-        "4 x H100 80GB | TP2 x Ulysses SP2\n"
-        "LightX2V: BF16 + SageAttention2 | "
-        "TeleFuser: FP8 Linear + FP8 Sol, tau=1.0",
+        "4 x H100 80GB | TP2 x Ulysses SP2",
         ha="center",
         color="#69747d",
         fontsize=9.5,

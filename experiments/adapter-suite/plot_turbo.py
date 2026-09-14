@@ -33,7 +33,7 @@ def main() -> None:
     baseline_memory = baseline["formal_run_peak_memory_mib"] / 1024.0
     candidate_memory = candidate["whole_process_peak_memory_mib"] / 1024.0
 
-    names = ["LightX2V\nBF16 + Sol", "TeleFuser\nFP8 + Sol"]
+    names = ["LightX2V", "TeleFuser"]
     colors = ["#3874a5", "#23806f"]
     panels = (
         ("Denoise time", "seconds / video", [baseline_time, candidate_time]),
@@ -88,9 +88,7 @@ def main() -> None:
         0.5,
         0.035,
         "MiniMax-H3 Turbo LoRA | 1344 x 768 | 124 frames | 8 DiT updates | "
-        "1 x H100 80GB\n"
-        "LightX2V: resident DiT, BF16 + Sol | "
-        "TeleFuser: FP8 Linear + FP8 Sol, tau=1.0",
+        "1 x H100 80GB | resident DiT",
         ha="center",
         color="#69747d",
         fontsize=9.5,

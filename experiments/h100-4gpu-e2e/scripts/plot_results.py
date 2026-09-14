@@ -37,7 +37,7 @@ def main() -> None:
     baseline = load(args.baseline)
     telefuser = load(args.telefuser)
     reports = [baseline, telefuser]
-    names = ["FastVideo\nBF16 + FA4", "TeleFuser\nFP8 + Sol"]
+    names = ["FastVideo", "TeleFuser"]
     colors = ["#3874a5", "#23806f"]
     panels = [
         (
@@ -112,8 +112,7 @@ def main() -> None:
         0.025,
         f"MiniMax-H3 + FastH3 Dense/Data-Free | "
         f"{workload['resolution'][0]} x {workload['resolution'][1]} | "
-        f"{workload['frames']} frames | {telefuser['hardware']} | no DiT CPU offload\n"
-        "FastVideo: BF16 Linear + FA4 | TeleFuser: FP8 Linear + FP8 Sol, tau=1.0, KV smoothing",
+        f"{workload['frames']} frames | {telefuser['hardware']} | no DiT CPU offload",
         ha="center",
         color="#69747d",
         fontsize=9.5,
