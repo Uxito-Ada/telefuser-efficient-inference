@@ -9,9 +9,6 @@ do_not_claim: Do not combine incomparable schedules or present invalid media as 
 
 # Performance and Output Quality {#results}
 
-The measurements below use the H100 80GB GPUs available for this study. The
-hardware is part of the reproducibility record, not the scope of Q-SPA.
-
 ## Base H3 on four GPUs
 
 The primary framework comparison runs MiniMax-H3 Base on four GPUs.

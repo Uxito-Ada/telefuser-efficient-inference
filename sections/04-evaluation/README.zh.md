@@ -6,11 +6,9 @@ language: zh-CN
 
 # 性能与生成效果 {#results}
 
-本文数据来自当时可用的 H100 80GB，图中保留硬件型号只是为了方便复现。
-
 ## 四卡 Base H3
 
-主测试使用四张 GPU 跑 MiniMax-H3 Base。LightX2V 和 TeleFuser 都开 `TP2 x Ulysses SP2`，prompt、seed、分辨率、帧数、帧率和 50-point schedule 全部一致，并关闭 feature cache。LightX2V 采用能够正确生成视频的 BF16 + SageAttention2；TeleFuser 采用 FP8 Linear + Q-SPA。
+主测试在四张 GPU 上运行 MiniMax-H3 Base。LightX2V 和 TeleFuser 均启用 `TP2 x Ulysses SP2`，并采用相同的 prompt、seed、分辨率、帧数、帧率和 50-point schedule，同时关闭 feature cache。LightX2V 使用 BF16 + SageAttention2，TeleFuser 使用 FP8 Linear + Q-SPA。
 
 ![四 GPU MiniMax-H3 Base 性能](assets/lightx2v-base-h3.svg)
 
@@ -20,7 +18,7 @@ language: zh-CN
   <div><strong>降低 40.3%</strong><span>代表性单卡峰值显存</span></div>
 </div>
 
-完整生成时间从 137.76 秒降到 52.27 秒，去噪时间从 129.22 秒降到 49.28 秒。两边使用相同的四卡并行配置，因此可以直接比较加速比。
+完整生成时间从 137.76 秒降至 52.27 秒，去噪时间从 129.22 秒降至 49.28 秒。两套框架使用相同的四卡并行配置，因此可以直接比较加速比。
 
 <div class="video-pair" data-sync-group="base-h3">
   <figure>
@@ -37,11 +35,11 @@ language: zh-CN
 
 ## Adapter 工作负载
 
-下面再看两个常用模型变体：MiniMax-H3 Turbo LoRA 和 FastH3 dense hybrid adapter。每组都选择能够正确运行该模型的外部框架作为对照，并对齐输入、输出规格和 DiT 调用次数。
+Adapter 评测覆盖 MiniMax-H3 Turbo LoRA 和 FastH3 dense hybrid adapter。每组测试均选择支持对应模型的外部框架作为对照，并对齐输入、输出规格和 DiT 调用次数。
 
 ### MiniMax-H3 Turbo LoRA
 
-Turbo 测试使用单张 GPU 和 8-step v1.0 768p Adapter，总共执行八次 DiT。两边的 DiT 都常驻 GPU：LightX2V 使用 BF16 + Sol，TeleFuser 先合并 LoRA，再生成 FP8 权重并运行 Q-SPA。CPU block offload 的数据没有画进来。
+Turbo 测试使用单张 GPU 和 8-step v1.0 768p Adapter，共执行八次 DiT。两套框架均将 DiT 常驻 GPU：LightX2V 使用 BF16 + Sol；TeleFuser 在合并 LoRA 后生成 FP8 权重，并运行 Q-SPA。图中不包含 CPU block offload 结果。
 
 ![MiniMax-H3 Turbo Adapter 性能](assets/turbo-performance.svg)
 
@@ -64,7 +62,7 @@ Turbo 测试使用单张 GPU 和 8-step v1.0 768p Adapter，总共执行八次 D
 
 ### FastH3 dense adapter
 
-FastH3 同样使用单张 GPU。两边采用相同的 dense adapter、prompt、seed、1344 x 768 输出和 124 帧配置，实际执行四次 DiT。FastVideo 使用 BF16 Linear + FlashAttention 4，TeleFuser 使用 FP8 Linear + Q-SPA；去噪时都不 offload DiT。每边先 warm-up 一次，正式结果取三次生成的中位数。
+FastH3 测试同样使用单张 GPU。两套框架采用相同的 dense adapter、prompt、seed、1344 x 768 输出和 124 帧配置，实际执行四次 DiT。FastVideo 使用 BF16 Linear + FlashAttention 4，TeleFuser 使用 FP8 Linear + Q-SPA；去噪期间均不进行 DiT CPU offload。每套框架先完成一次 warm-up，正式结果取三次生成的中位数。
 
 ![FastH3 Adapter 对齐性能](assets/end-to-end.svg)
 
@@ -89,4 +87,4 @@ FastH3 只比较去噪阶段，因为两套框架对 prompt-conditioning cache �
 
 ## 通信计算重叠
 
-四卡执行还可以把 Ulysses 通信藏到 attention 计算后面。另一组五个 case 的回归测试中，平均请求时间从 78.546 秒降到 75.766 秒，改善 **3.539%**；五个 MP4 都保持 byte-identical。这项优化已经用在四卡 Base H3 的分布式执行中。
+四卡执行支持 Ulysses 通信与 attention 计算重叠。在另一组包含五个 case 的回归测试中，平均请求时间从 78.546 秒降至 75.766 秒，改善 **3.539%**；五个 MP4 均保持 byte-identical。该优化用于四卡 Base H3 的分布式执行。

@@ -12,9 +12,9 @@ Q-SPA 在 TeleFuser 中解决了三个直接相关的问题：
 - FP8 和稀疏共同作用时的生成误差控制；
 - 稀疏 FP8 attention 在 Ulysses SP 与 Tensor Parallel 下的多卡执行。
 
-TeleFuser 可以直接运行 Base H3，也可以先合并 Turbo LoRA 或 FastH3 Adapter，再生成对应的 FP8 权重。Adapter 决定模型和采样方式，Q-SPA 降低每次 DiT 执行的成本。
+TeleFuser 支持直接运行 Base H3，也支持在合并 Turbo LoRA 或 FastH3 Adapter 后生成相应的 FP8 权重。Adapter 决定模型与采样方式，Q-SPA 降低单次 DiT 执行成本。
 
-四卡 Base H3 测试中，LightX2V 和 TeleFuser 都使用 `TP2 x Ulysses SP2`。TeleFuser 的生成速度是 LightX2V 的 2.64 倍，代表性峰值显存低 40.3%。Turbo LoRA 与 FastH3 的测试也分别优于对应的 LightX2V 和 FastVideo 对照。除了性能图，正文保留了 tensor 误差、完整视频和同步音频，方便同时检查速度与结果质量。
+四卡 Base H3 测试中，LightX2V 和 TeleFuser 均使用 `TP2 x Ulysses SP2`。TeleFuser 的生成速度达到 LightX2V 的 2.64 倍，代表性峰值显存降低 40.3%。Turbo LoRA 与 FastH3 测试也分别优于对应的 LightX2V 和 FastVideo 对照。评测同时提供性能图、tensor 误差、完整视频和同步音频，用于综合检查性能与输出质量。
 
 ## 延伸阅读
 

@@ -8,26 +8,26 @@ language: zh-CN
 
 # Q-SPA：用 TeleFuser 实现量化、稀疏与并行协同的世界模型推理
 
-[TeleFuser](https://github.com/Tele-AI/TeleFuser) 是一个面向实时世界模型和多模态生成的开源推理、服务框架。它已经具备分布式推理、有状态服务和流式传输能力。这篇文章介绍我们最近补上的一块：Q-SPA（Quantized Sparse-Parallel Attention），即让 FP8 量化、动态稀疏 attention 和序列并行在同一套执行逻辑下工作。
+[TeleFuser](https://github.com/Tele-AI/TeleFuser) 是一个面向实时世界模型和多模态生成的开源推理与服务框架，支持分布式推理、有状态服务和流式传输。本文介绍 Q-SPA（Quantized Sparse-Parallel Attention）：一套协同设计 FP8 量化、动态稀疏 attention 与序列并行的执行方案。
 
-我们用 MiniMax-H3 来检验这套方案。H3 的 DiT 同时生成高分辨率视频和音频，既有大规模 Linear/MLP 计算，也有长序列 attention。速度不是唯一指标：运动是否稳定、画面细节是否保留、声音是否正常，都必须一起检查。
+本文选择 MiniMax-H3 进行验证。H3 的 DiT 同时生成高分辨率视频和音频，既包含大规模 Linear/MLP 计算，也包含长序列 attention。因此，评测不仅关注性能，还覆盖运动稳定性、画面细节和音频完整性。
 
-Q-SPA 主要包含三部分：
+Q-SPA 包含三个相互关联的执行维度：
 
-- 用 FP8 处理 Linear 和 attention 中适合低精度执行的计算；
-- 用 Sol-Attn 跳过不重要的 attention block，同时保留必要的稠密区域；
-- 用 Ulysses SP、Tensor Parallel 和通信计算重叠扩展到多卡。
+- 面向 Linear 与 attention 的 FP8 低精度计算；
+- 基于 Sol-Attn 的动态 block 稀疏，以及质量敏感区域的稠密计算；
+- Ulysses SP、Tensor Parallel 与通信计算重叠。
 
-我们还用 Turbo LoRA 和 FastH3 Adapter 两种模型变体，检查这套量化、稀疏和并行实现能否覆盖实际使用场景。
+Turbo LoRA 和 FastH3 Adapter 作为模型变体，用于验证量化、稀疏和并行实现对不同 H3 推理配置的兼容性。
 
-在四卡 Base H3 对比中，LightX2V 和 TeleFuser 都使用 `TP2 x Ulysses SP2`。TeleFuser 的生成速度是 LightX2V 的 **2.64 倍**，代表性单卡峰值显存低 **40.3%**。后文还会给出 Turbo LoRA、FastH3 Adapter 的性能结果和完整生成视频。
+在四卡 Base H3 对比中，LightX2V 和 TeleFuser 均使用 `TP2 x Ulysses SP2`。TeleFuser 的生成速度达到 LightX2V 的 **2.64 倍**，代表性单卡峰值显存降低 **40.3%**。Turbo LoRA 和 FastH3 Adapter 的性能结果与完整生成视频将在评测章节中分别展示。
 
-下面依次讨论四个问题：
+后续章节依次讨论四个问题：
 
 1. 为什么现有量化 kernel 很难直接接上动态稀疏 attention？
 2. Q-SPA 如何统一量化 scale、稀疏 block 和跨卡分片的数据布局？
 3. FP8 attention 如何控制生成质量损失？
-4. 这套 attention 实现如何扩展到多卡？
+4. Q-SPA 如何扩展到多卡？
 
 ---
 
@@ -37,9 +37,9 @@ id: 01-why-co-design
 language: zh-CN
 -->
 
-# 为什么量化和稀疏 attention 不能直接拼在一起
+# 量化与稀疏 attention 的布局冲突
 
-世界模型对算力的需求主要来自两处：Linear/MLP 的稠密计算，以及视觉、音频和条件 token 带来的长序列 attention。FP8 擅长降低前者的计算量和带宽，Sol-Attn 则通过跳过 attention block 来减少后者的工作量。要进一步提速，自然会想到把两者同时打开。
+世界模型的主要计算开销来自两部分：Linear/MLP 的稠密计算，以及视觉、音频和条件 token 带来的长序列 attention。FP8 可以降低前者的计算与带宽开销，Sol-Attn 则通过跳过 attention block 减少后者的计算量。进一步加速需要同时利用这两类优化。
 
 | 方法 | 主要作用 | 没有解决的问题 |
 |---|---|---|
@@ -48,15 +48,15 @@ language: zh-CN
 | Sol-Attn | 跳过不重要的 attention block | 其余 Transformer 计算 |
 | Ulysses SP | 将序列拆到多张 GPU | 跨卡通信 |
 
-真正的冲突在数据布局上。量化会按照 tensor、row、group 或 block 划分数据，并为每个量化单元保存对应的 scale。这个划分通常假设 tensor 的布局是固定的。Sol-Attn、Top-K、Top-P 一类方法却会在运行时选择并淘汰 attention block；保留下来的 K/V 需要 gather、压紧或重新编号。经过这一步，物理 tile 与原来的量化分组不再天然对齐，dense FP8 kernel 也就不能直接拿原有 scale 去计算。
+两类优化的核心冲突在于数据布局。量化按照 tensor、row、group 或 block 划分数据，并为每个量化单元保存对应的 scale；该映射通常依赖固定的 tensor 布局。Sol-Attn、Top-K、Top-P 等稀疏方法会在运行时选择并淘汰 attention block，保留的 K/V 随后需要 gather、压紧或重新编号。此时，物理 tile 与原量化分组不再对齐，dense FP8 kernel 无法将重排后的数据直接关联到原有 scale。
 
-一种简单做法是把选中的 block 反量化回 BF16，再交给稀疏 kernel。但这样会重新引入数据搬运和高精度计算，量化本来想节省的开销又回来了。因此，问题不是“缺少一个开关”，而是稀疏索引、量化 scale 和 kernel tile 必须采用兼容的布局。
+一种兼容方案是将选中的 block 反量化为 BF16，再交由稀疏 kernel 处理，但额外的数据转换和高精度计算会抵消部分量化收益。要保留端到端低精度执行，稀疏索引、量化 scale 和 kernel tile 必须采用兼容的布局。
 
-序列并行又增加了一层约束。token 被切到不同 rank 后，每张卡看到的是局部 tensor，而稀疏选择仍要保持全局一致的含义。量化元数据、稀疏 block 编号和 rank 内布局必须一起设计，否则单卡能跑通的 kernel 到多卡就会失效。
+序列并行进一步引入跨 rank 的布局约束。token 分片后，每个 rank 仅持有局部 tensor，而稀疏选择仍需保持一致的全局语义。量化元数据、稀疏 block 编号和 rank 内布局如果不能协同映射，单卡 kernel 将无法直接扩展到多卡。
 
-硬件差异是另一个问题。低精度格式和 kernel 并不覆盖所有 GPU 架构；为更新硬件准备的 MXFP8、NVFP4 实现也不会自动在 SM90 上工作。因此，框架显示“FP8 已开启”，不等于 Linear、稀疏 attention 和多卡分片已经连成一条低精度执行链。
+硬件差异是另一项约束。低精度格式和 kernel 并不覆盖所有 GPU 架构；面向更新硬件的 MXFP8、NVFP4 实现也不会自动支持 SM90。因此，框架层面的“FP8 enabled”标记并不能说明 Linear、稀疏 attention 和多卡分片已经构成端到端低精度执行链。
 
-Q-SPA 的出发点就是统一这几份布局约定。归一化、位置编码等敏感计算保留高精度，主要 Linear 和被选中的 attention block 则继续使用与硬件匹配的 FP8 kernel。
+Q-SPA 通过统一量化、稀疏与分布式 attention 的布局约定解决上述问题。归一化、位置编码等敏感计算保留高精度，主要 Linear 和被选中的 attention block 则继续使用与硬件匹配的 FP8 kernel。
 
 ---
 
@@ -68,19 +68,19 @@ language: zh-CN
 
 # Q-SPA 在 TeleFuser 中的实现 {#q-spa-system}
 
-在 MiniMax-H3 上，Q-SPA 改动了三层执行逻辑：DiT 的稠密计算、长序列 attention，以及多卡上的 tensor 布局。
+在 MiniMax-H3 上，Q-SPA 覆盖三层执行逻辑：DiT 稠密计算、长序列 attention 和多卡 tensor 布局。
 
 ## 让 FP8 和稀疏 block 使用同一份布局
 
-TeleFuser 先把 FP8 用到 DiT 的投影层和 MLP，再把低精度执行延伸到 Sol-Attn。这里的关键不是同时打开两个配置项，而是让稀疏 block 索引、量化 scale 和 attention kernel 消费的 tile 遵守同一份布局约定。这样，选中的 QKV block 可以继续以 FP8 参与计算，不需要先还原成 BF16。
+TeleFuser 将 FP8 应用于 DiT 的投影层和 MLP，并将低精度执行延伸到 Sol-Attn。稀疏 block 索引、量化 scale 和 attention kernel 使用的 tile 遵循统一的布局约定，使选中的 QKV block 能够直接参与 FP8 计算，无需预先转换为 BF16。
 
-没有被当前 kernel 覆盖的 shape 会走经过验证的 dense fallback，不会静默进入错误路径。
+当前 kernel 尚未覆盖的 shape 将使用经过验证的 dense fallback。
 
-## 把 attention 拆到多张 GPU
+## 分布式 attention
 
 Ulysses 序列并行负责拆分长序列，Tensor Parallel 负责拆分较宽的 Transformer 层。TeleFuser 支持 MiniMax-H3 双卡和四卡配置，包括 `TP2 x Ulysses SP2`；Ulysses 的通信还能与 attention 计算重叠。
 
-稀疏选择所需的统计量按照 Ulysses 建立的 attention 视图计算，因此单卡和多卡使用相同的 block 语义。FP8 减少算术时间后，通信占比会变高，通信计算重叠也就更重要。
+稀疏选择所需的统计量基于 Ulysses 建立的 attention 视图计算，从而使单卡与多卡保持一致的 block 语义。FP8 降低算术计算时间后，通信占比相应提高，通信计算重叠的作用也更为显著。
 
 ## 覆盖不同 H3 模型变体
 
@@ -98,15 +98,15 @@ language: zh-CN
 
 # 控制误差，并扩展到多卡
 
-Diffusion 的每一步输出都会成为下一步输入。FP8 或稀疏 attention 在某一步引入的误差，可能沿着去噪过程继续累积。因此，我们没有只看 kernel 吞吐，还检查了 tensor 误差、最终视频和音频。
+Diffusion 的每一步输出都会成为下一步输入。FP8 或稀疏 attention 引入的局部误差可能沿去噪过程累积，因此评测同时覆盖 kernel 吞吐、tensor 误差、最终视频和音频。
 
 ## FP8 attention 的误差控制
 
-对 MiniMax-H3 实际层做 profile 后，我们发现部分 K/V 的均值明显偏离零点。直接做对称 FP8 量化会浪费一部分动态范围。TeleFuser 在计算前先对 K/V 做中心化，再在 attention 输出中补回等价偏移。这可以看作专门针对 attention 的非对称量化处理。
+MiniMax-H3 实际层的 profile 显示，部分 K/V 的均值明显偏离零点，直接使用对称 FP8 量化会损失有效动态范围。TeleFuser 在计算前对 K/V 进行中心化，并在 attention 输出中恢复等价偏移。这是一种针对 attention 数据分布设计的非对称量化处理。
 
 中心化和输出修正已经融合进 FP8 Sol-Attn。最早的非融合版本让去噪时间增加 11.7%，融合后开销降到 2.2%。在捕获的真实 H3 层上，K 的量化 MSE 降低 21.65%，attention 输出 MSE 降低 8.18%；KV smoothing 和 V correction 在优化配置中默认开启。
 
-50-step 测试中，这个版本的去噪吞吐仍比 BF16 Linear + FlashAttention 4 高 39.4%，peak allocated memory 低 42.6%。相较没有 smoothing 的 FP8，frame cosine、PSNR 和 mean SSIM 都有改善，音频距离指标则有升有降。下面三段是完整输出，可以同步播放。
+在 50-step 测试中，该版本的去噪吞吐比 BF16 Linear + FlashAttention 4 提高 39.4%，peak allocated memory 降低 42.6%。相较未使用 smoothing 的 FP8，frame cosine、PSNR 和 mean SSIM 均有所改善，音频距离指标则有升有降。以下播放器展示三组完整输出，并支持同步播放。
 
 <div class="video-grid video-grid-three" data-sync-group="smoothing">
   <figure>
@@ -125,7 +125,7 @@ Diffusion 的每一步输出都会成为下一步输入。FP8 或稀疏 attentio
 
 ## 哪些位置仍然保留稠密 attention
 
-去噪早期和部分 Transformer 层对长程依赖更敏感。TeleFuser 可以保留开头若干次完整 attention，也可以指定部分层始终使用稠密计算，其余位置再交给 Sol-Attn。本文的 FastH3 配置保留两个开头 update 和两个 dense layer，之后使用 `tau=1.0` 的 exact routing。Dense step、dense layer、threshold mode 和 `tau` 都可以按 schedule 调整。
+去噪早期和部分 Transformer 层对长程依赖更敏感。TeleFuser 可以保留开头若干次完整 attention，也可以指定部分层始终使用稠密计算，其余位置使用 Sol-Attn。本文的 FastH3 配置保留两个开头 update 和两个 dense layer，之后使用 `tau=1.0` 的 exact routing。Dense step、dense layer、threshold mode 和 `tau` 均可按 schedule 调整。
 
 ## 多卡执行
 
@@ -141,11 +141,9 @@ language: zh-CN
 
 # 性能与生成效果 {#results}
 
-本文数据来自当时可用的 H100 80GB，图中保留硬件型号只是为了方便复现。
-
 ## 四卡 Base H3
 
-主测试使用四张 GPU 跑 MiniMax-H3 Base。LightX2V 和 TeleFuser 都开 `TP2 x Ulysses SP2`，prompt、seed、分辨率、帧数、帧率和 50-point schedule 全部一致，并关闭 feature cache。LightX2V 采用能够正确生成视频的 BF16 + SageAttention2；TeleFuser 采用 FP8 Linear + Q-SPA。
+主测试在四张 GPU 上运行 MiniMax-H3 Base。LightX2V 和 TeleFuser 均启用 `TP2 x Ulysses SP2`，并采用相同的 prompt、seed、分辨率、帧数、帧率和 50-point schedule，同时关闭 feature cache。LightX2V 使用 BF16 + SageAttention2，TeleFuser 使用 FP8 Linear + Q-SPA。
 
 ![四 GPU MiniMax-H3 Base 性能](sections/04-evaluation/assets/lightx2v-base-h3.svg)
 
@@ -155,7 +153,7 @@ language: zh-CN
   <div><strong>降低 40.3%</strong><span>代表性单卡峰值显存</span></div>
 </div>
 
-完整生成时间从 137.76 秒降到 52.27 秒，去噪时间从 129.22 秒降到 49.28 秒。两边使用相同的四卡并行配置，因此可以直接比较加速比。
+完整生成时间从 137.76 秒降至 52.27 秒，去噪时间从 129.22 秒降至 49.28 秒。两套框架使用相同的四卡并行配置，因此可以直接比较加速比。
 
 <div class="video-pair" data-sync-group="base-h3">
   <figure>
@@ -172,11 +170,11 @@ language: zh-CN
 
 ## Adapter 工作负载
 
-下面再看两个常用模型变体：MiniMax-H3 Turbo LoRA 和 FastH3 dense hybrid adapter。每组都选择能够正确运行该模型的外部框架作为对照，并对齐输入、输出规格和 DiT 调用次数。
+Adapter 评测覆盖 MiniMax-H3 Turbo LoRA 和 FastH3 dense hybrid adapter。每组测试均选择支持对应模型的外部框架作为对照，并对齐输入、输出规格和 DiT 调用次数。
 
 ### MiniMax-H3 Turbo LoRA
 
-Turbo 测试使用单张 GPU 和 8-step v1.0 768p Adapter，总共执行八次 DiT。两边的 DiT 都常驻 GPU：LightX2V 使用 BF16 + Sol，TeleFuser 先合并 LoRA，再生成 FP8 权重并运行 Q-SPA。CPU block offload 的数据没有画进来。
+Turbo 测试使用单张 GPU 和 8-step v1.0 768p Adapter，共执行八次 DiT。两套框架均将 DiT 常驻 GPU：LightX2V 使用 BF16 + Sol；TeleFuser 在合并 LoRA 后生成 FP8 权重，并运行 Q-SPA。图中不包含 CPU block offload 结果。
 
 ![MiniMax-H3 Turbo Adapter 性能](sections/04-evaluation/assets/turbo-performance.svg)
 
@@ -199,7 +197,7 @@ Turbo 测试使用单张 GPU 和 8-step v1.0 768p Adapter，总共执行八次 D
 
 ### FastH3 dense adapter
 
-FastH3 同样使用单张 GPU。两边采用相同的 dense adapter、prompt、seed、1344 x 768 输出和 124 帧配置，实际执行四次 DiT。FastVideo 使用 BF16 Linear + FlashAttention 4，TeleFuser 使用 FP8 Linear + Q-SPA；去噪时都不 offload DiT。每边先 warm-up 一次，正式结果取三次生成的中位数。
+FastH3 测试同样使用单张 GPU。两套框架采用相同的 dense adapter、prompt、seed、1344 x 768 输出和 124 帧配置，实际执行四次 DiT。FastVideo 使用 BF16 Linear + FlashAttention 4，TeleFuser 使用 FP8 Linear + Q-SPA；去噪期间均不进行 DiT CPU offload。每套框架先完成一次 warm-up，正式结果取三次生成的中位数。
 
 ![FastH3 Adapter 对齐性能](sections/04-evaluation/assets/end-to-end.svg)
 
@@ -224,7 +222,7 @@ FastH3 只比较去噪阶段，因为两套框架对 prompt-conditioning cache �
 
 ## 通信计算重叠
 
-四卡执行还可以把 Ulysses 通信藏到 attention 计算后面。另一组五个 case 的回归测试中，平均请求时间从 78.546 秒降到 75.766 秒，改善 **3.539%**；五个 MP4 都保持 byte-identical。这项优化已经用在四卡 Base H3 的分布式执行中。
+四卡执行支持 Ulysses 通信与 attention 计算重叠。在另一组包含五个 case 的回归测试中，平均请求时间从 78.546 秒降至 75.766 秒，改善 **3.539%**；五个 MP4 均保持 byte-identical。该优化用于四卡 Base H3 的分布式执行。
 
 ---
 
@@ -242,9 +240,9 @@ Q-SPA 在 TeleFuser 中解决了三个直接相关的问题：
 - FP8 和稀疏共同作用时的生成误差控制；
 - 稀疏 FP8 attention 在 Ulysses SP 与 Tensor Parallel 下的多卡执行。
 
-TeleFuser 可以直接运行 Base H3，也可以先合并 Turbo LoRA 或 FastH3 Adapter，再生成对应的 FP8 权重。Adapter 决定模型和采样方式，Q-SPA 降低每次 DiT 执行的成本。
+TeleFuser 支持直接运行 Base H3，也支持在合并 Turbo LoRA 或 FastH3 Adapter 后生成相应的 FP8 权重。Adapter 决定模型与采样方式，Q-SPA 降低单次 DiT 执行成本。
 
-四卡 Base H3 测试中，LightX2V 和 TeleFuser 都使用 `TP2 x Ulysses SP2`。TeleFuser 的生成速度是 LightX2V 的 2.64 倍，代表性峰值显存低 40.3%。Turbo LoRA 与 FastH3 的测试也分别优于对应的 LightX2V 和 FastVideo 对照。除了性能图，正文保留了 tensor 误差、完整视频和同步音频，方便同时检查速度与结果质量。
+四卡 Base H3 测试中，LightX2V 和 TeleFuser 均使用 `TP2 x Ulysses SP2`。TeleFuser 的生成速度达到 LightX2V 的 2.64 倍，代表性峰值显存降低 40.3%。Turbo LoRA 与 FastH3 测试也分别优于对应的 LightX2V 和 FastVideo 对照。评测同时提供性能图、tensor 误差、完整视频和同步音频，用于综合检查性能与输出质量。
 
 ## 延伸阅读
 
