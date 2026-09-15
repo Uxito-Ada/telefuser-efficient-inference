@@ -221,6 +221,8 @@ correction adds 2.1% denoise time over raw FP8.
 | FP8, unsmoothed | **19.63 dB** | **0.6712** | 0.8504 | 0.5055 |
 | FP8, smoothing enabled | 19.27 dB | 0.6700 | **0.8891** | **0.4537** |
 
+**Prompt:** `Locked-off cinematic wide shot of a red vintage tram gliding slowly through a snowy alpine village at sunrise. The tram remains rigid and geometrically consistent, its windows and wheels stay aligned. Light snow falls; soft rail sounds and distant church bells are synchronized with the scene. No people, no cuts, no camera movement.`
+
 <div class="video-grid video-grid-three" data-sync-group="smoothing">
   <figure>
     <figcaption>BF16 reference</figcaption>
@@ -356,6 +358,8 @@ Both frameworks use the 8-step v1.0 768p adapter with resident DiT weights. Tele
   <div><strong>36.5% higher</strong><span>8-step denoise throughput</span></div>
   <div><strong>12.3% lower</strong><span>whole-process peak GPU memory</span></div>
 </div>
+
+**Prompt:** `Steam rises from the ramen while the family talks in the background.`
 
 <div class="video-pair" data-sync-group="turbo">
   <figure>
