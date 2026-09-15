@@ -144,7 +144,11 @@ MiniMax-H3 实际层的 profile 显示，部分 K/V 的均值明显偏离零点�
 
 ## 可持续优化的稀疏策略
 
-不同模型和生成任务对稀疏 attention 的敏感位置并不相同。TeleFuser 提供 dense window、dense layer、阈值模式和稀疏强度等配置接口，便于针对新的模型或质量目标继续调优；MiniMax-H3 的默认配置已经过性能与生成质量验证，无需用户手动选择稀疏参数。
+**TeleFuser 同时优化了 Sol-Attn 本身的执行效率。** QK 和 PV GEMM 使用 FP8 计算，dequant 被融合进 attention 执行，减少独立的数据转换和显存读写；Two-way KV splitting 将 K/V 计算分成两路并行调度，提高稀疏 shape 下的 SM 利用率。
+
+**FP8 与 Sol-Attn 共同使用时，稀疏路由的边界也需要重新处理。** Route 长度不满足 FP8 kernel 的 tile 对齐要求时，TeleFuser 使用 Tail padding 补齐输入，并在计算后恢复真实 route length，避免 padding 进入有效输出，保证量化与动态稀疏组合的正确性。
+
+**稀疏策略保留了持续调优的接口。** TeleFuser 支持配置 dense window、dense layer、阈值模式和稀疏强度；MiniMax-H3 的默认参数已经过性能与生成质量调优，可以直接使用。
 
 ## 多卡执行
 

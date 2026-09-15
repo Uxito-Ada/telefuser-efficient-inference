@@ -66,11 +66,21 @@ markings, overhead linkage, and window alignment than the smoothed output.
 
 ## Sparsity designed for continued optimization
 
-Models and generation tasks differ in which attention regions are sensitive to
-sparsity. TeleFuser exposes the dense window, dense layers, threshold mode, and
-sparsity strength for further tuning on new workloads. Its MiniMax-H3 defaults
-have already been validated for performance and output quality, so users do not
-need to select these parameters manually.
+**TeleFuser also optimizes Sol-Attn execution itself.** QK and PV GEMMs run in
+FP8, dequantization is fused into attention execution to avoid a separate data
+conversion and memory round trip, and Two-way KV splitting schedules K/V work
+in two parallel partitions to improve SM utilization on sparse shapes.
+
+**Combining FP8 with Sol-Attn also requires explicit handling of sparse-route
+boundaries.** When a route length does not meet the FP8 kernel's tile alignment,
+TeleFuser applies Tail padding and restores the true route length after compute.
+Padding therefore cannot enter the valid output, preserving correctness across
+quantization and dynamic sparsity.
+
+**The sparsity policy remains configurable for continued optimization.**
+TeleFuser exposes the dense window, dense layers, threshold mode, and sparsity
+strength. Its MiniMax-H3 defaults are already tuned for performance and output
+quality and can be used directly.
 
 ## The same path on multiple GPUs
 

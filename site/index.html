@@ -216,11 +216,19 @@ correction adds 2.1% denoise time over raw FP8.</p>
 <p>In the latter part of the clip, the unsmoothed output shows less stable roof
 markings, overhead linkage, and window alignment than the smoothed output.</p>
 <h2 id="sparsity-designed-for-continued-optimization">Sparsity designed for continued optimization</h2>
-<p>Models and generation tasks differ in which attention regions are sensitive to
-sparsity. TeleFuser exposes the dense window, dense layers, threshold mode, and
-sparsity strength for further tuning on new workloads. Its MiniMax-H3 defaults
-have already been validated for performance and output quality, so users do not
-need to select these parameters manually.</p>
+<p><strong>TeleFuser also optimizes Sol-Attn execution itself.</strong> QK and PV GEMMs run in
+FP8, dequantization is fused into attention execution to avoid a separate data
+conversion and memory round trip, and Two-way KV splitting schedules K/V work
+in two parallel partitions to improve SM utilization on sparse shapes.</p>
+<p><strong>Combining FP8 with Sol-Attn also requires explicit handling of sparse-route
+boundaries.</strong> When a route length does not meet the FP8 kernel&rsquo;s tile alignment,
+TeleFuser applies Tail padding and restores the true route length after compute.
+Padding therefore cannot enter the valid output, preserving correctness across
+quantization and dynamic sparsity.</p>
+<p><strong>The sparsity policy remains configurable for continued optimization.</strong>
+TeleFuser exposes the dense window, dense layers, threshold mode, and sparsity
+strength. Its MiniMax-H3 defaults are already tuned for performance and output
+quality and can be used directly.</p>
 <h2 id="the-same-path-on-multiple-gpus">The same path on multiple GPUs</h2>
 <p>TeleFuser specializes its SP kernels for FP8, Sol-Attn, and world-model video
 generation. Each GPU quantizes FP8 QKV and runs Sol-Attn on its local attention
