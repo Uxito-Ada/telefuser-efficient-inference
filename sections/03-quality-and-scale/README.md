@@ -42,11 +42,14 @@ visible throughout the clip.
 
 Smoothed FP8 raises denoise throughput by 37.2% over BF16 Linear +
 FlashAttention 4 and reduces peak allocated memory by 42.6%. The fused
-correction adds 2.1% denoise time over raw FP8. In this seed, audio cosine
-improves from 0.850 to 0.889 and spectral convergence error falls from 0.506
-to 0.454; video PSNR and SSIM change by -0.36 dB and -0.0013. Local tensor
-error and final-media distance are reported separately. The players below
-provide the complete synchronized outputs.
+correction adds 2.1% denoise time over raw FP8.
+
+| Configuration (BF16 reference) | Video PSNR ↑ | Video SSIM ↑ | Audio cosine ↑ | Spectral convergence error ↓ |
+|---|---:|---:|---:|---:|
+| FP8, unsmoothed | **19.63 dB** | **0.6712** | 0.8504 | 0.5055 |
+| FP8, smoothing enabled | 19.27 dB | 0.6700 | **0.8891** | **0.4537** |
+
+**Prompt (all three configurations):** `Locked-off cinematic wide shot of a red vintage tram gliding slowly through a snowy alpine village at sunrise. The tram remains rigid and geometrically consistent, its windows and wheels stay aligned. Light snow falls; soft rail sounds and distant church bells are synchronized with the scene. No people, no cuts, no camera movement.`
 
 <div class="video-grid video-grid-three" data-sync-group="smoothing">
   <figure>
@@ -64,24 +67,19 @@ provide the complete synchronized outputs.
 </div>
 
 In the latter part of the clip, the unsmoothed output shows less stable roof
-markings, overhead linkage, and window alignment than the smoothed output. This
-is a qualitative observation from the matched prompt and seed; the three
-complete outputs above remain the comparison artifacts.
+markings, overhead linkage, and window alignment than the smoothed output.
 
-## Quality-aware sparsity
+## Tuned defaults with configurable sparsity
 
-Some denoising updates and transformer layers are more sensitive to missing
-long-range interactions. TeleFuser supports a dense opening window and selected
-dense layers before Sol-Attn handles the remaining work. The evaluated FastH3
-profile uses two dense opening updates and two dense layers, followed by
-`tau=1.0` exact sparse routing. Dense steps, dense layers, threshold mode, and
-`tau` remain configurable for other MiniMax-H3 schedules.
+Models and generation tasks differ in which attention regions are sensitive to
+sparsity. TeleFuser exposes the dense window, dense layers, threshold mode, and
+sparsity strength for further tuning on new workloads. Its MiniMax-H3 defaults
+have already been validated for performance and output quality, so users do not
+need to select these parameters manually.
 
 ## The same path on multiple GPUs
 
-TeleFuser combines Ulysses sequence parallelism with tensor parallelism for
-long-sequence, wide-transformer execution. Quality statistics are derived from
-the attention view established by Ulysses, keeping the single- and multi-GPU
-paths consistent. The runtime also supports overlapping Ulysses communication
-with attention compute, which becomes increasingly valuable after FP8 and
-sparsity reduce arithmetic time.
+Q-SPA combines Ulysses SP with tensor parallelism, using dedicated kernels and
+communication-compute overlap to reduce distributed overhead. FP8
+quantization, Sol routing, video tokens, and timesteps follow one sharding
+contract, so the single- and multi-GPU paths retain the same quality controls.

@@ -22,7 +22,14 @@ MiniMax-H3 实际层的 profile 显示，部分 K/V 的均值明显偏离零点�
 
 ![MiniMax-H3 FP8 smoothing 单卡性能](assets/smoothing-performance.svg)
 
-平滑 FP8 的去噪吞吐比 BF16 Linear + FlashAttention 4 提高 37.2%，峰值分配显存降低 42.6%；相对未平滑 FP8，融合修正增加 2.1% 去噪时间。该 seed 的音频 cosine 从 0.850 提升到 0.889，频谱收敛误差从 0.506 降到 0.454；视频 PSNR 和 SSIM 分别变化 -0.36 dB 和 -0.0013。局部 tensor 误差和最终媒体指标并不等价，因此两类结果分别报告。以下播放器可同步检查三段完整输出。
+平滑 FP8 的去噪吞吐比 BF16 Linear + FlashAttention 4 提高 37.2%，峰值分配显存降低 42.6%；相对未平滑 FP8，融合修正增加 2.1% 去噪时间。
+
+| 配置（BF16 为 reference） | 视频 PSNR ↑ | 视频 SSIM ↑ | 音频 cosine ↑ | 频谱收敛误差 ↓ |
+|---|---:|---:|---:|---:|
+| FP8，不使用 smoothing | **19.63 dB** | **0.6712** | 0.8504 | 0.5055 |
+| FP8，开启 smoothing | 19.27 dB | 0.6700 | **0.8891** | **0.4537** |
+
+**Prompt（三个配置）：** `Locked-off cinematic wide shot of a red vintage tram gliding slowly through a snowy alpine village at sunrise. The tram remains rigid and geometrically consistent, its windows and wheels stay aligned. Light snow falls; soft rail sounds and distant church bells are synchronized with the scene. No people, no cuts, no camera movement.`
 
 <div class="video-grid video-grid-three" data-sync-group="smoothing">
   <figure>
@@ -39,12 +46,12 @@ MiniMax-H3 实际层的 profile 显示，部分 K/V 的均值明显偏离零点�
   </figure>
 </div>
 
-在视频后半段，未平滑输出的车顶标识、受电弓连线和窗框对齐相较平滑输出更不稳定。该观察来自相同 prompt 和 seed 的定性检查；上方三段完整视频仍是主要对比材料。
+在视频后半段，未平滑输出的车顶标识、受电弓连线和窗框对齐相较平滑输出更不稳定。
 
-## 哪些位置仍然保留稠密 attention
+## 开箱即用、可继续调优的稀疏策略
 
-去噪早期和部分 Transformer 层对长程依赖更敏感。TeleFuser 可以保留开头若干次完整 attention，也可以指定部分层始终使用稠密计算，其余位置使用 Sol-Attn。本文的 FastH3 配置保留两个开头 update 和两个 dense layer，之后使用 `tau=1.0` 的 exact routing。Dense step、dense layer、threshold mode 和 `tau` 均可按 schedule 调整。
+不同模型和生成任务对稀疏 attention 的敏感位置并不相同。TeleFuser 提供 dense window、dense layer、阈值模式和稀疏强度等配置接口，便于针对新的模型或质量目标继续调优；MiniMax-H3 的默认配置已经过性能与生成质量验证，无需用户手动选择稀疏参数。
 
 ## 多卡执行
 
-Q-SPA 使用 Ulysses SP 拆分长序列，并与 Tensor Parallel 组合。稀疏统计基于 Ulysses 的 attention 视图计算，单卡和多卡因此保持相同的 block 语义。运行时还会重叠 Ulysses 通信和 attention 计算；FP8 与稀疏计算越快，这部分通信隐藏带来的收益越明显。
+Q-SPA 将 Ulysses SP 与 Tensor Parallel 组合，并通过专用 kernel 和通信计算重叠降低分布式开销。FP8 quantization、Sol-Attn routing、视频 token 和 timestep 均遵循同一分片语义，使单卡与多卡使用同一条质量优化路径。

@@ -21,8 +21,6 @@ tiles consumed by the attention kernel are kept in the same layout contract.
 Selected QKV blocks can therefore remain in FP8 instead of returning to a BF16
 attention backend.
 
-The implementation retains validated dense fallbacks for unsupported cases.
-
 ## Model variants
 
 MiniMax-H3 is used both as a base model and with acceleration or style adapters.
@@ -31,18 +29,24 @@ and dense adapters. Adapter changes are incorporated into the effective model
 before its reusable FP8 representation is created, ensuring that low-precision
 execution represents the requested model rather than the base checkpoint.
 
-A distilled adapter can reduce the number of DiT evaluations, while Q-SPA
-reduces the cost of each evaluation.
+Distilled adapters such as Turbo LoRA can reduce denoising steps, while other
+adapters target output quality for a specific task. Q-SPA incorporates the
+adapter's effective weights into the FP8, sparse, and parallel path, reducing
+end-to-end inference cost for the requested model rather than optimizing only
+the Base checkpoint.
 
 ## Distributed execution for long sequences
 
-For larger deployments, Ulysses sequence parallelism divides long attention
-work across GPUs and tensor parallelism divides wide transformer layers.
-TeleFuser supports two- and four-GPU MiniMax-H3 topologies, including
-`TP2 x Ulysses SP2`, and can overlap Ulysses communication with attention
-compute.
+TeleFuser does more than enable Ulysses SP for MiniMax-H3. It adapts the
+multi-GPU path to FP8, Sol-Attn, and the model's video-token layout. FP8
+quantization and Sol routing run on the rank-local attention view established
+by Ulysses All-to-All, keeping quantization scales and sparse blocks aligned
+with the actual compute layout. Three-dimensional video tokens are reordered
+before sequence partitioning; a scalar diffusion timestep remains replicated,
+while per-token timesteps follow the token shards. These rules preserve the
+model semantics across single- and multi-GPU execution.
 
-The result is one attention path spanning low-precision dense compute, sparse
-low-precision attention, and distributed execution. Because FP8 rounding and
-sparsity affect the same denoising trajectory, quality preservation is built
-into this path as well.
+TeleFuser also adds sequence-parallel kernels and overlaps Ulysses communication
+with attention compute. The resulting two- and four-GPU MiniMax-H3 path,
+including `TP2 × Ulysses SP2`, carries FP8 and sparse-attention gains into
+end-to-end distributed inference.

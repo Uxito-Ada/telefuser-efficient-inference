@@ -9,6 +9,8 @@ do_not_claim: Do not generalize performance beyond the evaluated MiniMax-H3 conf
 
 # Q-SPA: Quantized Sparse-Parallel Attention for World Models with TeleFuser
 
+<div class="byline">Heyang Sun · <a href="mailto:hsunbi@connect.ust.hk">hsunbi@connect.ust.hk</a></div>
+
 [TeleFuser](https://github.com/Tele-AI/TeleFuser) is an open-source streaming
 inference and serving framework for real-time world models and multimodal
 generation. It brings model execution, distributed GPU inference, stateful
@@ -41,14 +43,15 @@ TeleFuser now brings three execution dimensions together:
 - General-purpose quantization is often unstable on world-model DiTs. Their
   attention layouts, activation ranges, and hardware-specific kernels require
   targeted reconstruction rather than a drop-in quantizer.
-- A model fitting on one GPU does not make distributed execution redundant.
-  Compute-bound DiT denoising benefits from dividing work across devices and
-  overlapping communication with computation.
+- A world-model request combines conditioning and reasoning with long-sequence
+  video/audio denoising and decoding. Even when the weights fit on one GPU,
+  the full generation path remains compute-intensive; sequence parallelism,
+  tensor parallelism, and communication overlap turn additional GPUs into
+  lower end-to-end latency.
 
 TeleFuser scales the same Base H3 request across one, two, and four GPUs; the
 four-GPU run reaches **3.40x** the single-GPU denoise throughput. The evaluation
-also covers SGLang, LightX2V, FastVideo, Turbo LoRA, and FastH3, with the
-generated media embedded for direct inspection.
+also covers SGLang, LightX2V, FastVideo, Turbo LoRA, and FastH3.
 
 The rest of this post follows four questions:
 

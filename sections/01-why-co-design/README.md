@@ -11,14 +11,9 @@ do_not_claim: General FP8 support implies an FP8 sparse-attention path.
 
 World models pay for quality with compute. In MiniMax-H3, large projections and
 MLPs make the DiT compute-heavy, while visual, audio, and conditioning tokens
-make attention expensive. No single optimization addresses both costs.
-
-| Technique | Primary benefit | Remaining cost |
-|---|---|---|
-| FP8 Linear | cheaper projections and MLPs | long-sequence attention |
-| FP8 attention | lower QK/PV precision and bandwidth | dense token pairs |
-| Sol-Attn | fewer attention blocks | dense transformer layers |
-| Ulysses SP | lower per-GPU sequence state | communication between GPUs |
+make attention expensive. FP8 reduces the cost of projections and MLPs;
+Sol-Attn skips unimportant attention blocks. Further acceleration requires both
+to operate in one execution path.
 
 The difficulty is not simply that separate libraries expose separate APIs.
 Quantization scales are defined over a fixed partition of the tensor: per
@@ -29,18 +24,14 @@ scale groups assumed by a dense quantized kernel. Dequantizing the selected
 blocks back to BF16 restores compatibility but gives up much of the intended
 bandwidth and compute benefit.
 
-Sequence parallelism adds another layout transformation. Tokens and attention
-statistics are split across ranks, while sparse selection still needs a
-consistent global meaning. Quantization metadata, sparse block indices, and
-the per-rank tensor layout therefore have to be designed together.
-
 Hardware support sharpens the issue. Low-precision formats and kernels do not
-have uniform coverage across GPU generations: a path optimized for newer
-hardware does not automatically provide an equivalent implementation on SM90.
-A framework-level "FP8 enabled" switch therefore says little about whether
-dense DiT compute and sparse attention can remain in low precision together.
+cover every GPU generation. For example, MXFP8 and NVFP4 implementations built
+for newer hardware do not automatically support widely deployed platforms such
+as SM90. New accelerators do not make the installed base disappear. TeleFuser
+builds hardware-matched low-precision paths so existing platforms can run the
+latest world models efficiently.
 
-Q-SPA makes sparse routing, quantization metadata, and distributed attention
-share one layout contract. Sensitive normalization and positional transforms
-remain in higher precision, while the dominant Linear work and selected
-attention blocks stay on the hardware-matched FP8 path.
+Q-SPA gives sparse indices, quantization scales, and kernel tiles a compatible
+layout. Sensitive normalization and positional transforms remain in higher
+precision, while the dominant Linear work and selected attention blocks stay
+on the hardware-matched FP8 path.

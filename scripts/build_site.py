@@ -51,6 +51,7 @@ MEDIA = {
     "lightx2v-base-h3": "../sections/04-evaluation/assets/lightx2v-base-h3.mp4",
     "telefuser-base-h3": "../sections/04-evaluation/assets/telefuser-base-h3.mp4",
     "fastvideo-base-h3": "../sections/04-evaluation/assets/fastvideo-base-h3.mp4",
+    "sglang-base-h3": "../sections/04-evaluation/assets/sglang-base-h3.mp4",
     "turbo-lightx2v": "../sections/04-evaluation/assets/turbo-lightx2v.mp4",
     "turbo-telefuser": "../sections/04-evaluation/assets/turbo-telefuser.mp4",
     "fastvideo-primary": "../sections/04-evaluation/assets/fastvideo-primary.mp4",
@@ -85,6 +86,7 @@ def render(edition: dict[str, Any]) -> str:
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="{edition["description"]}">
+  <meta name="author" content="Heyang Sun">
   <title>{edition["title"]}</title>
   <link rel="stylesheet" href="styles.css">
 </head>

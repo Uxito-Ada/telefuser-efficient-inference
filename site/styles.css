@@ -84,6 +84,16 @@ article > p:first-of-type {
   font-weight: 650;
 }
 
+.byline {
+  margin: -10px 0 24px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.byline a {
+  color: inherit;
+}
+
 .hero-result {
   width: min(1040px, calc(100vw - 40px));
   margin: 36px 50% 34px;
