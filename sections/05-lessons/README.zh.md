@@ -16,8 +16,6 @@ TeleFuser 支持直接运行 Base H3，也支持在合并 Turbo LoRA 或 FastH3 
 
 四卡 Base H3 测试中，TeleFuser 完整生成耗时 52.27 秒，比 LightX2V 降低 62.1%，比 SGLang 降低 34.1%；对应的峰值显存分别降低 40.3% 和 37.3%。Turbo LoRA 与 FastH3 测试也优于各自的 LightX2V 和 FastVideo 对照。文中同时给出了性能、tensor 误差及完整的视频和音频输出。
 
-## Insights
-
 - FP8 与稀疏 attention 应当作为一条执行路径共同设计。单独使用任一优化
   仍会留下大量 DiT 计算；让稀疏 kernel 直接消费量化表示，才能同时获得两者的收益。
 - 通用量化封装不能保证 world model 的生成质量。长序列 attention 的布局和

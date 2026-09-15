@@ -25,7 +25,7 @@
   <span>相同四卡拓扑下，完整请求比 LightX2V 快 2.64 倍，比 SGLang 快 1.52 倍。</span>
 </div>
 
-<p><img class="results-montage" src="../sections/00-introduction/assets/results-montage.webp" width="960" height="549" alt="Base、Turbo、FastH3 与 FP8 质量实验输出总览"></p>
+<p><img class="results-montage" src="../sections/00-introduction/assets/results-montage.webp" width="1920" height="1098" alt="Base、Turbo、FastH3 与 FP8 质量实验输出总览"></p>
 <p>本文以 MiniMax-H3 为主要测试模型。它的 DiT 联合生成高分辨率视频和音频，计算同时集中在大规模 Linear/MLP 和长序列 attention。性能优化必须和运动稳定性、画面细节及音频完整性一起验证。</p>
 <p>Q-SPA 包含三个相互关联的执行维度：</p>
 <ul>
@@ -142,6 +142,22 @@
   <figure>
     <figcaption>FP8，开启 smoothing</figcaption>
     <video controls playsinline preload="metadata" src="../sections/03-quality-and-scale/assets/fp8-sol-smoothed.mp4" data-result-slot="fp8-smoothed"></video>
+  </figure>
+</div>
+
+<p>三段输出的差异在视频后半段最明显：未平滑 FP8 的车顶标识更杂乱，受电弓连线和窗框也不够规整。下面同步放大三段原始视频的同一区域。</p>
+<div class="video-grid video-grid-three" data-sync-group="smoothing-detail">
+  <figure>
+    <figcaption>BF16 参考局部</figcaption>
+    <video controls muted playsinline preload="metadata" src="../sections/03-quality-and-scale/assets/bf16-fa4-detail.mp4" data-result-slot="bf16-quality-detail"></video>
+  </figure>
+  <figure>
+    <figcaption>FP8，未平滑局部</figcaption>
+    <video controls muted playsinline preload="metadata" src="../sections/03-quality-and-scale/assets/fp8-sol-unsmoothed-detail.mp4" data-result-slot="fp8-unsmoothed-detail"></video>
+  </figure>
+  <figure>
+    <figcaption>FP8，平滑后局部</figcaption>
+    <video controls muted playsinline preload="metadata" src="../sections/03-quality-and-scale/assets/fp8-sol-smoothed-detail.mp4" data-result-slot="fp8-smoothed-detail"></video>
   </figure>
 </div>
 
@@ -293,7 +309,6 @@
 </ul>
 <p>TeleFuser 支持直接运行 Base H3，也支持在合并 Turbo LoRA 或 FastH3 Adapter 后生成相应的 FP8 权重。Adapter 决定模型与采样方式，Q-SPA 降低单次 DiT 执行成本。</p>
 <p>四卡 Base H3 测试中，TeleFuser 完整生成耗时 52.27 秒，比 LightX2V 降低 62.1%，比 SGLang 降低 34.1%；对应的峰值显存分别降低 40.3% 和 37.3%。Turbo LoRA 与 FastH3 测试也优于各自的 LightX2V 和 FastVideo 对照。文中同时给出了性能、tensor 误差及完整的视频和音频输出。</p>
-<h2 id="insights_1">Insights</h2>
 <ul>
 <li>FP8 与稀疏 attention 应当作为一条执行路径共同设计。单独使用任一优化
   仍会留下大量 DiT 计算；让稀疏 kernel 直接消费量化表示，才能同时获得两者的收益。</li>

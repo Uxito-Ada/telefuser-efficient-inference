@@ -23,7 +23,7 @@ diffusion transformers.
   <span>At the same four-GPU topology, TeleFuser is 2.64x faster than LightX2V and 1.52x faster than SGLang.</span>
 </div>
 
-<img class="results-montage" src="sections/00-introduction/assets/results-montage.webp" width="960" height="549" alt="Overview of Base, Turbo, FastH3, and FP8 quality outputs">
+<img class="results-montage" src="sections/00-introduction/assets/results-montage.webp" width="1920" height="1098" alt="Overview of Base, Turbo, FastH3, and FP8 quality outputs">
 
 MiniMax-H3 is the primary evaluation model. Its DiT jointly generates
 high-resolution video and synchronized audio, with substantial work in both
@@ -226,6 +226,25 @@ provide the complete synchronized outputs.
   </figure>
 </div>
 
+The largest visual divergence appears late in the clip. Raw FP8 produces
+noisier roof markings and less regular overhead linkage and window geometry.
+The following players magnify the same pixel region from all three outputs.
+
+<div class="video-grid video-grid-three" data-sync-group="smoothing-detail">
+  <figure>
+    <figcaption>BF16 reference detail</figcaption>
+    <video controls muted playsinline preload="metadata" data-result-slot="bf16-quality-detail"></video>
+  </figure>
+  <figure>
+    <figcaption>FP8, unsmoothed detail</figcaption>
+    <video controls muted playsinline preload="metadata" data-result-slot="fp8-unsmoothed-detail"></video>
+  </figure>
+  <figure>
+    <figcaption>FP8, smoothed detail</figcaption>
+    <video controls muted playsinline preload="metadata" data-result-slot="fp8-smoothed-detail"></video>
+  </figure>
+</div>
+
 ## Quality-aware sparsity
 
 Some denoising updates and transformer layers are more sensitive to missing
@@ -393,8 +412,6 @@ On the matched four-GPU Base H3 workload, TeleFuser completes generation in
 SGLang, with 40.3% and 37.3% lower reported peak memory. The Turbo LoRA and
 FastH3 runs also outperform their LightX2V and FastVideo baselines. Tensor
 profiles, video, and synchronized audio accompany the performance results.
-
-## Insights
 
 - FP8 and sparse attention should be designed as one path. Applying either in
   isolation leaves substantial DiT work on the table; matching the quantized

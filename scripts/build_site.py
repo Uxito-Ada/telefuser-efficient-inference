@@ -57,6 +57,9 @@ MEDIA = {
     "bf16-quality": "../sections/03-quality-and-scale/assets/bf16-fa4.mp4",
     "fp8-unsmoothed": "../sections/03-quality-and-scale/assets/fp8-sol-unsmoothed.mp4",
     "fp8-smoothed": "../sections/03-quality-and-scale/assets/fp8-sol-smoothed.mp4",
+    "bf16-quality-detail": "../sections/03-quality-and-scale/assets/bf16-fa4-detail.mp4",
+    "fp8-unsmoothed-detail": "../sections/03-quality-and-scale/assets/fp8-sol-unsmoothed-detail.mp4",
+    "fp8-smoothed-detail": "../sections/03-quality-and-scale/assets/fp8-sol-smoothed-detail.mp4",
 }
 
 

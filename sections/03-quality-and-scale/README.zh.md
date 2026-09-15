@@ -39,6 +39,23 @@ MiniMax-H3 实际层的 profile 显示，部分 K/V 的均值明显偏离零点�
   </figure>
 </div>
 
+三段输出的差异在视频后半段最明显：未平滑 FP8 的车顶标识更杂乱，受电弓连线和窗框也不够规整。下面同步放大三段原始视频的同一区域。
+
+<div class="video-grid video-grid-three" data-sync-group="smoothing-detail">
+  <figure>
+    <figcaption>BF16 参考局部</figcaption>
+    <video controls muted playsinline preload="metadata" data-result-slot="bf16-quality-detail"></video>
+  </figure>
+  <figure>
+    <figcaption>FP8，未平滑局部</figcaption>
+    <video controls muted playsinline preload="metadata" data-result-slot="fp8-unsmoothed-detail"></video>
+  </figure>
+  <figure>
+    <figcaption>FP8，平滑后局部</figcaption>
+    <video controls muted playsinline preload="metadata" data-result-slot="fp8-smoothed-detail"></video>
+  </figure>
+</div>
+
 ## 哪些位置仍然保留稠密 attention
 
 去噪早期和部分 Transformer 层对长程依赖更敏感。TeleFuser 可以保留开头若干次完整 attention，也可以指定部分层始终使用稠密计算，其余位置使用 Sol-Attn。本文的 FastH3 配置保留两个开头 update 和两个 dense layer，之后使用 `tau=1.0` 的 exact routing。Dense step、dense layer、threshold mode 和 `tau` 均可按 schedule 调整。

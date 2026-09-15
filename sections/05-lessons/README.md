@@ -26,8 +26,6 @@ SGLang, with 40.3% and 37.3% lower reported peak memory. The Turbo LoRA and
 FastH3 runs also outperform their LightX2V and FastVideo baselines. Tensor
 profiles, video, and synchronized audio accompany the performance results.
 
-## Insights
-
 - FP8 and sparse attention should be designed as one path. Applying either in
   isolation leaves substantial DiT work on the table; matching the quantized
   representation to the sparse kernel allows both optimizations to contribute.
