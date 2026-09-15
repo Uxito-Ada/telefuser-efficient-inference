@@ -1,0 +1,26 @@
+{
+  "audio": {
+    "channels": 2,
+    "cosine_similarity": 0.8504060924871171,
+    "duration_seconds": 4.48,
+    "log_spectral_distance_db": 13.121260987440644,
+    "mse": 0.013167077988126148,
+    "sample_rate": 32000,
+    "samples_per_channel": 143360,
+    "spectral_convergence": 0.5055314676340623
+  },
+  "candidate": "/data/heyang/quality-refresh/tram-fp8-unsmoothed.mp4",
+  "reference": "/data/heyang/quality-refresh/tram-bf16-fa4.mp4",
+  "video": {
+    "cosine_similarity": 0.9835482594198187,
+    "frames": 107,
+    "height": 768,
+    "mse": 707.5809292550175,
+    "psnr_db": 19.633042415919594,
+    "ssim_mean": 0.6712427478698713,
+    "ssim_minimum": 0.6324255959363747,
+    "ssim_samples": 27,
+    "ssim_stride": 4,
+    "width": 1344
+  }
+}

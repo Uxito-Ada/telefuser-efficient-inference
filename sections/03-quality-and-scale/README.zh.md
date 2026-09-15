@@ -14,19 +14,27 @@ MiniMax-H3 实际层的 profile 显示，部分 K/V 的均值明显偏离零点�
 
 中心化和输出修正已经融合进 FP8 Sol-Attn。最早的非融合版本让去噪时间增加 11.7%，融合后开销降到 2.2%。在捕获的真实 H3 层上，K 的量化 MSE 降低 21.65%，attention 输出 MSE 降低 8.18%；KV smoothing 和 V correction 在优化配置中默认开启。
 
-在 50-step 测试中，该版本的去噪吞吐比 BF16 Linear + FlashAttention 4 提高 39.4%，peak allocated memory 降低 42.6%。相较未使用 smoothing 的 FP8，frame cosine、PSNR 和 mean SSIM 均有所改善，音频距离指标则有升有降。以下播放器展示三组完整输出，并支持同步播放。
+质量实验使用固定机位拍摄雪地电车，三组运行采用相同 prompt、seed 和输出规格。车体、车窗、轨道和受电弓的刚性结构可直接反映时序几何是否稳定。
+
+| 模型 | 分辨率与帧数 | 采样 | GPU | Prompt / seed |
+|---|---|---|---:|---|
+| MiniMax-H3 Base，T2VA | 1344 × 768，107 帧，4 秒，24 fps | 50 points / 49 DiT updates | 1 × H100 | 雪地电车固定机位 / 17 |
+
+![MiniMax-H3 FP8 smoothing 单卡性能](assets/smoothing-performance.svg)
+
+平滑 FP8 的去噪吞吐比 BF16 Linear + FlashAttention 4 提高 37.2%，峰值分配显存降低 42.6%；相对未平滑 FP8，融合修正增加 2.1% 去噪时间。该 seed 的音频 cosine 从 0.850 提升到 0.889，频谱收敛误差从 0.506 降到 0.454；视频 PSNR 和 SSIM 分别变化 -0.36 dB 和 -0.0013。局部 tensor 误差和最终媒体指标并不等价，因此两类结果分别报告。以下播放器可同步检查三段完整输出。
 
 <div class="video-grid video-grid-three" data-sync-group="smoothing">
   <figure>
-    <figcaption>BF16 Linear + FlashAttention 4</figcaption>
+    <figcaption>BF16 参考</figcaption>
     <video controls playsinline preload="metadata" data-result-slot="bf16-quality"></video>
   </figure>
   <figure>
-    <figcaption>FP8 Linear + FP8 Sol，不使用 smoothing</figcaption>
+    <figcaption>FP8，不使用 smoothing</figcaption>
     <video controls playsinline preload="metadata" data-result-slot="fp8-unsmoothed"></video>
   </figure>
   <figure>
-    <figcaption>FP8 Linear + FP8 Sol，开启误差修正</figcaption>
+    <figcaption>FP8，开启 smoothing</figcaption>
     <video controls playsinline preload="metadata" data-result-slot="fp8-smoothed"></video>
   </figure>
 </div>

@@ -64,6 +64,7 @@ def render(edition: dict[str, Any]) -> str:
     source = edition["source"].read_text(encoding="utf-8")
     source = re.sub(r"<!--.*?-->", "", source, flags=re.DOTALL)
     source = source.replace("](sections/", "](../sections/")
+    source = source.replace('src="sections/', 'src="../sections/')
     source = source.replace("](experiments/", "](../experiments/")
     source = source.replace("](README.md)", "](../README.md)")
     body = markdown.markdown(

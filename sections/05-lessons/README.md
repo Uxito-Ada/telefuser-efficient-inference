@@ -20,16 +20,13 @@ TeleFuser can also run Base H3 or merge a Turbo LoRA or FastH3 adapter before
 creating the FP8 weights. The adapter defines the model and sampling schedule;
 Q-SPA reduces the cost of each DiT evaluation.
 
-On the matched four-GPU Base H3 workload, TeleFuser is 2.64x faster in
-generation and uses 40.3% less representative peak memory than LightX2V while
-both run `TP2 x Ulysses SP2`. The adapter evaluations show that the same runtime
-also outperforms the working LightX2V Turbo and FastVideo FastH3 baselines. The
-accompanying tensor profiles and generated media cover numerical error, final
-video, and synchronized audio rather than performance alone.
+On the matched four-GPU Base H3 workload, TeleFuser completes generation in
+52.27 seconds. It reduces latency by 62.1% against LightX2V and 34.1% against
+SGLang, with 40.3% and 37.3% lower reported peak memory. The Turbo LoRA and
+FastH3 runs also outperform their LightX2V and FastVideo baselines. Tensor
+profiles, video, and synchronized audio accompany the performance results.
 
 ## Insights
-
-The results reinforce the three observations from the opening:
 
 - FP8 and sparse attention should be designed as one path. Applying either in
   isolation leaves substantial DiT work on the table; matching the quantized
@@ -40,8 +37,9 @@ The results reinforce the three observations from the opening:
 - Distributed execution remains useful after the model fits on one GPU.
   MiniMax-H3 spends most of its denoising time in compute-bound DiT blocks, so
   Ulysses SP and tensor parallelism reduce per-device work and expose overlap
-  opportunities. The measured one-to-four GPU path improves denoise throughput
-  by 3.40x and reduces denoise time by 70.6%.
+  opportunities. Denoising takes 167.41 seconds on one GPU, 90.90 seconds on
+  two, and 49.28 seconds on four; four-GPU throughput reaches 3.40x the
+  single-GPU result.
 
 ## Further reading
 
@@ -50,4 +48,5 @@ The results reinforce the three observations from the opening:
 - [Sol-Attn: on-the-fly attention sparsification](https://nvlabs.github.io/Sana/Sol-Attn/)
 - [FastVideo MiniMax-H3 cookbook](https://haoailab.com/FastVideo/cookbook/minimax-h3/)
 - [LightX2V MiniMax-H3 examples](https://github.com/ModelTC/LightX2V/tree/main/scripts/minimax_h3)
+- [SGLang MiniMax-H3 cookbook](https://github.com/sgl-project/sglang/blob/main/docs/cookbook/diffusion/MiniMax/MiniMax-H3.mdx)
 - [TorchAO quantized inference workflows](https://docs.pytorch.org/ao/stable/workflows/inference.html)

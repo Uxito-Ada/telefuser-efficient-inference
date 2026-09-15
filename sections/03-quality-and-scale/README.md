@@ -29,23 +29,36 @@ cost to 2.2%. On a captured MiniMax-H3 layer, K quantization MSE fell by 21.65%
 and attention-output MSE by 8.18%. KV smoothing and V correction are enabled by
 default in the optimized profile.
 
-In the 50-step quality experiment, the resulting FP8 path remained 39.4%
-faster in denoising than BF16 Linear + FlashAttention 4 and used 42.6% less peak
-allocated memory. Frame cosine, PSNR, and mean SSIM all improved over
-unsmoothed FP8; audio-distance results were mixed. The synchronized outputs
-below show the complete video and audio result.
+The quality case uses a locked camera on a tram moving through snow.
+All three runs use the same prompt, seed, and output specification. The rigid
+body, aligned windows, rails, and pantograph make temporal geometry directly
+visible throughout the clip.
+
+| Model | Resolution and frames | Sampling | GPUs | Prompt / seed |
+|---|---|---|---:|---|
+| MiniMax-H3 Base, T2VA | 1344 × 768, 107 frames, 4 s at 24 FPS | 50 points / 49 DiT updates | 1 × H100 | locked tram shot / 17 |
+
+![MiniMax-H3 FP8 smoothing performance on one GPU](assets/smoothing-performance.svg)
+
+Smoothed FP8 raises denoise throughput by 37.2% over BF16 Linear +
+FlashAttention 4 and reduces peak allocated memory by 42.6%. The fused
+correction adds 2.1% denoise time over raw FP8. In this seed, audio cosine
+improves from 0.850 to 0.889 and spectral convergence error falls from 0.506
+to 0.454; video PSNR and SSIM change by -0.36 dB and -0.0013. Local tensor
+error and final-media distance are reported separately. The players below
+provide the complete synchronized outputs.
 
 <div class="video-grid video-grid-three" data-sync-group="smoothing">
   <figure>
-    <figcaption>BF16 Linear + FlashAttention 4</figcaption>
+    <figcaption>BF16 reference</figcaption>
     <video controls playsinline preload="metadata" data-result-slot="bf16-quality"></video>
   </figure>
   <figure>
-    <figcaption>FP8 Linear + FP8 Sol, unsmoothed</figcaption>
+    <figcaption>FP8, unsmoothed</figcaption>
     <video controls playsinline preload="metadata" data-result-slot="fp8-unsmoothed"></video>
   </figure>
   <figure>
-    <figcaption>FP8 Linear + FP8 Sol, quality-aware FP8</figcaption>
+    <figcaption>FP8, smoothing enabled</figcaption>
     <video controls playsinline preload="metadata" data-result-slot="fp8-smoothed"></video>
   </figure>
 </div>

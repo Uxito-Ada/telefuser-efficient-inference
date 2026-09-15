@@ -16,12 +16,17 @@ serving, and streaming delivery into one runtime. This post introduces Q-SPA:
 a quantized, sparse, and parallel attention path for compute-intensive
 diffusion transformers.
 
-We use MiniMax-H3 as the proving ground. Its DiT jointly generates
-high-resolution video and synchronized audio, so acceleration cannot come at
-the cost of unstable motion, lost visual detail, or broken audio events. The
-model also combines large dense layers, long-sequence attention, optional
-adapters, and multi-GPU execution. It exposes exactly the interactions an
-efficient world-model runtime must handle.
+<div class="hero-result">
+  <strong>4 × H100: a 5-second, 1344 × 768, 124-frame video with synchronized stereo audio in 52.27 seconds</strong>
+  <span>At the same four-GPU topology, TeleFuser is 2.64x faster than LightX2V and 1.52x faster than SGLang.</span>
+</div>
+
+<img class="results-montage" src="assets/results-montage.webp" width="960" height="549" alt="Overview of Base, Turbo, FastH3, and FP8 quality outputs">
+
+MiniMax-H3 is the primary evaluation model. Its DiT jointly generates
+high-resolution video and synchronized audio, with substantial work in both
+large Linear/MLP layers and long-sequence attention. We therefore evaluate
+motion, visual detail, and audio integrity together with performance.
 
 TeleFuser now brings three execution dimensions together:
 
@@ -40,17 +45,10 @@ TeleFuser now brings three execution dimensions together:
   Compute-bound DiT denoising benefits from dividing work across devices and
   overlapping communication with computation.
 
-We evaluate the same execution path on Base H3, Turbo LoRA, and FastH3 model
-variants.
-
-On the matched four-GPU Base H3 workload, with both frameworks running
-`TP2 x Ulysses SP2`, TeleFuser generates a video **2.64x faster** than LightX2V
-while using **40.3% less** representative peak GPU memory. We then test both
-supported adapter families against their working external baselines and embed
-the generated video and audio for direct comparison.
-
-Within TeleFuser, moving the same Base H3 FP8+Sol request from one GPU to four
-GPUs raises denoise throughput by **3.40x** and cuts denoise time by **70.6%**.
+TeleFuser scales the same Base H3 request across one, two, and four GPUs; the
+four-GPU run reaches **3.40x** the single-GPU denoise throughput. The evaluation
+also covers SGLang, LightX2V, FastVideo, Turbo LoRA, and FastH3, with the
+generated media embedded for direct inspection.
 
 The rest of this post follows four questions:
 
@@ -58,5 +56,3 @@ The rest of this post follows four questions:
 2. How does Q-SPA make their layouts compatible?
 3. How does attention smoothing recover quality without giving back the speed?
 4. How does the same attention path scale across GPUs?
-
-We close with matched performance, memory, tensor-error, and media results.

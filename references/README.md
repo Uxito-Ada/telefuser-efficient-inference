@@ -11,7 +11,8 @@ wording or unmatched benchmark values.
 | [MiniMax-H3](https://huggingface.co/MiniMaxAI/MiniMax-H3) | The only model studied; the official Diffusers route is a quality reference. |
 | [FastH3](https://haoailab.com/blogs/fasth3-preview/) | Current H3 acceleration work and presentation reference. |
 | [FastVideo MiniMax-H3 recipes](https://haoailab.com/FastVideo/cookbook/minimax-h3/) | Maintained external CUDA baseline and FastH3 adapter contract. |
-| [LightX2V MiniMax-H3](https://github.com/ModelTC/LightX2V) | Candidate external Sol-Attn comparison, admitted only after valid matched output. |
+| [LightX2V MiniMax-H3](https://github.com/ModelTC/LightX2V) | External MiniMax-H3 runtime baseline. |
+| [SGLang MiniMax-H3](https://github.com/sgl-project/sglang/blob/main/docs/cookbook/diffusion/MiniMax/MiniMax-H3.mdx) | External four-GPU MiniMax-H3 runtime baseline and topology reference. |
 
 ## Algorithms and kernels
 

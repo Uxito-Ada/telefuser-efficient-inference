@@ -1,7 +1,7 @@
 # Assets
 
-- `base-scaling.svg`: matched TeleFuser one-to-four-H100 Base H3 scaling chart.
-- `lightx2v-base-h3.svg`: matched four-H100 Base H3 performance chart.
+- `base-scaling.svg`: matched TeleFuser one-, two-, and four-H100 Base H3 scaling chart.
+- `lightx2v-base-h3.svg`: matched four-H100 SGLang, LightX2V, and TeleFuser chart.
 - `lightx2v-base-h3.mp4`: LightX2V BF16 + SageAttention2 Base H3 output.
 - `telefuser-base-h3.mp4`: TeleFuser FP8 + Sol Base H3 output.
 - `turbo-performance.svg`: matched one-H100 MiniMax-H3 Turbo LoRA chart.

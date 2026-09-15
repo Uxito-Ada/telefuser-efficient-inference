@@ -5,7 +5,11 @@ claims:
     source: experiments/h100-4gpu-e2e/raw/telefuser-base-h3-scaling.json
   one_to_four_gpu_peak_memory:
     status: measured
-    value: 37.2343 percent lower representative peak memory per GPU
+    value: 35.4580 percent lower maximum sampled peak memory per GPU
+    source: experiments/h100-4gpu-e2e/raw/telefuser-base-h3-scaling.json
+  one_to_two_gpu_denoise:
+    status: measured
+    value: 1.8417x higher denoise throughput
     source: experiments/h100-4gpu-e2e/raw/telefuser-base-h3-scaling.json
   four_gpu_generation:
     status: measured
@@ -19,6 +23,14 @@ claims:
     status: measured
     value: 40.3409 percent lower than LightX2V BF16 + SageAttention2
     source: experiments/h100-4gpu-e2e/raw/lightx2v-base-h3-summary.json
+  four_gpu_sglang_generation:
+    status: measured
+    value: 34.1381 percent lower request latency than the matched SGLang H100 run
+    source: experiments/h100-4gpu-e2e/raw/lightx2v-base-h3-comparison.json
+  four_gpu_sglang_peak_memory:
+    status: measured
+    value: 37.3416 percent lower reported peak GPU memory than SGLang
+    source: experiments/h100-4gpu-e2e/raw/lightx2v-base-h3-comparison.json
   turbo_denoise_time:
     status: measured
     value: 26.7287 percent lower than LightX2V resident BF16 + Sol
@@ -49,7 +61,7 @@ claims:
     source: experiments/quality-suite/raw/real-h3-qkv-error.json
   smoothing_video_quality:
     status: measured_single_case
-    value: frame cosine, PSNR, and mean SSIM improve; audio metrics are mixed
+    value: audio cosine improves and spectral convergence error falls; video full-reference metrics are nearly flat and slightly lower
     source: experiments/quality-suite/raw/media-quality.json
   distributed_overlap:
     status: measured_separate_protocol

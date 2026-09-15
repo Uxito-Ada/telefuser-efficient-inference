@@ -1,32 +1,31 @@
 {
-  "fp8_sol_unsmoothed": {
-    "video": {
-      "ssim_stride": 4,
-      "ssim_sample_count": 27,
-      "ssim_mean": 0.5463582976167992,
-      "ssim_min": 0.5150578835267706
-    },
-    "audio": {
-      "mse": 9.842346067117749e-05,
-      "snr_db": 1.447585043205624,
-      "si_sdr_db": -3.579078150473038,
-      "spectral_convergence": 0.6301397453555623,
-      "log_spectral_distance_db": 12.48431854196268
-    }
+  "schema_version": 2,
+  "reference": "bf16-fa4.mp4",
+  "workload": {
+    "model": "MiniMax-H3 Base",
+    "task": "T2VA",
+    "resolution": [1344, 768],
+    "frames": 107,
+    "fps": 24,
+    "duration_seconds": 4,
+    "sampling_points": 50,
+    "seed": 17,
+    "prompt": "Locked-off cinematic wide shot of a red vintage tram gliding slowly through a snowy alpine village at sunrise. The tram remains rigid and geometrically consistent, its windows and wheels stay aligned. Light snow falls; soft rail sounds and distant church bells are synchronized with the scene. No people, no cuts, no camera movement."
   },
-  "fp8_sol_smoothed": {
-    "video": {
-      "ssim_stride": 4,
-      "ssim_sample_count": 27,
-      "ssim_mean": 0.5659144680095332,
-      "ssim_min": 0.5382264700893488
+  "results": {
+    "fp8_sol_unsmoothed": {
+      "video_cosine": 0.9835482594198187,
+      "video_psnr_db": 19.633042415919594,
+      "video_ssim_mean": 0.6712427478698713,
+      "audio_cosine": 0.8504060924871171,
+      "audio_spectral_convergence": 0.5055314676340623
     },
-    "audio": {
-      "mse": 0.00010257369135540424,
-      "snr_db": 1.2682115062715458,
-      "si_sdr_db": -3.9798609498627497,
-      "spectral_convergence": 0.6387622178800704,
-      "log_spectral_distance_db": 12.521922249337985
+    "fp8_sol_smoothed": {
+      "video_cosine": 0.9820000899910979,
+      "video_psnr_db": 19.26829723906317,
+      "video_ssim_mean": 0.6699882427646313,
+      "audio_cosine": 0.8890975281084507,
+      "audio_spectral_convergence": 0.4536901776006695
     }
   }
 }

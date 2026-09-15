@@ -1,55 +1,55 @@
 {
   "aspect_ratio": "16:9",
   "attention": "FLASH_ATTN_4",
-  "audio": "/data/heyang/pr40-refine-results/bf16_fa4.audio.npy",
+  "audio": "/data/heyang/quality-refresh/tram-bf16-fa4.audio.npy",
   "audio_shape": [
     1,
     2,
     142400
   ],
-  "denoising_steps_per_second": 0.23647169331718773,
+  "denoising_steps_per_second": 0.2345208431885852,
   "duration_seconds": 4.0,
-  "frames": "/data/heyang/pr40-refine-results/bf16_fa4.frames.npy",
-  "generated_video_seconds_per_second": 0.011292026741839866,
-  "generation_seconds": 354.2322464734316,
+  "frames": "/data/heyang/quality-refresh/tram-bf16-fa4.frames.npy",
+  "generated_video_seconds_per_second": 0.01115827583858987,
+  "generation_seconds": 358.47832208685577,
   "linear_quantization": null,
-  "load_seconds": 21.49270541034639,
+  "load_seconds": 9.301160834729671,
   "model_root": "/hhb-data/aigc/model_zoo/MiniMaxAI_MiniMax-H3",
   "num_inference_steps": 50,
-  "output": "/data/heyang/pr40-refine-results/bf16_fa4.mp4",
-  "packed_sequence_length": 32640,
+  "output": "/data/heyang/quality-refresh/tram-bf16-fa4.mp4",
+  "packed_sequence_length": 32704,
   "parallelism": {
     "tp_degree": 1,
     "ulysses_degree": 1,
     "world_size": 1
   },
   "peak_memory_mib": [
-    69563
+    69571
   ],
-  "peak_memory_total_mib": 69563,
+  "peak_memory_total_mib": 69571,
   "profile": "baseline",
-  "prompt": "Steam rises from the ramen while the family talks in the background.",
+  "prompt": "Locked-off cinematic wide shot of a red vintage tram gliding slowly through a snowy alpine village at sunrise. The tram remains rigid and geometrically consistent, its windows and wheels stay aligned. Light snow falls; soft rail sounds and distant church bells are synchronized with the scene. No people, no cuts, no camera movement.",
   "resident_memory_mib": [
-    4
+    6
   ],
   "runtime_metrics": {
-    "audio_decoding_seconds": 1.0784117374569178,
+    "audio_decoding_seconds": 1.2734004314988852,
     "audio_encoding_seconds": 0.0,
-    "denoising_seconds": 211.441797953099,
-    "denoising_stage_seconds": 301.67541990429163,
+    "denoising_seconds": 213.2006661761552,
+    "denoising_stage_seconds": 303.3106910344213,
     "feature_cache_computed_steps": 49,
     "feature_cache_skipped_steps": 0,
-    "media_preparation_seconds": 0.00017173774540424347,
-    "peak_allocated_bytes": 69444148736,
-    "peak_reserved_bytes": 72207040512,
-    "pipeline_seconds": 353.4768197014928,
-    "text_encoding_seconds": 39.8582083825022,
-    "video_decoding_seconds": 10.171325668692589,
+    "media_preparation_seconds": 0.00014017149806022644,
+    "peak_allocated_bytes": 69452926976,
+    "peak_reserved_bytes": 72215429120,
+    "pipeline_seconds": 357.8968535400927,
+    "text_encoding_seconds": 41.66869423724711,
+    "video_decoding_seconds": 10.943599246442318,
     "visual_encoding_seconds": 0.0
   },
-  "save_seconds": 3.8977954294532537,
+  "save_seconds": 4.563206294551492,
   "schema_version": 1,
-  "seed": 0,
+  "seed": 17,
   "sol": null,
   "versions": {
     "telefuser": "0.1.0.post4.dev193+g25c1efb.d20260816",

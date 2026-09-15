@@ -84,6 +84,33 @@ article > p:first-of-type {
   font-weight: 650;
 }
 
+.hero-result {
+  width: min(1040px, calc(100vw - 40px));
+  margin: 36px 50% 34px;
+  padding: 26px 0;
+  border-top: 2px solid var(--teal);
+  border-bottom: 1px solid var(--line);
+  transform: translateX(-50%);
+}
+
+.hero-result strong,
+.hero-result span {
+  display: block;
+  max-width: 940px;
+  margin: 0 auto;
+}
+
+.hero-result strong {
+  font-size: 27px;
+  line-height: 1.35;
+}
+
+.hero-result span {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 16px;
+}
+
 h1,
 h2,
 h3 {
@@ -96,6 +123,11 @@ h1 {
   margin: 0 0 24px;
   font-size: 52px;
   font-weight: 760;
+}
+
+html[lang="zh-CN"] h1:first-of-type {
+  max-width: 860px;
+  font-size: 46px;
 }
 
 h1:not(:first-of-type) {
@@ -302,6 +334,10 @@ footer {
     font-size: 38px;
   }
 
+  html[lang="zh-CN"] h1:first-of-type {
+    font-size: 38px;
+  }
+
   h1:not(:first-of-type) {
     margin-top: 68px;
     font-size: 30px;
@@ -309,6 +345,15 @@ footer {
 
   article img {
     width: calc(100vw - 24px);
+  }
+
+  .hero-result {
+    width: calc(100vw - 24px);
+    padding: 22px 6px;
+  }
+
+  .hero-result strong {
+    font-size: 21px;
   }
 
   .video-pair,

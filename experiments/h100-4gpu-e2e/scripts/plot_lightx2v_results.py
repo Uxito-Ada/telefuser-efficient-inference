@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plot the matched four-H100 LightX2V and TeleFuser comparison."""
+"""Plot the matched four-H100 SGLang, LightX2V, and TeleFuser comparison."""
 
 from __future__ import annotations
 
@@ -23,33 +23,26 @@ def main() -> None:
     args = parser.parse_args()
 
     report: dict[str, Any] = json.loads(args.input.read_text(encoding="utf-8"))
+    sglang = report["results"]["sglang_matched_h100"]
     baseline = report["results"]["lightx2v_bf16_sageattention2"]
     candidate = report["results"]["telefuser_fp8_sol_exact"]
-    names = ["LightX2V", "TeleFuser"]
-    colors = ["#3874a5", "#23806f"]
+    names = ["SGLang", "LightX2V", "TeleFuser"]
+    colors = ["#8C72A8", "#3874A5", "#23806F"]
     panels = (
         (
             "Generation time",
             "seconds / video",
-            [baseline["generation_seconds"], candidate["generation_seconds"]],
-        ),
-        (
-            "Denoise time",
-            "seconds / video",
-            [baseline["denoise_seconds"], candidate["denoise_seconds"]],
-        ),
-        (
-            "Denoise throughput",
-            "steps / second",
             [
-                baseline["config_points_per_second"],
-                candidate["config_points_per_second"],
+                sglang["generation_seconds"],
+                baseline["generation_seconds"],
+                candidate["generation_seconds"],
             ],
         ),
         (
             "Peak memory",
             "GiB / GPU",
             [
+                sglang["representative_peak_memory_mib"] / 1024.0,
                 baseline["representative_peak_memory_mib"] / 1024.0,
                 candidate["representative_peak_memory_mib"] / 1024.0,
             ],
@@ -66,12 +59,13 @@ def main() -> None:
             "ytick.color": "#69747d",
             "figure.facecolor": "#ffffff",
             "axes.facecolor": "#ffffff",
+            "svg.fonttype": "none",
         }
     )
-    figure, axes = plt.subplots(1, 4, figsize=(14, 6.8))
+    figure, axes = plt.subplots(1, 2, figsize=(10.8, 6.8))
     figure.patch.set_facecolor("#ffffff")
     for axis, (label, unit, values) in zip(axes, panels, strict=True):
-        bars = axis.bar(names, values, width=0.30, color=colors)
+        bars = axis.bar(names, values, width=0.34, color=colors)
         axis.set_title(label, fontsize=14, fontweight=700, color="#17212b", pad=14)
         axis.set_ylabel(unit, fontsize=10)
         axis.grid(axis="y", color="#e7ebee", linewidth=0.8)
@@ -81,7 +75,7 @@ def main() -> None:
         axis.spines["left"].set_color("#dce2e6")
         axis.spines["bottom"].set_color("#dce2e6")
         axis.tick_params(axis="x", length=0, pad=8)
-        axis.margins(x=0.45)
+        axis.margins(x=0.30)
         upper = max(values) * 1.22
         axis.set_ylim(0, upper)
         for bar, value in zip(bars, values, strict=True):
@@ -105,10 +99,15 @@ def main() -> None:
         color="#69747d",
         fontsize=9.5,
     )
-    figure.subplots_adjust(left=0.06, right=0.99, top=0.88, bottom=0.21, wspace=0.38)
+    figure.subplots_adjust(left=0.09, right=0.98, top=0.88, bottom=0.21, wspace=0.30)
     args.figure.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(args.figure, format=args.figure.suffix.removeprefix("."), dpi=180)
     plt.close(figure)
+    svg = args.figure.read_text(encoding="utf-8")
+    args.figure.write_text(
+        "\n".join(line.rstrip() for line in svg.splitlines()) + "\n",
+        encoding="utf-8",
+    )
 
     summary = {
         "source": str(args.input),

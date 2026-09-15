@@ -25,12 +25,16 @@ generation. It brings model execution, distributed GPU inference, stateful
 serving, and streaming delivery into one runtime. This post introduces Q-SPA:
 a quantized, sparse, and parallel attention path for compute-intensive
 diffusion transformers.</p>
-<p>We use MiniMax-H3 as the proving ground. Its DiT jointly generates
-high-resolution video and synchronized audio, so acceleration cannot come at
-the cost of unstable motion, lost visual detail, or broken audio events. The
-model also combines large dense layers, long-sequence attention, optional
-adapters, and multi-GPU execution. It exposes exactly the interactions an
-efficient world-model runtime must handle.</p>
+<div class="hero-result">
+  <strong>4 × H100: a 5-second, 1344 × 768, 124-frame video with synchronized stereo audio in 52.27 seconds</strong>
+  <span>At the same four-GPU topology, TeleFuser is 2.64x faster than LightX2V and 1.52x faster than SGLang.</span>
+</div>
+
+<p><img class="results-montage" src="../sections/00-introduction/assets/results-montage.webp" width="960" height="549" alt="Overview of Base, Turbo, FastH3, and FP8 quality outputs"></p>
+<p>MiniMax-H3 is the primary evaluation model. Its DiT jointly generates
+high-resolution video and synchronized audio, with substantial work in both
+large Linear/MLP layers and long-sequence attention. We therefore evaluate
+motion, visual detail, and audio integrity together with performance.</p>
 <p>TeleFuser now brings three execution dimensions together:</p>
 <ul>
 <li>FP8 Linear and layout-aware FP8 attention;</li>
@@ -48,15 +52,10 @@ efficient world-model runtime must handle.</p>
   Compute-bound DiT denoising benefits from dividing work across devices and
   overlapping communication with computation.</li>
 </ul>
-<p>We evaluate the same execution path on Base H3, Turbo LoRA, and FastH3 model
-variants.</p>
-<p>On the matched four-GPU Base H3 workload, with both frameworks running
-<code>TP2 x Ulysses SP2</code>, TeleFuser generates a video <strong>2.64x faster</strong> than LightX2V
-while using <strong>40.3% less</strong> representative peak GPU memory. We then test both
-supported adapter families against their working external baselines and embed
-the generated video and audio for direct comparison.</p>
-<p>Within TeleFuser, moving the same Base H3 FP8+Sol request from one GPU to four
-GPUs raises denoise throughput by <strong>3.40x</strong> and cuts denoise time by <strong>70.6%</strong>.</p>
+<p>TeleFuser scales the same Base H3 request across one, two, and four GPUs; the
+four-GPU run reaches <strong>3.40x</strong> the single-GPU denoise throughput. The evaluation
+also covers SGLang, LightX2V, FastVideo, Turbo LoRA, and FastH3, with the
+generated media embedded for direct inspection.</p>
 <p>The rest of this post follows four questions:</p>
 <ol>
 <li>Why do quantization and block-sparse attention conflict in existing kernels?</li>
@@ -64,7 +63,6 @@ GPUs raises denoise throughput by <strong>3.40x</strong> and cuts denoise time b
 <li>How does attention smoothing recover quality without giving back the speed?</li>
 <li>How does the same attention path scale across GPUs?</li>
 </ol>
-<p>We close with matched performance, memory, tensor-error, and media results.</p>
 <hr>
 <h1 id="why-fp8-and-sparse-attention-need-one-design">Why FP8 and Sparse Attention Need One Design</h1>
 <p>World models pay for quality with compute. In MiniMax-H3, large projections and
@@ -170,22 +168,49 @@ unfused implementation added 11.7% denoising overhead; fusion reduced the final
 cost to 2.2%. On a captured MiniMax-H3 layer, K quantization MSE fell by 21.65%
 and attention-output MSE by 8.18%. KV smoothing and V correction are enabled by
 default in the optimized profile.</p>
-<p>In the 50-step quality experiment, the resulting FP8 path remained 39.4%
-faster in denoising than BF16 Linear + FlashAttention 4 and used 42.6% less peak
-allocated memory. Frame cosine, PSNR, and mean SSIM all improved over
-unsmoothed FP8; audio-distance results were mixed. The synchronized outputs
-below show the complete video and audio result.</p>
+<p>The quality case uses a locked camera on a tram moving through snow.
+All three runs use the same prompt, seed, and output specification. The rigid
+body, aligned windows, rails, and pantograph make temporal geometry directly
+visible throughout the clip.</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Resolution and frames</th>
+<th>Sampling</th>
+<th style="text-align: right;">GPUs</th>
+<th>Prompt / seed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MiniMax-H3 Base, T2VA</td>
+<td>1344 × 768, 107 frames, 4 s at 24 FPS</td>
+<td>50 points / 49 DiT updates</td>
+<td style="text-align: right;">1 × H100</td>
+<td>locked tram shot / 17</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="MiniMax-H3 FP8 smoothing performance on one GPU" src="../sections/03-quality-and-scale/assets/smoothing-performance.svg"></p>
+<p>Smoothed FP8 raises denoise throughput by 37.2% over BF16 Linear +
+FlashAttention 4 and reduces peak allocated memory by 42.6%. The fused
+correction adds 2.1% denoise time over raw FP8. In this seed, audio cosine
+improves from 0.850 to 0.889 and spectral convergence error falls from 0.506
+to 0.454; video PSNR and SSIM change by -0.36 dB and -0.0013. Local tensor
+error and final-media distance are reported separately. The players below
+provide the complete synchronized outputs.</p>
 <div class="video-grid video-grid-three" data-sync-group="smoothing">
   <figure>
-    <figcaption>BF16 Linear + FlashAttention 4</figcaption>
+    <figcaption>BF16 reference</figcaption>
     <video controls playsinline preload="metadata" src="../sections/03-quality-and-scale/assets/bf16-fa4.mp4" data-result-slot="bf16-quality"></video>
   </figure>
   <figure>
-    <figcaption>FP8 Linear + FP8 Sol, unsmoothed</figcaption>
+    <figcaption>FP8, unsmoothed</figcaption>
     <video controls playsinline preload="metadata" src="../sections/03-quality-and-scale/assets/fp8-sol-unsmoothed.mp4" data-result-slot="fp8-unsmoothed"></video>
   </figure>
   <figure>
-    <figcaption>FP8 Linear + FP8 Sol, quality-aware FP8</figcaption>
+    <figcaption>FP8, smoothing enabled</figcaption>
     <video controls playsinline preload="metadata" src="../sections/03-quality-and-scale/assets/fp8-sol-smoothed.mp4" data-result-slot="fp8-smoothed"></video>
   </figure>
 </div>
@@ -206,41 +231,83 @@ with attention compute, which becomes increasingly valuable after FP8 and
 sparsity reduce arithmetic time.</p>
 <hr>
 <h1 id="results">Performance and Output Quality</h1>
-<h2 id="scaling-base-h3-from-one-to-four-gpus">Scaling Base H3 from one to four GPUs</h2>
-<p>The distributed result is not only a four-GPU deployment point. We reran the
-same MiniMax-H3 Base request on one GPU and compared it with TeleFuser&rsquo;s
-four-GPU <code>TP2 x Ulysses SP2</code> profile. Both endpoints use the same prompt, seed,
-1344 x 768 output, 124 frames, 50-point schedule, FP8 Linear, FP8 Sol-Attn, and
-disabled feature cache.</p>
-<p><img alt="TeleFuser MiniMax-H3 Base one-to-four GPU scaling" src="../sections/04-evaluation/assets/base-scaling.svg"></p>
+<h2 id="evaluation-matrix">Evaluation matrix</h2>
+<p>Unless noted otherwise, each run uses MiniMax-H3&rsquo;s 768p profile and writes 24 FPS H.264 video with 32 kHz stereo AAC audio. Performance is measured after warm-up.</p>
+<table>
+<thead>
+<tr>
+<th>Experiment</th>
+<th>Model and task</th>
+<th>Output</th>
+<th>Sampling</th>
+<th style="text-align: right;">GPUs</th>
+<th>Topology</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TeleFuser scaling</td>
+<td>Base H3, T2VA</td>
+<td>1344 × 768, 124 frames, 5 s</td>
+<td>50 points / 49 DiT updates</td>
+<td style="text-align: right;">1 / 2 / 4</td>
+<td>local / TP2 / TP2 × Ulysses SP2</td>
+</tr>
+<tr>
+<td>Four-GPU frameworks</td>
+<td>Base H3, T2VA</td>
+<td>1344 × 768, 124 frames, 5 s</td>
+<td>50 points / 49 DiT updates</td>
+<td style="text-align: right;">4</td>
+<td>TP2 × Ulysses SP2</td>
+</tr>
+<tr>
+<td>FP8 smoothing</td>
+<td>Base H3, T2VA</td>
+<td>1344 × 768, 107 frames, 4 s</td>
+<td>50 points / 49 DiT updates</td>
+<td style="text-align: right;">1</td>
+<td>local</td>
+</tr>
+<tr>
+<td>Turbo LoRA</td>
+<td>MiniMax-H3 Turbo, I2AV</td>
+<td>1344 × 768, 124 frames, 5 s</td>
+<td>9 points / 8 DiT updates</td>
+<td style="text-align: right;">1</td>
+<td>local</td>
+</tr>
+<tr>
+<td>FastH3 adapter</td>
+<td>FastH3 dense, T2VA</td>
+<td>1344 × 768, 124 frames, 5 s</td>
+<td>5 points / 4 DiT updates</td>
+<td style="text-align: right;">1</td>
+<td>local</td>
+</tr>
+</tbody>
+</table>
+<p>The scaling runs disable feature cache and KV smoothing to isolate parallel execution. The smoothing and adapter sections specify their low-precision profiles separately.</p>
+<h2 id="telefuser-scaling-on-one-two-and-four-gpus">TeleFuser scaling on one, two, and four GPUs</h2>
+<p>All three runs use the same prompt, seed, FP8 Linear, and FP8 Sol-Attn. The single-GPU run is local, the two-GPU run uses TP2, and the four-GPU run adds Ulysses SP2 over TP2.</p>
+<p><img alt="TeleFuser MiniMax-H3 Base scaling on one, two, and four GPUs" src="../sections/04-evaluation/assets/base-scaling.svg"></p>
 <div class="result-summary">
-  <div><strong>3.40x higher</strong><span>denoise throughput on four GPUs</span></div>
-  <div><strong>70.6% lower</strong><span>denoise time, from 167.41 to 49.28 seconds</span></div>
-  <div><strong>37.2% lower</strong><span>representative peak memory per GPU</span></div>
+  <div><strong>3.40x higher</strong><span>four-GPU denoise throughput</span></div>
+  <div><strong>70.6% lower</strong><span>denoise time: 167.41 → 49.28 seconds</span></div>
+  <div><strong>35.5% lower</strong><span>maximum sampled peak per GPU</span></div>
 </div>
 
-<p>This scaling result directly exercises the distributed Q-SPA path described
-above: Ulysses splits the long attention sequence while tensor parallelism
-splits the wide transformer layers. It shows why distributed execution remains
-useful even when the FP8 model fits on one device. The scaling run disables KV
-smoothing at both endpoints to isolate parallel execution; quality-aware
-smoothing is evaluated separately below.</p>
-<h2 id="base-h3-on-four-gpus">Base H3 on four GPUs</h2>
-<p>The primary framework comparison runs MiniMax-H3 Base on four GPUs.
-LightX2V and TeleFuser both use <code>TP2 x Ulysses SP2</code>, the same prompt and seed,
-1344 x 768 output, 124 frames at 24 FPS, and the same 50-point schedule. Feature
-cache is disabled. Each framework uses its validated optimized profile.</p>
+<p>Denoising falls from 167.41 seconds on one GPU to 90.90 seconds on two and 49.28 seconds on four. The adjacent scaling steps deliver 1.84x and 1.84x speedups; 50-step throughput is 0.299, 0.550, and 1.015 step/s.</p>
+<h2 id="four-gpu-base-h3-framework-comparison">Four-GPU Base H3 framework comparison</h2>
+<p>SGLang, LightX2V, and TeleFuser use four H100 GPUs with <code>TP2 × Ulysses SP2</code>. The request uses the same Base H3 output shape and disables feature cache. The <a href="https://github.com/sgl-project/sglang/blob/main/docs/cookbook/diffusion/MiniMax/MiniMax-H3.mdx">official SGLang MiniMax-H3 cookbook</a> lists this H100 topology; the chart uses the matched local result retained in TeleFuser&rsquo;s MiniMax-H3 documentation.</p>
 <p><img alt="Four-GPU MiniMax-H3 Base performance" src="../sections/04-evaluation/assets/lightx2v-base-h3.svg"></p>
 <div class="result-summary">
   <div><strong>2.64x faster</strong><span>generation than LightX2V</span></div>
-  <div><strong>2.62x faster</strong><span>denoising, or 162.2% higher step throughput</span></div>
-  <div><strong>40.3% lower</strong><span>representative peak GPU memory</span></div>
+  <div><strong>1.52x faster</strong><span>request than SGLang</span></div>
+  <div><strong>40.3% / 37.3% lower</strong><span>peak memory vs. LightX2V / SGLang</span></div>
 </div>
 
-<p>Generation time falls from 137.76 to 52.27 seconds, while denoising falls from
-129.22 to 49.28 seconds. This is the main end-to-end result: the external
-baseline and TeleFuser use the same four-GPU parallel topology rather than
-comparing a distributed path with a single-GPU run.</p>
+<p>TeleFuser completes generation in 52.27 seconds, compared with 137.76 seconds for LightX2V and 79.37 seconds for SGLang. TeleFuser therefore reduces request latency and peak memory by 62.1% and 40.3% versus LightX2V, and by 34.1% and 37.3% versus SGLang. Against LightX2V, denoising falls from 129.22 to 49.28 seconds and 50-step throughput rises by 162.2%.</p>
 <div class="video-pair" data-sync-group="base-h3">
   <figure>
     <figcaption>LightX2V</figcaption>
@@ -252,20 +319,10 @@ comparing a distributed path with a single-GPU run.</p>
   </figure>
 </div>
 
-<p>Both files contain a coherent 124-frame ramen scene with synchronized stereo
-audio. The performance record uses one warm-up and one measured request; the
-memory figure is the representative peak across otherwise idle GPUs because
-GPU 0 had a fixed unrelated allocation during both runs.</p>
+<p>Both videos use the same prompt and seed, with 124 frames and synchronized stereo audio. Each framework runs one warm-up followed by one measured request. Device memory is sampled through <code>nvidia-smi</code> every 100 ms.</p>
 <h2 id="adapter-workloads">Adapter workloads</h2>
-<p>TeleFuser supports both MiniMax-H3 Turbo LoRA and FastH3&rsquo;s dense hybrid
-adapter. Each is compared with the external framework that provides a working
-reference path for that adapter, using matched model inputs, output shape, and
-DiT work.</p>
 <h3 id="minimax-h3-turbo-lora">MiniMax-H3 Turbo LoRA</h3>
-<p>The Turbo comparison uses one GPU, the 8-step v1.0 768p adapter, eight DiT
-updates, and resident DiT weights in both frameworks. TeleFuser merges the LoRA
-before low-precision execution.
-CPU block-offload measurements are not included in the chart.</p>
+<p>Both frameworks use the 8-step v1.0 768p adapter with resident DiT weights. TeleFuser merges the LoRA before creating FP8 weights. CPU block offload is excluded.</p>
 <p><img alt="MiniMax-H3 Turbo adapter performance" src="../sections/04-evaluation/assets/turbo-performance.svg"></p>
 <div class="result-summary">
   <div><strong>26.7% lower</strong><span>denoise time than LightX2V</span></div>
@@ -284,16 +341,9 @@ CPU block-offload measurements are not included in the chart.</p>
   </figure>
 </div>
 
-<p>The performance workload remains prompt-matched. The displayed TeleFuser Turbo
-sample uses a camera-stable presentation prompt: a level tripod shot, a subtle
-push-in, and explicit suppression of orbit, roll, and spinning. This isolates
-the adapter&rsquo;s subject motion without inviting unstable camera transforms.</p>
+<p>The performance input is matched. The display prompt uses a fixed level camera so that rotation does not obscure adapter motion quality.</p>
 <h3 id="fasth3-dense-adapter">FastH3 dense adapter</h3>
-<p>For FastH3, both systems run one GPU with the same dense adapter, prompt,
-seed, 1344 x 768 output, 124 frames, and four actual DiT evaluations. Each
-framework uses its validated optimized profile, and neither path offloads the
-DiT during denoising. Results are the median after one warm-up and three
-measured generations.</p>
+<p>FastVideo and TeleFuser use the same dense adapter, prompt, and seed, with four actual DiT evaluations and no DiT CPU offload. Results are medians from three measured generations after one warm-up.</p>
 <p><img alt="Matched FastH3 adapter performance" src="../sections/04-evaluation/assets/end-to-end.svg"></p>
 <div class="result-summary">
   <div><strong>25.7% lower</strong><span>denoise time than FastVideo</span></div>
@@ -312,16 +362,7 @@ measured generations.</p>
   </figure>
 </div>
 
-<p>The chart compares the matched denoising region rather than whole-request
-latency because the recorded frameworks used different prompt-conditioning
-cache policies. All four adapter outputs above contain 124 H.264 frames at
-1344 x 768 and 32kHz stereo AAC audio.</p>
-<h2 id="communication-overlap">Communication overlap</h2>
-<p>The four-GPU Base path also benefits from TeleFuser&rsquo;s communication-compute
-overlap. In a separate five-case regression, it reduced mean request wall time
-from 78.546 to 75.766 seconds, a <strong>3.539%</strong> improvement, while every generated
-MP4 remained byte-identical. This optimization is part of the same distributed
-execution path used by the main Base H3 result.</p>
+<p>FastH3 compares denoising only because the recorded frameworks use different prompt-conditioning cache policies.</p>
 <hr>
 <h1 id="q-spa-in-telefuser">Q-SPA in TeleFuser</h1>
 <p>Q-SPA addresses three connected problems in TeleFuser:</p>
@@ -334,14 +375,12 @@ execution path used by the main Base H3 result.</p>
 <p>TeleFuser can also run Base H3 or merge a Turbo LoRA or FastH3 adapter before
 creating the FP8 weights. The adapter defines the model and sampling schedule;
 Q-SPA reduces the cost of each DiT evaluation.</p>
-<p>On the matched four-GPU Base H3 workload, TeleFuser is 2.64x faster in
-generation and uses 40.3% less representative peak memory than LightX2V while
-both run <code>TP2 x Ulysses SP2</code>. The adapter evaluations show that the same runtime
-also outperforms the working LightX2V Turbo and FastVideo FastH3 baselines. The
-accompanying tensor profiles and generated media cover numerical error, final
-video, and synchronized audio rather than performance alone.</p>
+<p>On the matched four-GPU Base H3 workload, TeleFuser completes generation in
+52.27 seconds. It reduces latency by 62.1% against LightX2V and 34.1% against
+SGLang, with 40.3% and 37.3% lower reported peak memory. The Turbo LoRA and
+FastH3 runs also outperform their LightX2V and FastVideo baselines. Tensor
+profiles, video, and synchronized audio accompany the performance results.</p>
 <h2 id="insights_1">Insights</h2>
-<p>The results reinforce the three observations from the opening:</p>
 <ul>
 <li>FP8 and sparse attention should be designed as one path. Applying either in
   isolation leaves substantial DiT work on the table; matching the quantized
@@ -352,8 +391,9 @@ video, and synchronized audio rather than performance alone.</p>
 <li>Distributed execution remains useful after the model fits on one GPU.
   MiniMax-H3 spends most of its denoising time in compute-bound DiT blocks, so
   Ulysses SP and tensor parallelism reduce per-device work and expose overlap
-  opportunities. The measured one-to-four GPU path improves denoise throughput
-  by 3.40x and reduces denoise time by 70.6%.</li>
+  opportunities. Denoising takes 167.41 seconds on one GPU, 90.90 seconds on
+  two, and 49.28 seconds on four; four-GPU throughput reaches 3.40x the
+  single-GPU result.</li>
 </ul>
 <h2 id="further-reading">Further reading</h2>
 <ul>
@@ -362,6 +402,7 @@ video, and synchronized audio rather than performance alone.</p>
 <li><a href="https://nvlabs.github.io/Sana/Sol-Attn/">Sol-Attn: on-the-fly attention sparsification</a></li>
 <li><a href="https://haoailab.com/FastVideo/cookbook/minimax-h3/">FastVideo MiniMax-H3 cookbook</a></li>
 <li><a href="https://github.com/ModelTC/LightX2V/tree/main/scripts/minimax_h3">LightX2V MiniMax-H3 examples</a></li>
+<li><a href="https://github.com/sgl-project/sglang/blob/main/docs/cookbook/diffusion/MiniMax/MiniMax-H3.mdx">SGLang MiniMax-H3 cookbook</a></li>
 <li><a href="https://docs.pytorch.org/ao/stable/workflows/inference.html">TorchAO quantized inference workflows</a></li>
 </ul></article>
   </main>

@@ -1,0 +1,58 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 650" width="1200" height="650">
+  <rect x="0" y="0" width="1200" height="650" fill="#FFFFFF" />
+  <style>text { font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; }</style>
+  <text x="210" y="42" text-anchor="middle" font-size="20" font-weight="700" fill="#17212B">Denoise time</text>
+  <text x="60" y="76" font-size="14" fill="#65727B">seconds / video</text>
+  <line x1="60" y1="470.0" x2="360" y2="470.0" stroke="#E7ECEF" stroke-width="1" />
+  <line x1="60" y1="378.75" x2="360" y2="378.75" stroke="#E7ECEF" stroke-width="1" />
+  <line x1="60" y1="287.5" x2="360" y2="287.5" stroke="#E7ECEF" stroke-width="1" />
+  <line x1="60" y1="196.25" x2="360" y2="196.25" stroke="#E7ECEF" stroke-width="1" />
+  <line x1="60" y1="105.0" x2="360" y2="105.0" stroke="#E7ECEF" stroke-width="1" />
+  <rect x="101" y="160.6779661016949" width="42" height="309.3220338983051" rx="2" fill="#5379A5" />
+  <text x="122" y="148.6779661016949" text-anchor="middle" font-size="13" font-weight="700" fill="#26343D">213.20</text>
+  <text x="122" y="500" text-anchor="middle" font-size="12" font-weight="600" fill="#38464F">BF16 + FA4</text>
+  <rect x="189" y="249.27381726940095" width="42" height="220.72618273059905" rx="2" fill="#D57C57" />
+  <text x="210" y="237.27381726940095" text-anchor="middle" font-size="13" font-weight="700" fill="#26343D">152.14</text>
+  <text x="210" y="500" text-anchor="middle" font-size="12" font-weight="600" fill="#38464F">FP8 raw</text>
+  <rect x="277" y="244.5776651352986" width="42" height="225.4223348647014" rx="2" fill="#23806F" />
+  <text x="298" y="232.5776651352986" text-anchor="middle" font-size="13" font-weight="700" fill="#26343D">155.37</text>
+  <text x="298" y="500" text-anchor="middle" font-size="12" font-weight="600" fill="#38464F">FP8 smoothing</text>
+  <line x1="60" y1="470" x2="360" y2="470" stroke="#CBD5DA" stroke-width="1" />
+  <text x="600" y="42" text-anchor="middle" font-size="20" font-weight="700" fill="#17212B">Denoise throughput</text>
+  <text x="450" y="76" font-size="14" fill="#65727B">steps / second</text>
+  <line x1="450" y1="470.0" x2="750" y2="470.0" stroke="#E7ECEF" stroke-width="1" />
+  <line x1="450" y1="378.75" x2="750" y2="378.75" stroke="#E7ECEF" stroke-width="1" />
+  <line x1="450" y1="287.5" x2="750" y2="287.5" stroke="#E7ECEF" stroke-width="1" />
+  <line x1="450" y1="196.25" x2="750" y2="196.25" stroke="#E7ECEF" stroke-width="1" />
+  <line x1="450" y1="105.0" x2="750" y2="105.0" stroke="#E7ECEF" stroke-width="1" />
+  <rect x="491" y="249.27381726940095" width="42" height="220.72618273059905" rx="2" fill="#5379A5" />
+  <text x="512" y="237.27381726940095" text-anchor="middle" font-size="13" font-weight="700" fill="#26343D">0.23</text>
+  <text x="512" y="500" text-anchor="middle" font-size="12" font-weight="600" fill="#38464F">BF16 + FA4</text>
+  <rect x="579" y="160.6779661016949" width="42" height="309.3220338983051" rx="2" fill="#D57C57" />
+  <text x="600" y="148.6779661016949" text-anchor="middle" font-size="13" font-weight="700" fill="#26343D">0.33</text>
+  <text x="600" y="500" text-anchor="middle" font-size="12" font-weight="600" fill="#38464F">FP8 raw</text>
+  <rect x="667" y="167.12197410333454" width="42" height="302.87802589666546" rx="2" fill="#23806F" />
+  <text x="688" y="155.12197410333454" text-anchor="middle" font-size="13" font-weight="700" fill="#26343D">0.32</text>
+  <text x="688" y="500" text-anchor="middle" font-size="12" font-weight="600" fill="#38464F">FP8 smoothing</text>
+  <line x1="450" y1="470" x2="750" y2="470" stroke="#CBD5DA" stroke-width="1" />
+  <text x="990" y="42" text-anchor="middle" font-size="20" font-weight="700" fill="#17212B">Peak allocated memory</text>
+  <text x="840" y="76" font-size="14" fill="#65727B">GiB</text>
+  <line x1="840" y1="470.0" x2="1140" y2="470.0" stroke="#E7ECEF" stroke-width="1" />
+  <line x1="840" y1="378.75" x2="1140" y2="378.75" stroke="#E7ECEF" stroke-width="1" />
+  <line x1="840" y1="287.5" x2="1140" y2="287.5" stroke="#E7ECEF" stroke-width="1" />
+  <line x1="840" y1="196.25" x2="1140" y2="196.25" stroke="#E7ECEF" stroke-width="1" />
+  <line x1="840" y1="105.0" x2="1140" y2="105.0" stroke="#E7ECEF" stroke-width="1" />
+  <rect x="881" y="160.6779661016949" width="42" height="309.3220338983051" rx="2" fill="#5379A5" />
+  <text x="902" y="148.6779661016949" text-anchor="middle" font-size="13" font-weight="700" fill="#26343D">64.68</text>
+  <text x="902" y="500" text-anchor="middle" font-size="12" font-weight="600" fill="#38464F">BF16 + FA4</text>
+  <rect x="969" y="292.4487976196459" width="42" height="177.55120238035408" rx="2" fill="#D57C57" />
+  <text x="990" y="280.4487976196459" text-anchor="middle" font-size="13" font-weight="700" fill="#26343D">37.13</text>
+  <text x="990" y="500" text-anchor="middle" font-size="12" font-weight="600" fill="#38464F">FP8 raw</text>
+  <rect x="1057" y="292.4486699233523" width="42" height="177.5513300766477" rx="2" fill="#23806F" />
+  <text x="1078" y="280.4486699233523" text-anchor="middle" font-size="13" font-weight="700" fill="#26343D">37.13</text>
+  <text x="1078" y="500" text-anchor="middle" font-size="12" font-weight="600" fill="#38464F">FP8 smoothing</text>
+  <line x1="840" y1="470" x2="1140" y2="470" stroke="#CBD5DA" stroke-width="1" />
+  <text x="600.0" y="557" text-anchor="middle" font-size="15" font-weight="600" fill="#4D5B64">MiniMax-H3 Base · 1344 × 768 · 107 frames · 4 seconds · 50 steps · 1 × H100</text>
+  <text x="600.0" y="588" text-anchor="middle" font-size="14" fill="#69767F">seed 17 · FP8 Sol: tau 1.0, exact routing, 10 dense steps, 2 dense layers · no warm-up</text>
+</svg>

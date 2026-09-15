@@ -13,6 +13,11 @@
     "prompt": "Steam rises from the ramen while the family talks in the background."
   },
   "results": {
+    "sglang_matched_h100": {
+      "generation_seconds": 79.37,
+      "representative_peak_memory_mib": 69427.2,
+      "source": "TeleFuser examples/minimax_h3 measured four-GPU profile"
+    },
     "lightx2v_bf16_sageattention2": {
       "generation_seconds": 137.75983863323927,
       "denoise_seconds": 129.22054240852594,
@@ -45,6 +50,12 @@
       "generation_speedup": 2.6353104893698727,
       "denoise_speedup": 2.622325863696876,
       "representative_peak_memory_reduction_percent": 40.340940260025235
+    }
+  },
+  "relative_to_sglang": {
+    "telefuser_fp8_sol": {
+      "generation_speedup": 1.518327805959,
+      "representative_peak_memory_reduction_percent": 37.34163140517751
     }
   }
 }
