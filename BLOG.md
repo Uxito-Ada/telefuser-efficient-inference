@@ -90,6 +90,18 @@ scale groups assumed by a dense quantized kernel. Dequantizing the selected
 blocks back to BF16 restores compatibility but gives up much of the intended
 bandwidth and compute benefit.
 
+Existing quantization paths usually treat quantization as a separate data
+conversion. Offline quantization performs it before model loading; online or
+lazy paths create low-precision data and scales when a tensor is first used or
+enters an operator. The kernel then assumes that packed layout remains stable.
+Sparse attention is different: every forward pass selects, evicts, and compacts
+blocks from the current Q/K/V. That recurring reordering changes row, channel,
+and group boundaries, breaking the mapping between packed values and their
+scales. A per-tensor scale remains numerically valid under permutation, but the
+existing kernel's packing and addressing contract still does not. Quantization
+and dynamic sparsity therefore cannot be composed as two independent switches;
+the reordered data, scales, indices, and tiles need one shared mapping.
+
 Hardware support sharpens the issue. Low-precision formats and kernels do not
 cover every GPU generation. For example, MXFP8 and NVFP4 implementations built
 for newer hardware do not automatically support widely deployed platforms such
