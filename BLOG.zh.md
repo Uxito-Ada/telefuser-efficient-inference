@@ -127,6 +127,8 @@ MiniMax-H3 实际层的 profile 显示，部分 K/V 的均值明显偏离零点�
 | FP8，不使用 smoothing | **19.63 dB** | **0.6712** | 0.8504 | 0.5055 |
 | FP8，开启 smoothing | 19.27 dB | 0.6700 | **0.8891** | **0.4537** |
 
+**Prompt：** `Locked-off cinematic wide shot of a red vintage tram gliding slowly through a snowy alpine village at sunrise. The tram remains rigid and geometrically consistent, its windows and wheels stay aligned. Light snow falls; soft rail sounds and distant church bells are synchronized with the scene. No people, no cuts, no camera movement.`
+
 <div class="video-grid video-grid-three" data-sync-group="smoothing">
   <figure>
     <figcaption>BF16 参考</figcaption>
@@ -249,6 +251,8 @@ Turbo LoRA 对比 TeleFuser 与 LightX2V，FastH3 对比 TeleFuser 与 FastVideo
   <div><strong>提升 36.5%</strong><span>8-step 去噪吞吐</span></div>
   <div><strong>降低 12.3%</strong><span>进程峰值 GPU 显存</span></div>
 </div>
+
+**Prompt：** `Steam rises from the ramen while the family talks in the background.`
 
 <div class="video-pair" data-sync-group="turbo">
   <figure>
