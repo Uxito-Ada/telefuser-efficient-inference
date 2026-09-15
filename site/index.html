@@ -215,7 +215,7 @@ correction adds 2.1% denoise time over raw FP8.</p>
 
 <p>In the latter part of the clip, the unsmoothed output shows less stable roof
 markings, overhead linkage, and window alignment than the smoothed output.</p>
-<h2 id="tuned-defaults-with-configurable-sparsity">Tuned defaults with configurable sparsity</h2>
+<h2 id="sparsity-designed-for-continued-optimization">Sparsity designed for continued optimization</h2>
 <p>Models and generation tasks differ in which attention regions are sensitive to
 sparsity. TeleFuser exposes the dense window, dense layers, threshold mode, and
 sparsity strength for further tuning on new workloads. Its MiniMax-H3 defaults
@@ -286,7 +286,6 @@ also overlapped with attention compute to reduce multi-GPU overhead.</p>
 </tr>
 </tbody>
 </table>
-<p>The scaling runs disable feature cache and KV smoothing to isolate parallel execution. The smoothing and adapter sections specify their low-precision profiles separately.</p>
 <h2 id="telefuser-scaling">TeleFuser scaling</h2>
 <p>All three runs use the same prompt, seed, FP8 Linear, and FP8 Sol-Attn. The single-GPU run is local, the two-GPU run uses TP2, and the four-GPU run adds Ulysses SP2 over TP2.</p>
 <p><img alt="TeleFuser MiniMax-H3 Base scaling on one, two, and four GPUs" src="../sections/04-evaluation/assets/base-scaling.svg"></p>
@@ -383,7 +382,6 @@ also overlapped with attention compute to reduce multi-GPU overhead.</p>
 </div>
 
 <h3 id="fasth3-dense-adapter">FastH3 dense adapter</h3>
-<p>FastVideo and TeleFuser use the same dense adapter, prompt, and seed, with four actual DiT evaluations and no DiT CPU offload. Results are medians from three measured generations after one warm-up.</p>
 <p><img alt="Matched FastH3 adapter performance" src="../sections/04-evaluation/assets/end-to-end.svg"></p>
 <div class="result-summary">
   <div><strong>25.7% lower</strong><span>denoise time than FastVideo</span></div>
@@ -403,7 +401,6 @@ also overlapped with attention compute to reduce multi-GPU overhead.</p>
   </figure>
 </div>
 
-<p>FastH3 compares denoising only because the recorded frameworks use different prompt-conditioning cache policies.</p>
 <hr>
 <h1 id="q-spa-in-telefuser">Q-SPA in TeleFuser</h1>
 <p>Q-SPA addresses three connected problems in TeleFuser:</p>

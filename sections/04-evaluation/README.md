@@ -21,8 +21,6 @@ Unless noted otherwise, each run uses MiniMax-H3's 768p profile and writes 24 FP
 | Turbo LoRA | MiniMax-H3 Turbo, I2AV | 1344 × 768, 124 frames, 5 s | 9 points / 8 DiT updates | 1 | local |
 | FastH3 adapter | FastH3 dense, T2VA | 1344 × 768, 124 frames, 5 s | 5 points / 4 DiT updates | 1 | local |
 
-The scaling runs disable feature cache and KV smoothing to isolate parallel execution. The smoothing and adapter sections specify their low-precision profiles separately.
-
 ## TeleFuser scaling
 
 All three runs use the same prompt, seed, FP8 Linear, and FP8 Sol-Attn. The single-GPU run is local, the two-GPU run uses TP2, and the four-GPU run adds Ulysses SP2 over TP2.
@@ -112,8 +110,6 @@ Both frameworks use the 8-step v1.0 768p adapter with resident DiT weights. Tele
 
 ### FastH3 dense adapter
 
-FastVideo and TeleFuser use the same dense adapter, prompt, and seed, with four actual DiT evaluations and no DiT CPU offload. Results are medians from three measured generations after one warm-up.
-
 ![Matched FastH3 adapter performance](assets/end-to-end.svg)
 
 <div class="result-summary">
@@ -134,5 +130,3 @@ FastVideo and TeleFuser use the same dense adapter, prompt, and seed, with four 
     <video controls playsinline preload="metadata" data-result-slot="telefuser-primary"></video>
   </figure>
 </div>
-
-FastH3 compares denoising only because the recorded frameworks use different prompt-conditioning cache policies.

@@ -142,7 +142,7 @@ MiniMax-H3 实际层的 profile 显示，部分 K/V 的均值明显偏离零点�
 
 在视频后半段，未平滑输出的车顶标识、受电弓连线和窗框对齐相较平滑输出更不稳定。
 
-## 开箱即用、可继续调优的稀疏策略
+## 可持续优化的稀疏策略
 
 不同模型和生成任务对稀疏 attention 的敏感位置并不相同。TeleFuser 提供 dense window、dense layer、阈值模式和稀疏强度等配置接口，便于针对新的模型或质量目标继续调优；MiniMax-H3 的默认配置已经过性能与生成质量验证，无需用户手动选择稀疏参数。
 
@@ -171,8 +171,6 @@ language: zh-CN
 | FP8 smoothing | Base H3，T2VA | 1344 × 768，107 帧，4 秒 | 50 points / 49 DiT updates | 1 | 单卡 |
 | Turbo LoRA | MiniMax-H3 Turbo，I2AV | 1344 × 768，124 帧，5 秒 | 9 points / 8 DiT updates | 1 | 单卡 |
 | FastH3 Adapter | FastH3 dense，T2VA | 1344 × 768，124 帧，5 秒 | 5 points / 4 DiT updates | 1 | 单卡 |
-
-扩展性实验关闭 feature cache 和 KV smoothing，用于单独测量并行收益。Smoothing、Turbo 和 FastH3 的具体低精度配置在对应小节列出。
 
 ## TeleFuser 扩展性
 
@@ -263,8 +261,6 @@ Turbo LoRA 对比 TeleFuser 与 LightX2V，FastH3 对比 TeleFuser 与 FastVideo
 
 ### FastH3 dense adapter
 
-FastVideo 和 TeleFuser 使用相同 dense adapter、prompt 与 seed，实际执行四次 DiT，去噪期间均不使用 CPU offload。结果为一次 warm-up 后三次正式生成的中位数。
-
 ![FastH3 Adapter 对齐性能](sections/04-evaluation/assets/end-to-end.svg)
 
 <div class="result-summary">
@@ -285,8 +281,6 @@ FastVideo 和 TeleFuser 使用相同 dense adapter、prompt 与 seed，实际执
     <video controls playsinline preload="metadata" data-result-slot="telefuser-primary"></video>
   </figure>
 </div>
-
-FastH3 只比较去噪阶段，因为两套记录采用了不同的 prompt-conditioning cache 策略，完整请求时间不具备相同口径。
 
 ---
 

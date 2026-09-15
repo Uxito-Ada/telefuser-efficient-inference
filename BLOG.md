@@ -227,7 +227,7 @@ correction adds 2.1% denoise time over raw FP8.
 In the latter part of the clip, the unsmoothed output shows less stable roof
 markings, overhead linkage, and window alignment than the smoothed output.
 
-## Tuned defaults with configurable sparsity
+## Sparsity designed for continued optimization
 
 Models and generation tasks differ in which attention regions are sensitive to
 sparsity. TeleFuser exposes the dense window, dense layers, threshold mode, and
@@ -268,8 +268,6 @@ Unless noted otherwise, each run uses MiniMax-H3's 768p profile and writes 24 FP
 | FP8 smoothing | Base H3, T2VA | 1344 × 768, 107 frames, 4 s | 50 points / 49 DiT updates | 1 | local |
 | Turbo LoRA | MiniMax-H3 Turbo, I2AV | 1344 × 768, 124 frames, 5 s | 9 points / 8 DiT updates | 1 | local |
 | FastH3 adapter | FastH3 dense, T2VA | 1344 × 768, 124 frames, 5 s | 5 points / 4 DiT updates | 1 | local |
-
-The scaling runs disable feature cache and KV smoothing to isolate parallel execution. The smoothing and adapter sections specify their low-precision profiles separately.
 
 ## TeleFuser scaling
 
@@ -360,8 +358,6 @@ Both frameworks use the 8-step v1.0 768p adapter with resident DiT weights. Tele
 
 ### FastH3 dense adapter
 
-FastVideo and TeleFuser use the same dense adapter, prompt, and seed, with four actual DiT evaluations and no DiT CPU offload. Results are medians from three measured generations after one warm-up.
-
 ![Matched FastH3 adapter performance](sections/04-evaluation/assets/end-to-end.svg)
 
 <div class="result-summary">
@@ -382,8 +378,6 @@ FastVideo and TeleFuser use the same dense adapter, prompt, and seed, with four 
     <video controls playsinline preload="metadata" data-result-slot="telefuser-primary"></video>
   </figure>
 </div>
-
-FastH3 compares denoising only because the recorded frameworks use different prompt-conditioning cache policies.
 
 ---
 

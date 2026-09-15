@@ -64,7 +64,7 @@ correction adds 2.1% denoise time over raw FP8.
 In the latter part of the clip, the unsmoothed output shows less stable roof
 markings, overhead linkage, and window alignment than the smoothed output.
 
-## Tuned defaults with configurable sparsity
+## Sparsity designed for continued optimization
 
 Models and generation tasks differ in which attention regions are sensitive to
 sparsity. TeleFuser exposes the dense window, dense layers, threshold mode, and
