@@ -38,9 +38,9 @@ python experiments/quality-suite/scripts/plot_smoothing.py \
 ```
 
 The three MP4 files used by the primary HTML comparison live under
-`sections/03-quality-and-scale/assets/`. The three detail clips are spatial crops
-of the original FP8 files; they do not change the prompt, seed, generation, or
-reported metrics.
+`sections/03-quality-and-scale/assets/`. The article describes the local visual
+differences in text; it does not publish separately cropped clips, so all
+reported media and metrics refer to the original matched generations.
 
 ## Distributed media comparison
 

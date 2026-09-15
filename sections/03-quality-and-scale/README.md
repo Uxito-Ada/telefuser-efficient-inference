@@ -63,24 +63,10 @@ provide the complete synchronized outputs.
   </figure>
 </div>
 
-The largest visual divergence appears late in the clip. Raw FP8 produces
-noisier roof markings and less regular overhead linkage and window geometry.
-The following players magnify the same pixel region from all three outputs.
-
-<div class="video-grid video-grid-three" data-sync-group="smoothing-detail">
-  <figure>
-    <figcaption>BF16 reference detail</figcaption>
-    <video controls muted playsinline preload="metadata" data-result-slot="bf16-quality-detail"></video>
-  </figure>
-  <figure>
-    <figcaption>FP8, unsmoothed detail</figcaption>
-    <video controls muted playsinline preload="metadata" data-result-slot="fp8-unsmoothed-detail"></video>
-  </figure>
-  <figure>
-    <figcaption>FP8, smoothed detail</figcaption>
-    <video controls muted playsinline preload="metadata" data-result-slot="fp8-smoothed-detail"></video>
-  </figure>
-</div>
+In the latter part of the clip, the unsmoothed output shows less stable roof
+markings, overhead linkage, and window alignment than the smoothed output. This
+is a qualitative observation from the matched prompt and seed; the three
+complete outputs above remain the comparison artifacts.
 
 ## Quality-aware sparsity
 

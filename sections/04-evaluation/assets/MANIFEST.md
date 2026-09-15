@@ -1,9 +1,10 @@
 # Assets
 
 - `base-scaling.svg`: matched TeleFuser one-, two-, and four-H100 Base H3 scaling chart.
-- `lightx2v-base-h3.svg`: matched four-H100 SGLang, LightX2V, and TeleFuser chart.
+- `lightx2v-base-h3.svg`: matched four-H100 SGLang, LightX2V, FastVideo, and TeleFuser chart; FastVideo is labelled SP4 while the other points use TP2 × Ulysses SP2.
 - `lightx2v-base-h3.mp4`: LightX2V BF16 + SageAttention2 Base H3 output.
 - `telefuser-base-h3.mp4`: TeleFuser FP8 + Sol Base H3 output.
+- `fastvideo-base-h3.mp4`: FastVideo BF16 + dense FA4 Base H3 output, 4-GPU SP4 run.
 - `turbo-performance.svg`: matched one-H100 MiniMax-H3 Turbo LoRA chart.
 - `turbo-lightx2v.mp4`: LightX2V resident BF16 Turbo LoRA output.
 - `turbo-telefuser.mp4`: TeleFuser FP8 Turbo LoRA output using a camera-stable presentation prompt.

@@ -215,24 +215,10 @@ provide the complete synchronized outputs.</p>
   </figure>
 </div>
 
-<p>The largest visual divergence appears late in the clip. Raw FP8 produces
-noisier roof markings and less regular overhead linkage and window geometry.
-The following players magnify the same pixel region from all three outputs.</p>
-<div class="video-grid video-grid-three" data-sync-group="smoothing-detail">
-  <figure>
-    <figcaption>BF16 reference detail</figcaption>
-    <video controls muted playsinline preload="metadata" src="../sections/03-quality-and-scale/assets/bf16-fa4-detail.mp4" data-result-slot="bf16-quality-detail"></video>
-  </figure>
-  <figure>
-    <figcaption>FP8, unsmoothed detail</figcaption>
-    <video controls muted playsinline preload="metadata" src="../sections/03-quality-and-scale/assets/fp8-sol-unsmoothed-detail.mp4" data-result-slot="fp8-unsmoothed-detail"></video>
-  </figure>
-  <figure>
-    <figcaption>FP8, smoothed detail</figcaption>
-    <video controls muted playsinline preload="metadata" src="../sections/03-quality-and-scale/assets/fp8-sol-smoothed-detail.mp4" data-result-slot="fp8-smoothed-detail"></video>
-  </figure>
-</div>
-
+<p>In the latter part of the clip, the unsmoothed output shows less stable roof
+markings, overhead linkage, and window alignment than the smoothed output. This
+is a qualitative observation from the matched prompt and seed; the three
+complete outputs above remain the comparison artifacts.</p>
 <h2 id="quality-aware-sparsity">Quality-aware sparsity</h2>
 <p>Some denoising updates and transformer layers are more sensitive to missing
 long-range interactions. TeleFuser supports a dense opening window and selected
@@ -277,7 +263,7 @@ sparsity reduce arithmetic time.</p>
 <td>1344 × 768, 124 frames, 5 s</td>
 <td>50 points / 49 DiT updates</td>
 <td style="text-align: right;">4</td>
-<td>TP2 × Ulysses SP2</td>
+<td>TP2 × Ulysses SP2; FastVideo SP4</td>
 </tr>
 <tr>
 <td>FP8 smoothing</td>
@@ -317,15 +303,15 @@ sparsity reduce arithmetic time.</p>
 
 <p>Denoising falls from 167.41 seconds on one GPU to 90.90 seconds on two and 49.28 seconds on four. The adjacent scaling steps deliver 1.84x and 1.84x speedups; 50-step throughput is 0.299, 0.550, and 1.015 step/s.</p>
 <h2 id="four-gpu-base-h3-framework-comparison">Four-GPU Base H3 framework comparison</h2>
-<p>SGLang, LightX2V, and TeleFuser use four H100 GPUs with <code>TP2 × Ulysses SP2</code>. The request uses the same Base H3 output shape and disables feature cache. The <a href="https://github.com/sgl-project/sglang/blob/main/docs/cookbook/diffusion/MiniMax/MiniMax-H3.mdx">official SGLang MiniMax-H3 cookbook</a> lists this H100 topology; the chart uses the matched local result retained in TeleFuser&rsquo;s MiniMax-H3 documentation.</p>
+<p>SGLang, LightX2V, and TeleFuser use four H100 GPUs with <code>TP2 × Ulysses SP2</code>. FastVideo also has a maintained full Base H3 path and was measured with its official dense FA4 runner on four H100 GPUs using <code>SP4</code>. The request uses the same Base H3 output shape and 50-point schedule; feature cache is disabled. The <a href="https://github.com/hao-ai-lab/FastVideo/blob/main/examples/inference/basic/basic_minimax_h3_t2v.py">FastVideo Base H3 example</a> and the <a href="https://github.com/sgl-project/sglang/blob/main/docs/cookbook/diffusion/MiniMax/MiniMax-H3.mdx">official SGLang MiniMax-H3 cookbook</a> document these model paths. Because FastVideo&rsquo;s verified run uses SP4 rather than TP2 × Ulysses SP2, it is shown as a separately labelled four-GPU point rather than claimed as an identical topology.</p>
 <p><img alt="Four-GPU MiniMax-H3 Base performance" src="../sections/04-evaluation/assets/lightx2v-base-h3.svg"></p>
 <div class="result-summary">
   <div><strong>2.64x faster</strong><span>generation than LightX2V</span></div>
-  <div><strong>1.52x faster</strong><span>request than SGLang</span></div>
+  <div><strong>2.19x faster</strong><span>request than FastVideo</span></div>
   <div><strong>40.3% / 37.3% lower</strong><span>peak memory vs. LightX2V / SGLang</span></div>
 </div>
 
-<p>TeleFuser completes generation in 52.27 seconds, compared with 137.76 seconds for LightX2V and 79.37 seconds for SGLang. TeleFuser therefore reduces request latency and peak memory by 62.1% and 40.3% versus LightX2V, and by 34.1% and 37.3% versus SGLang. Against LightX2V, denoising falls from 129.22 to 49.28 seconds and 50-step throughput rises by 162.2%.</p>
+<p>TeleFuser completes generation in 52.27 seconds, compared with 137.76 seconds for LightX2V, 114.70 seconds for FastVideo, and 79.37 seconds for SGLang. It is 2.64× faster than LightX2V, 2.19× faster than FastVideo, and 1.52× faster than SGLang on this request. Peak memory is 42.5 GiB/GPU for TeleFuser, versus 71.2 GiB for LightX2V, 41.9 GiB for FastVideo, and 67.8 GiB for SGLang; the small FastVideo memory difference reflects its SP4 execution and is not presented as a TeleFuser win. Against LightX2V, denoising falls from 129.22 to 49.28 seconds and 50-point throughput rises by 162.2%.</p>
 <div class="video-pair" data-sync-group="base-h3">
   <figure>
     <figcaption>LightX2V</figcaption>
@@ -335,10 +321,56 @@ sparsity reduce arithmetic time.</p>
     <figcaption>TeleFuser</figcaption>
     <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/telefuser-base-h3.mp4" data-result-slot="telefuser-base-h3"></video>
   </figure>
+  <figure>
+    <figcaption>FastVideo</figcaption>
+    <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/fastvideo-base-h3.mp4" data-result-slot="fastvideo-base-h3"></video>
+  </figure>
 </div>
 
-<p>Both videos use the same prompt and seed, with 124 frames and synchronized stereo audio. Each framework runs one warm-up followed by one measured request. Device memory is sampled through <code>nvidia-smi</code> every 100 ms.</p>
+<p>The three retained videos use the same prompt and seed, with 124 frames and synchronized stereo audio. The SGLang timing record predates this article&rsquo;s media capture, so no SGLang MP4 is embedded. Each recorded framework runs one warm-up followed by one measured request. Device memory is sampled through <code>nvidia-smi</code> every 100 ms.</p>
 <h2 id="adapter-workloads">Adapter workloads</h2>
+<p>The four frameworks do not expose the same adapter artifacts. The matrix below
+separates a supported route from a route that was not admitted as a benchmark;
+an em dash is not a claim that the framework can never support that adapter.</p>
+<table>
+<thead>
+<tr>
+<th>Framework</th>
+<th>MiniMax-H3 Turbo LoRA</th>
+<th>FastH3 Preview adapter</th>
+<th>Why it is or is not plotted</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TeleFuser</td>
+<td>Measured</td>
+<td>Measured</td>
+<td>Both adapter paths are implemented in the tested runtime.</td>
+</tr>
+<tr>
+<td>LightX2V</td>
+<td>Measured</td>
+<td>Not admitted</td>
+<td>Its official H3 recipe documents the Turbo LoRA; no maintained FastH3 Preview adapter recipe was available in the tested checkout.</td>
+</tr>
+<tr>
+<td>FastVideo</td>
+<td>Not admitted</td>
+<td>Measured</td>
+<td>The official FastVideo release is the FastH3 adapter; the LightX2V Turbo file is a different adapter family and was not silently substituted.</td>
+</tr>
+<tr>
+<td>SGLang</td>
+<td>Supported by current cookbook, no local H100 record</td>
+<td>Not admitted</td>
+<td>Current SGLang documents standard H3 LoRA loading, but the local benchmark has no reproducible Turbo run. FastH3 files include dense delta tensors that the native H3 LoRA mapper rejects.</td>
+</tr>
+</tbody>
+</table>
+<p>Consequently, each adapter chart compares only the frameworks with a matched,
+validated artifact. The Base H3 chart is the four-framework comparison because
+all four have a full-checkpoint path with a recorded run.</p>
 <h3 id="minimax-h3-turbo-lora">MiniMax-H3 Turbo LoRA</h3>
 <p>Both frameworks use the 8-step v1.0 768p adapter with resident DiT weights. TeleFuser merges the LoRA before creating FP8 weights. CPU block offload is excluded.</p>
 <p><img alt="MiniMax-H3 Turbo adapter performance" src="../sections/04-evaluation/assets/turbo-performance.svg"></p>
@@ -394,10 +426,13 @@ sparsity reduce arithmetic time.</p>
 creating the FP8 weights. The adapter defines the model and sampling schedule;
 Q-SPA reduces the cost of each DiT evaluation.</p>
 <p>On the matched four-GPU Base H3 workload, TeleFuser completes generation in
-52.27 seconds. It reduces latency by 62.1% against LightX2V and 34.1% against
-SGLang, with 40.3% and 37.3% lower reported peak memory. The Turbo LoRA and
-FastH3 runs also outperform their LightX2V and FastVideo baselines. Tensor
-profiles, video, and synchronized audio accompany the performance results.</p>
+52.27 seconds. It is 2.64× faster than LightX2V, 2.19× faster than FastVideo,
+and 1.52× faster than SGLang. The FastVideo point uses SP4 rather than the
+TP2 × Ulysses SP2 topology used by the other three frameworks, so its memory
+number is shown for context rather than as a directly equivalent capacity
+claim. The Turbo LoRA and FastH3 runs also outperform their LightX2V and
+FastVideo baselines. Tensor profiles, video, and synchronized audio accompany
+the performance results.</p>
 <ul>
 <li>FP8 and sparse attention should be designed as one path. Applying either in
   isolation leaves substantial DiT work on the table; matching the quantized

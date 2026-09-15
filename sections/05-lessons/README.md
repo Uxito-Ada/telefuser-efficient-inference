@@ -21,10 +21,13 @@ creating the FP8 weights. The adapter defines the model and sampling schedule;
 Q-SPA reduces the cost of each DiT evaluation.
 
 On the matched four-GPU Base H3 workload, TeleFuser completes generation in
-52.27 seconds. It reduces latency by 62.1% against LightX2V and 34.1% against
-SGLang, with 40.3% and 37.3% lower reported peak memory. The Turbo LoRA and
-FastH3 runs also outperform their LightX2V and FastVideo baselines. Tensor
-profiles, video, and synchronized audio accompany the performance results.
+52.27 seconds. It is 2.64× faster than LightX2V, 2.19× faster than FastVideo,
+and 1.52× faster than SGLang. The FastVideo point uses SP4 rather than the
+TP2 × Ulysses SP2 topology used by the other three frameworks, so its memory
+number is shown for context rather than as a directly equivalent capacity
+claim. The Turbo LoRA and FastH3 runs also outperform their LightX2V and
+FastVideo baselines. Tensor profiles, video, and synchronized audio accompany
+the performance results.
 
 - FP8 and sparse attention should be designed as one path. Applying either in
   isolation leaves substantial DiT work on the table; matching the quantized

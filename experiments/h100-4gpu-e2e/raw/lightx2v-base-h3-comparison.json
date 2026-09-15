@@ -25,6 +25,14 @@
       "representative_peak_memory_mib": 72916,
       "representative_memory_devices": [1, 2, 3]
     },
+    "fastvideo_bf16_fa4": {
+      "generation_seconds": 114.698,
+      "denoise_seconds": 100.747,
+      "config_points_per_second": 0.4962907123780877,
+      "representative_peak_memory_mib": 42873.0,
+      "parallelism": "SP4",
+      "source": "experiments/h100-4gpu-e2e/raw/fastvideo-base-h3.json"
+    },
     "telefuser_bf16_flashattention4": {
       "generation_seconds": 78.50636019185185,
       "denoise_seconds": 75.47177096270025,

@@ -14,7 +14,7 @@ Q-SPA 在 TeleFuser 中解决了三个直接相关的问题：
 
 TeleFuser 支持直接运行 Base H3，也支持在合并 Turbo LoRA 或 FastH3 Adapter 后生成相应的 FP8 权重。Adapter 决定模型与采样方式，Q-SPA 降低单次 DiT 执行成本。
 
-四卡 Base H3 测试中，TeleFuser 完整生成耗时 52.27 秒，比 LightX2V 降低 62.1%，比 SGLang 降低 34.1%；对应的峰值显存分别降低 40.3% 和 37.3%。Turbo LoRA 与 FastH3 测试也优于各自的 LightX2V 和 FastVideo 对照。文中同时给出了性能、tensor 误差及完整的视频和音频输出。
+四卡 Base H3 测试中，TeleFuser 完整生成耗时 52.27 秒，相比 LightX2V、FastVideo 和 SGLang 分别快 2.64 倍、2.19 倍和 1.52 倍。FastVideo 使用 SP4，另外三个框架使用 TP2 × Ulysses SP2，因此其显存数字只作参考，不宣称为完全等价的容量对比。Turbo LoRA 与 FastH3 测试也优于各自的 LightX2V 和 FastVideo 对照。文中同时给出了性能、tensor 误差及完整的视频和音频输出。
 
 - FP8 与稀疏 attention 应当作为一条执行路径共同设计。单独使用任一优化
   仍会留下大量 DiT 计算；让稀疏 kernel 直接消费量化表示，才能同时获得两者的收益。

@@ -12,9 +12,9 @@ The scaling comparison uses the same MiniMax-H3 Base prompt, seed, output
 shape, 50-point schedule, and FP8 Linear + FP8 Sol profile at all three points.
 KV smoothing and feature cache are disabled to isolate parallel execution. The
 topologies are local, `TP2`, and `TP2 x Ulysses SP2`. Raw measurements are
-stored in `raw/telefuser-base-h3-{1,2}gpu.json`; the four-GPU source is retained
-in `raw/lightx2v-base-h3-comparison.json`, and the normalized series is
-`raw/telefuser-base-h3-scaling.json`.
+stored in `raw/telefuser-base-h3-{1,2}gpu.json`; the normalized TeleFuser series
+is `raw/telefuser-base-h3-scaling.json`. The separate FastVideo Base H3 control
+is recorded in `raw/fastvideo-base-h3.json` and uses SP4.
 
 ```bash
 python experiments/h100-4gpu-e2e/scripts/plot_scaling.py \
@@ -24,10 +24,10 @@ python experiments/h100-4gpu-e2e/scripts/plot_scaling.py \
 
 ## Primary four-H100 framework comparison
 
-SGLang, LightX2V, and TeleFuser use:
+SGLang, LightX2V, FastVideo, and TeleFuser use:
 
 - MiniMax-H3 Base T2AV on four NVIDIA H100 80GB GPUs;
-- `TP2 x Ulysses SP2` in both frameworks;
+- `TP2 x Ulysses SP2` for SGLang, LightX2V, and TeleFuser; FastVideo uses SP4;
 - the same prompt, seed 0, 1344 x 768 output, 124 frames, 24 FPS, and 50
   configured sampling points;
 - feature cache disabled; and
@@ -41,9 +41,16 @@ The SGLang point is the matched 79.37-second, 67.8-GiB H100 run retained in
 TeleFuser's MiniMax-H3 documentation. Its `TP2 x Ulysses SP2` topology is also
 listed as verified by the official SGLang MiniMax-H3 cookbook.
 
+FastVideo's matched four-GPU Base H3 rerun uses the same ramen prompt, seed 0,
+1344 x 768 output, 124 frames, and 50-point schedule. Its measured median is
+114.698 seconds E2E and 100.747 seconds denoising; the retained output is
+`sections/04-evaluation/assets/fastvideo-base-h3.mp4`. The run uses the
+official dense FA4 path with SP4 and no DiT offload.
+
 Normalized records:
 
 - `raw/lightx2v-base-h3-comparison.json`
+- `raw/fastvideo-base-h3.json`
 - `raw/lightx2v-base-h3-summary.json`
 
 Generate the chart with:
@@ -55,7 +62,7 @@ python experiments/h100-4gpu-e2e/scripts/plot_lightx2v_results.py \
   --summary experiments/h100-4gpu-e2e/raw/lightx2v-base-h3-summary.json
 ```
 
-Both published MP4s pass the media gate: 124 decodable 1344 x 768 H.264 frames,
+The retained LightX2V, FastVideo, and TeleFuser MP4s pass the media gate: 124 decodable 1344 x 768 H.264 frames,
 finite 32kHz stereo AAC audio, and matching duration. Device memory was sampled
 at 100 ms intervals; the normalized record identifies the ranks used for each
 reported statistic.

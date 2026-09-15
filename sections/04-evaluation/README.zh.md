@@ -13,7 +13,7 @@ language: zh-CN
 | 实验 | 模型与任务 | 输出规格 | 采样 | GPU | 并行拓扑 |
 |---|---|---|---|---:|---|
 | TeleFuser 扩展性 | Base H3，T2VA | 1344 × 768，124 帧，5 秒 | 50 points / 49 DiT updates | 1 / 2 / 4 | 单卡 / TP2 / TP2 × Ulysses SP2 |
-| 四卡框架对比 | Base H3，T2VA | 1344 × 768，124 帧，5 秒 | 50 points / 49 DiT updates | 4 | TP2 × Ulysses SP2 |
+| 四卡框架对比 | Base H3，T2VA | 1344 × 768，124 帧，5 秒 | 50 points / 49 DiT updates | 4 | TP2 × Ulysses SP2；FastVideo 为 SP4 |
 | FP8 smoothing | Base H3，T2VA | 1344 × 768，107 帧，4 秒 | 50 points / 49 DiT updates | 1 | 单卡 |
 | Turbo LoRA | MiniMax-H3 Turbo，I2AV | 1344 × 768，124 帧，5 秒 | 9 points / 8 DiT updates | 1 | 单卡 |
 | FastH3 Adapter | FastH3 dense，T2VA | 1344 × 768，124 帧，5 秒 | 5 points / 4 DiT updates | 1 | 单卡 |
@@ -36,17 +36,17 @@ language: zh-CN
 
 ## 四卡 Base H3 框架对比
 
-SGLang、LightX2V 与 TeleFuser 均使用四张 H100 和 `TP2 × Ulysses SP2`。请求采用同一 Base H3 输出规格，不启用 feature cache。[SGLang 官方 MiniMax-H3 cookbook](https://github.com/sgl-project/sglang/blob/main/docs/cookbook/diffusion/MiniMax/MiniMax-H3.mdx)列出了该 H100 拓扑；本图采用 TeleFuser 文档中记录的同规格本机测试结果。
+FastVideo 提供完整 Base H3 的官方路径，本次也用其 dense FA4 runner 在四张 H100 上完成了测试，拓扑为 `SP4`。SGLang、LightX2V 和 TeleFuser 使用 `TP2 × Ulysses SP2`。四个框架采用相同 Base H3 输出规格和 50-point schedule，均关闭 feature cache。[FastVideo Base H3 示例](https://github.com/hao-ai-lab/FastVideo/blob/main/examples/inference/basic/basic_minimax_h3_t2v.py)与 [SGLang 官方 MiniMax-H3 cookbook](https://github.com/sgl-project/sglang/blob/main/docs/cookbook/diffusion/MiniMax/MiniMax-H3.mdx)均提供对应模型路径。由于 FastVideo 的已验证运行使用 SP4，而不是 TP2 × Ulysses SP2，图中单独标注其拓扑，不将它表述为完全相同的并行配置。
 
 ![四 GPU MiniMax-H3 Base 性能](assets/lightx2v-base-h3.svg)
 
 <div class="result-summary">
   <div><strong>快 2.64 倍</strong><span>相比 LightX2V 的完整生成</span></div>
-  <div><strong>快 1.52 倍</strong><span>相比 SGLang 的完整请求</span></div>
+  <div><strong>快 2.19 倍</strong><span>相比 FastVideo 的完整请求</span></div>
   <div><strong>降低 40.3% / 37.3%</strong><span>相比 LightX2V / SGLang 的峰值显存</span></div>
 </div>
 
-TeleFuser 完整生成耗时 52.27 秒；LightX2V 为 137.76 秒，SGLang 为 79.37 秒。对应地，TeleFuser 比 LightX2V 降低 62.1% 请求时延和 40.3% 峰值显存，比 SGLang 降低 34.1% 请求时延和 37.3% 峰值显存。LightX2V 与 TeleFuser 的去噪时间分别为 129.22 秒和 49.28 秒，TeleFuser 的 50-step 吞吐提高 162.2%。
+TeleFuser 完整生成耗时 52.27 秒；LightX2V 为 137.76 秒，FastVideo 为 114.70 秒，SGLang 为 79.37 秒。在这一请求上，TeleFuser 相比三者分别快 2.64 倍、2.19 倍和 1.52 倍。TeleFuser 峰值显存为 42.5 GiB/GPU，LightX2V、FastVideo 和 SGLang 分别为 71.2、41.9 和 67.8 GiB；FastVideo 的小幅显存差异来自 SP4 拓扑，因此不将其写成 TeleFuser 的显存优势。相对 LightX2V，TeleFuser 去噪时间从 129.22 秒降至 49.28 秒，50-point 吞吐提高 162.2%。
 
 <div class="video-pair" data-sync-group="base-h3">
   <figure>
@@ -57,11 +57,26 @@ TeleFuser 完整生成耗时 52.27 秒；LightX2V 为 137.76 秒，SGLang 为 79
     <figcaption>TeleFuser</figcaption>
     <video controls playsinline preload="metadata" data-result-slot="telefuser-base-h3"></video>
   </figure>
+  <figure>
+    <figcaption>FastVideo</figcaption>
+    <video controls playsinline preload="metadata" data-result-slot="fastvideo-base-h3"></video>
+  </figure>
 </div>
 
-两段视频采用相同 prompt 和 seed，均包含 124 帧画面与同步立体声音频。每个框架先 warm-up 一次，再记录一次正式请求。显存指标采用 `nvidia-smi` 以 100 ms 间隔采样。
+三段保留的视频采用相同 prompt 和 seed，均包含 124 帧画面与同步立体声音频。SGLang 的计时记录早于本文的媒体采集，因此没有可嵌入的 SGLang MP4。每个有记录的框架先 warm-up 一次，再记录一次正式请求。显存指标采用 `nvidia-smi` 以 100 ms 间隔采样。
 
 ## Adapter 工作负载
+
+四个框架目前提供的 Adapter 文件和加载路径并不相同。下表将“支持”与“有可复现的本机测试”分开记录；“—”不表示框架永远不能支持该文件，而表示本次没有把未验证路径放入性能图。
+
+| 框架 | MiniMax-H3 Turbo LoRA | FastH3 Preview Adapter | 说明 |
+|---|---|---|---|
+| TeleFuser | 已测试 | 已测试 | 当前测试运行时同时实现两种 Adapter 路径。 |
+| LightX2V | 已测试 | 未纳入 | 官方 H3 示例提供 Turbo LoRA；测试 checkout 没有可维护的 FastH3 Preview Adapter 示例。 |
+| FastVideo | 未纳入 | 已测试 | FastVideo 官方发布的是 FastH3 Adapter；LightX2V Turbo 文件属于另一 Adapter 家族，未用不同文件替代。 |
+| SGLang | 当前 cookbook 已支持，但本机没有 H100 记录 | 未纳入 | SGLang 当前文档支持标准 H3 LoRA 加载；FastH3 文件包含 native mapper 不接受的 dense delta tensor。 |
+
+因此，Adapter 图只比较拥有同一文件、同一 prompt/seed 和已验证运行记录的框架。Base H3 图才是四框架完整对比，因为四者都有完整 checkpoint 的本机结果。
 
 ### MiniMax-H3 Turbo LoRA
 

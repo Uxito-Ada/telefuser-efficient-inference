@@ -50,6 +50,7 @@ EDITIONS: tuple[dict[str, Any], ...] = (
 MEDIA = {
     "lightx2v-base-h3": "../sections/04-evaluation/assets/lightx2v-base-h3.mp4",
     "telefuser-base-h3": "../sections/04-evaluation/assets/telefuser-base-h3.mp4",
+    "fastvideo-base-h3": "../sections/04-evaluation/assets/fastvideo-base-h3.mp4",
     "turbo-lightx2v": "../sections/04-evaluation/assets/turbo-lightx2v.mp4",
     "turbo-telefuser": "../sections/04-evaluation/assets/turbo-telefuser.mp4",
     "fastvideo-primary": "../sections/04-evaluation/assets/fastvideo-primary.mp4",
@@ -57,9 +58,6 @@ MEDIA = {
     "bf16-quality": "../sections/03-quality-and-scale/assets/bf16-fa4.mp4",
     "fp8-unsmoothed": "../sections/03-quality-and-scale/assets/fp8-sol-unsmoothed.mp4",
     "fp8-smoothed": "../sections/03-quality-and-scale/assets/fp8-sol-smoothed.mp4",
-    "bf16-quality-detail": "../sections/03-quality-and-scale/assets/bf16-fa4-detail.mp4",
-    "fp8-unsmoothed-detail": "../sections/03-quality-and-scale/assets/fp8-sol-unsmoothed-detail.mp4",
-    "fp8-smoothed-detail": "../sections/03-quality-and-scale/assets/fp8-sol-smoothed-detail.mp4",
 }
 
 

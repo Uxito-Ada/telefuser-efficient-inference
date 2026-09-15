@@ -39,22 +39,7 @@ MiniMax-H3 实际层的 profile 显示，部分 K/V 的均值明显偏离零点�
   </figure>
 </div>
 
-三段输出的差异在视频后半段最明显：未平滑 FP8 的车顶标识更杂乱，受电弓连线和窗框也不够规整。下面同步放大三段原始视频的同一区域。
-
-<div class="video-grid video-grid-three" data-sync-group="smoothing-detail">
-  <figure>
-    <figcaption>BF16 参考局部</figcaption>
-    <video controls muted playsinline preload="metadata" data-result-slot="bf16-quality-detail"></video>
-  </figure>
-  <figure>
-    <figcaption>FP8，未平滑局部</figcaption>
-    <video controls muted playsinline preload="metadata" data-result-slot="fp8-unsmoothed-detail"></video>
-  </figure>
-  <figure>
-    <figcaption>FP8，平滑后局部</figcaption>
-    <video controls muted playsinline preload="metadata" data-result-slot="fp8-smoothed-detail"></video>
-  </figure>
-</div>
+在视频后半段，未平滑输出的车顶标识、受电弓连线和窗框对齐相较平滑输出更不稳定。该观察来自相同 prompt 和 seed 的定性检查；上方三段完整视频仍是主要对比材料。
 
 ## 哪些位置仍然保留稠密 attention
 

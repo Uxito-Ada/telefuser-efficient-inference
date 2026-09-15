@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plot the matched four-H100 SGLang, LightX2V, and TeleFuser comparison."""
+"""Plot the matched four-H100 framework comparison."""
 
 from __future__ import annotations
 
@@ -25,9 +25,10 @@ def main() -> None:
     report: dict[str, Any] = json.loads(args.input.read_text(encoding="utf-8"))
     sglang = report["results"]["sglang_matched_h100"]
     baseline = report["results"]["lightx2v_bf16_sageattention2"]
+    fastvideo = report["results"]["fastvideo_bf16_fa4"]
     candidate = report["results"]["telefuser_fp8_sol_exact"]
-    names = ["SGLang", "LightX2V", "TeleFuser"]
-    colors = ["#8C72A8", "#3874A5", "#23806F"]
+    names = ["SGLang", "LightX2V", "FastVideo", "TeleFuser"]
+    colors = ["#8C72A8", "#3874A5", "#D97742", "#23806F"]
     panels = (
         (
             "Generation time",
@@ -35,6 +36,7 @@ def main() -> None:
             [
                 sglang["generation_seconds"],
                 baseline["generation_seconds"],
+                fastvideo["generation_seconds"],
                 candidate["generation_seconds"],
             ],
         ),
@@ -44,6 +46,7 @@ def main() -> None:
             [
                 sglang["representative_peak_memory_mib"] / 1024.0,
                 baseline["representative_peak_memory_mib"] / 1024.0,
+                fastvideo["representative_peak_memory_mib"] / 1024.0,
                 candidate["representative_peak_memory_mib"] / 1024.0,
             ],
         ),
@@ -93,8 +96,8 @@ def main() -> None:
     figure.text(
         0.5,
         0.03,
-        "MiniMax-H3 Base | 1344 x 768 | 124 frames | 50 steps | "
-        "4 x H100 80GB | TP2 x Ulysses SP2",
+        "MiniMax-H3 Base | 1344 x 768 | 124 frames | 50 points | 4 x H100 80GB | "
+        "TeleFuser/LightX2V/SGLang: TP2 x Ulysses SP2; FastVideo: SP4",
         ha="center",
         color="#69747d",
         fontsize=9.5,

@@ -16,7 +16,7 @@ Unless noted otherwise, each run uses MiniMax-H3's 768p profile and writes 24 FP
 | Experiment | Model and task | Output | Sampling | GPUs | Topology |
 |---|---|---|---|---:|---|
 | TeleFuser scaling | Base H3, T2VA | 1344 × 768, 124 frames, 5 s | 50 points / 49 DiT updates | 1 / 2 / 4 | local / TP2 / TP2 × Ulysses SP2 |
-| Four-GPU frameworks | Base H3, T2VA | 1344 × 768, 124 frames, 5 s | 50 points / 49 DiT updates | 4 | TP2 × Ulysses SP2 |
+| Four-GPU frameworks | Base H3, T2VA | 1344 × 768, 124 frames, 5 s | 50 points / 49 DiT updates | 4 | TP2 × Ulysses SP2; FastVideo SP4 |
 | FP8 smoothing | Base H3, T2VA | 1344 × 768, 107 frames, 4 s | 50 points / 49 DiT updates | 1 | local |
 | Turbo LoRA | MiniMax-H3 Turbo, I2AV | 1344 × 768, 124 frames, 5 s | 9 points / 8 DiT updates | 1 | local |
 | FastH3 adapter | FastH3 dense, T2VA | 1344 × 768, 124 frames, 5 s | 5 points / 4 DiT updates | 1 | local |
@@ -39,17 +39,17 @@ Denoising falls from 167.41 seconds on one GPU to 90.90 seconds on two and 49.28
 
 ## Four-GPU Base H3 framework comparison
 
-SGLang, LightX2V, and TeleFuser use four H100 GPUs with `TP2 × Ulysses SP2`. The request uses the same Base H3 output shape and disables feature cache. The [official SGLang MiniMax-H3 cookbook](https://github.com/sgl-project/sglang/blob/main/docs/cookbook/diffusion/MiniMax/MiniMax-H3.mdx) lists this H100 topology; the chart uses the matched local result retained in TeleFuser's MiniMax-H3 documentation.
+SGLang, LightX2V, and TeleFuser use four H100 GPUs with `TP2 × Ulysses SP2`. FastVideo also has a maintained full Base H3 path and was measured with its official dense FA4 runner on four H100 GPUs using `SP4`. The request uses the same Base H3 output shape and 50-point schedule; feature cache is disabled. The [FastVideo Base H3 example](https://github.com/hao-ai-lab/FastVideo/blob/main/examples/inference/basic/basic_minimax_h3_t2v.py) and the [official SGLang MiniMax-H3 cookbook](https://github.com/sgl-project/sglang/blob/main/docs/cookbook/diffusion/MiniMax/MiniMax-H3.mdx) document these model paths. Because FastVideo's verified run uses SP4 rather than TP2 × Ulysses SP2, it is shown as a separately labelled four-GPU point rather than claimed as an identical topology.
 
 ![Four-GPU MiniMax-H3 Base performance](assets/lightx2v-base-h3.svg)
 
 <div class="result-summary">
   <div><strong>2.64x faster</strong><span>generation than LightX2V</span></div>
-  <div><strong>1.52x faster</strong><span>request than SGLang</span></div>
+  <div><strong>2.19x faster</strong><span>request than FastVideo</span></div>
   <div><strong>40.3% / 37.3% lower</strong><span>peak memory vs. LightX2V / SGLang</span></div>
 </div>
 
-TeleFuser completes generation in 52.27 seconds, compared with 137.76 seconds for LightX2V and 79.37 seconds for SGLang. TeleFuser therefore reduces request latency and peak memory by 62.1% and 40.3% versus LightX2V, and by 34.1% and 37.3% versus SGLang. Against LightX2V, denoising falls from 129.22 to 49.28 seconds and 50-step throughput rises by 162.2%.
+TeleFuser completes generation in 52.27 seconds, compared with 137.76 seconds for LightX2V, 114.70 seconds for FastVideo, and 79.37 seconds for SGLang. It is 2.64× faster than LightX2V, 2.19× faster than FastVideo, and 1.52× faster than SGLang on this request. Peak memory is 42.5 GiB/GPU for TeleFuser, versus 71.2 GiB for LightX2V, 41.9 GiB for FastVideo, and 67.8 GiB for SGLang; the small FastVideo memory difference reflects its SP4 execution and is not presented as a TeleFuser win. Against LightX2V, denoising falls from 129.22 to 49.28 seconds and 50-point throughput rises by 162.2%.
 
 <div class="video-pair" data-sync-group="base-h3">
   <figure>
@@ -60,11 +60,30 @@ TeleFuser completes generation in 52.27 seconds, compared with 137.76 seconds fo
     <figcaption>TeleFuser</figcaption>
     <video controls playsinline preload="metadata" data-result-slot="telefuser-base-h3"></video>
   </figure>
+  <figure>
+    <figcaption>FastVideo</figcaption>
+    <video controls playsinline preload="metadata" data-result-slot="fastvideo-base-h3"></video>
+  </figure>
 </div>
 
-Both videos use the same prompt and seed, with 124 frames and synchronized stereo audio. Each framework runs one warm-up followed by one measured request. Device memory is sampled through `nvidia-smi` every 100 ms.
+The three retained videos use the same prompt and seed, with 124 frames and synchronized stereo audio. The SGLang timing record predates this article's media capture, so no SGLang MP4 is embedded. Each recorded framework runs one warm-up followed by one measured request. Device memory is sampled through `nvidia-smi` every 100 ms.
 
 ## Adapter workloads
+
+The four frameworks do not expose the same adapter artifacts. The matrix below
+separates a supported route from a route that was not admitted as a benchmark;
+an em dash is not a claim that the framework can never support that adapter.
+
+| Framework | MiniMax-H3 Turbo LoRA | FastH3 Preview adapter | Why it is or is not plotted |
+|---|---|---|---|
+| TeleFuser | Measured | Measured | Both adapter paths are implemented in the tested runtime. |
+| LightX2V | Measured | Not admitted | Its official H3 recipe documents the Turbo LoRA; no maintained FastH3 Preview adapter recipe was available in the tested checkout. |
+| FastVideo | Not admitted | Measured | The official FastVideo release is the FastH3 adapter; the LightX2V Turbo file is a different adapter family and was not silently substituted. |
+| SGLang | Supported by current cookbook, no local H100 record | Not admitted | Current SGLang documents standard H3 LoRA loading, but the local benchmark has no reproducible Turbo run. FastH3 files include dense delta tensors that the native H3 LoRA mapper rejects. |
+
+Consequently, each adapter chart compares only the frameworks with a matched,
+validated artifact. The Base H3 chart is the four-framework comparison because
+all four have a full-checkpoint path with a recorded run.
 
 ### MiniMax-H3 Turbo LoRA
 

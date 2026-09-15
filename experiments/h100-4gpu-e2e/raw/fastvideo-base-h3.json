@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "framework": "FastVideo",
+  "profile": "base-h3-dense-fa4",
+  "commit": "a28f2bab4b41c2e714119ca704db1098a483e4fb",
+  "hardware": "4x NVIDIA H100 80GB HBM3",
+  "model": "MiniMaxAI/MiniMax-H3",
+  "adapter": null,
+  "parallelism": "SP4",
+  "workload": {
+    "task": "T2AV",
+    "prompt": "Steam rises from the ramen while the family talks in the background.",
+    "seed": 0,
+    "resolution": [1344, 768],
+    "frames": 124,
+    "fps": 24,
+    "duration_seconds": 5.0,
+    "sigma_points": 50,
+    "actual_dit_forwards": 49
+  },
+  "configuration": {
+    "linear": "BF16",
+    "attention": "FlashAttention 4",
+    "dit_offload": false,
+    "feature_cache": false,
+    "sequence_parallel": "SP4"
+  },
+  "measurement": {
+    "scope": "warm request through synchronized MP4 close",
+    "warmups": 1,
+    "repeats": 3,
+    "e2e_seconds": 114.698,
+    "denoise_seconds": 100.747,
+    "config_points_per_second": 0.4962907123780877,
+    "peak_increment_gib": 41.868408203125,
+    "source": "/data/heyang/fasth3-h100-benchmark/outputs/base_h3_dense_fa4_5s_4gpu_ramen/",
+    "timing_samples": {
+      "e2e_seconds": [114.878, 114.698, 112.997],
+      "denoise_seconds": [100.510, 100.947, 100.747]
+    }
+  },
+  "output": "sections/04-evaluation/assets/fastvideo-base-h3.mp4"
+}
