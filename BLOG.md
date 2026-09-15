@@ -202,14 +202,13 @@ cost to 2.2%. On a captured MiniMax-H3 layer, K quantization MSE fell by 21.65%
 and attention-output MSE by 8.18%. KV smoothing and V correction are enabled by
 default in the optimized profile.
 
-The quality case uses a locked camera on a tram moving through snow.
-All three runs use the same prompt, seed, and output specification. The rigid
+The quality case uses a locked camera on a tram moving through snow. The rigid
 body, aligned windows, rails, and pantograph make temporal geometry directly
 visible throughout the clip.
 
-| Model | Resolution and frames | Sampling | GPUs | Prompt / seed |
+| Model | Resolution and frames | Sampling | GPUs | Case / seed |
 |---|---|---|---:|---|
-| MiniMax-H3 Base, T2VA | 1344 × 768, 107 frames, 4 s at 24 FPS | 50 points / 49 DiT updates | 1 × H100 | locked tram shot / 17 |
+| MiniMax-H3 Base, T2VA | 1344 × 768, 107 frames, 4 s at 24 FPS | 50 points / 49 DiT updates | 1 × H100 | snow tram / 17 |
 
 ![MiniMax-H3 FP8 smoothing performance on one GPU](sections/03-quality-and-scale/assets/smoothing-performance.svg)
 
@@ -221,8 +220,6 @@ correction adds 2.1% denoise time over raw FP8.
 |---|---:|---:|---:|---:|
 | FP8, unsmoothed | **19.63 dB** | **0.6712** | 0.8504 | 0.5055 |
 | FP8, smoothing enabled | 19.27 dB | 0.6700 | **0.8891** | **0.4537** |
-
-**Prompt (all three configurations):** `Locked-off cinematic wide shot of a red vintage tram gliding slowly through a snowy alpine village at sunrise. The tram remains rigid and geometrically consistent, its windows and wheels stay aligned. Light snow falls; soft rail sounds and distant church bells are synchronized with the scene. No people, no cuts, no camera movement.`
 
 <div class="video-grid video-grid-three" data-sync-group="smoothing">
   <figure>
@@ -252,10 +249,12 @@ need to select these parameters manually.
 
 ## The same path on multiple GPUs
 
-Q-SPA combines Ulysses SP with tensor parallelism, using dedicated kernels and
-communication-compute overlap to reduce distributed overhead. FP8
-quantization, Sol routing, video tokens, and timesteps follow one sharding
-contract, so the single- and multi-GPU paths retain the same quality controls.
+TeleFuser specializes its SP kernels for FP8, Sol-Attn, and world-model video
+generation. Each GPU quantizes FP8 QKV and runs Sol-Attn on its local attention
+layout after Ulysses All-to-All. Three-dimensional video-token reordering runs
+before sequence partitioning; scalar timesteps remain replicated, while
+per-token timesteps are sharded with the video tokens. Ulysses communication is
+also overlapped with attention compute to reduce multi-GPU overhead.
 
 ---
 
@@ -284,7 +283,7 @@ Unless noted otherwise, each run uses MiniMax-H3's 768p profile and writes 24 FP
 
 The scaling runs disable feature cache and KV smoothing to isolate parallel execution. The smoothing and adapter sections specify their low-precision profiles separately.
 
-## TeleFuser scaling on one, two, and four GPUs
+## TeleFuser scaling
 
 All three runs use the same prompt, seed, FP8 Linear, and FP8 Sol-Attn. The single-GPU run is local, the two-GPU run uses TP2, and the four-GPU run adds Ulysses SP2 over TP2.
 
@@ -312,7 +311,7 @@ All four frameworks use the same Base H3 output shape and 50-point schedule with
 
 TeleFuser completes generation in 52.27 seconds, compared with 137.76 seconds for LightX2V, 114.70 seconds for FastVideo, and 79.37 seconds for SGLang. It is 2.64× faster than LightX2V, 2.19× faster than FastVideo, and 1.52× faster than SGLang on this request. Peak memory is 42.5 GiB/GPU for TeleFuser, versus 71.2 GiB for LightX2V, 41.9 GiB for FastVideo, and 67.8 GiB for SGLang. Against LightX2V, denoising falls from 129.22 to 49.28 seconds and 50-point throughput rises by 162.2%.
 
-**Prompt (all four frameworks):** `Steam rises from the ramen while the family talks in the background.`
+**Prompt:** `Steam rises from the ramen while the family talks in the background.`
 
 <div class="video-pair" data-sync-group="base-h3">
   <figure>
@@ -339,10 +338,10 @@ Turbo LoRA and FastH3 use different weights and sampling contracts. Current fram
 
 | Framework | MiniMax-H3 Turbo LoRA | FastH3 Preview adapter |
 |---|---|---|
-| TeleFuser | ✓ Supported | ✓ Supported |
-| LightX2V | ✓ Supported | ✗ Unsupported |
-| FastVideo | ✗ Unsupported | ✓ Supported |
-| SGLang | ✓ Supported | ✗ Unsupported |
+| TeleFuser | ✅ Supported | ✅ Supported |
+| LightX2V | ✅ Supported | ❌ Unsupported |
+| FastVideo | ❌ Unsupported | ✅ Supported |
+| SGLang | ✅ Supported | ❌ Unsupported |
 
 The Turbo LoRA comparison covers TeleFuser and LightX2V; the FastH3 comparison covers TeleFuser and FastVideo.
 
@@ -357,8 +356,6 @@ Both frameworks use the 8-step v1.0 768p adapter with resident DiT weights. Tele
   <div><strong>36.5% higher</strong><span>8-step denoise throughput</span></div>
   <div><strong>12.3% lower</strong><span>whole-process peak GPU memory</span></div>
 </div>
-
-**Display prompts:** LightX2V: `Steam rises from the ramen while the family talks in the background.` TeleFuser: `A level tripod shot with a subtle push-in; no orbit, roll, or spinning.`
 
 <div class="video-pair" data-sync-group="turbo">
   <figure>
@@ -383,7 +380,7 @@ FastVideo and TeleFuser use the same dense adapter, prompt, and seed, with four 
   <div><strong>14.3% lower</strong><span>whole-process peak GPU memory</span></div>
 </div>
 
-**Prompt (both frameworks):** `integrated_multimodal_description: A red fox runs through fresh snow at dawn. overall_soundscape: Fast pawsteps in snow, winter wind, and distant birds.`
+**Prompt:** `integrated_multimodal_description: A red fox runs through fresh snow at dawn. overall_soundscape: Fast pawsteps in snow, winter wind, and distant birds.`
 
 <div class="video-pair" data-sync-group="fasth3">
   <figure>

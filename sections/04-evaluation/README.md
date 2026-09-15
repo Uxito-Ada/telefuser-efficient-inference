@@ -23,7 +23,7 @@ Unless noted otherwise, each run uses MiniMax-H3's 768p profile and writes 24 FP
 
 The scaling runs disable feature cache and KV smoothing to isolate parallel execution. The smoothing and adapter sections specify their low-precision profiles separately.
 
-## TeleFuser scaling on one, two, and four GPUs
+## TeleFuser scaling
 
 All three runs use the same prompt, seed, FP8 Linear, and FP8 Sol-Attn. The single-GPU run is local, the two-GPU run uses TP2, and the four-GPU run adds Ulysses SP2 over TP2.
 
@@ -51,7 +51,7 @@ All four frameworks use the same Base H3 output shape and 50-point schedule with
 
 TeleFuser completes generation in 52.27 seconds, compared with 137.76 seconds for LightX2V, 114.70 seconds for FastVideo, and 79.37 seconds for SGLang. It is 2.64× faster than LightX2V, 2.19× faster than FastVideo, and 1.52× faster than SGLang on this request. Peak memory is 42.5 GiB/GPU for TeleFuser, versus 71.2 GiB for LightX2V, 41.9 GiB for FastVideo, and 67.8 GiB for SGLang. Against LightX2V, denoising falls from 129.22 to 49.28 seconds and 50-point throughput rises by 162.2%.
 
-**Prompt (all four frameworks):** `Steam rises from the ramen while the family talks in the background.`
+**Prompt:** `Steam rises from the ramen while the family talks in the background.`
 
 <div class="video-pair" data-sync-group="base-h3">
   <figure>
@@ -78,10 +78,10 @@ Turbo LoRA and FastH3 use different weights and sampling contracts. Current fram
 
 | Framework | MiniMax-H3 Turbo LoRA | FastH3 Preview adapter |
 |---|---|---|
-| TeleFuser | ✓ Supported | ✓ Supported |
-| LightX2V | ✓ Supported | ✗ Unsupported |
-| FastVideo | ✗ Unsupported | ✓ Supported |
-| SGLang | ✓ Supported | ✗ Unsupported |
+| TeleFuser | ✅ Supported | ✅ Supported |
+| LightX2V | ✅ Supported | ❌ Unsupported |
+| FastVideo | ❌ Unsupported | ✅ Supported |
+| SGLang | ✅ Supported | ❌ Unsupported |
 
 The Turbo LoRA comparison covers TeleFuser and LightX2V; the FastH3 comparison covers TeleFuser and FastVideo.
 
@@ -96,8 +96,6 @@ Both frameworks use the 8-step v1.0 768p adapter with resident DiT weights. Tele
   <div><strong>36.5% higher</strong><span>8-step denoise throughput</span></div>
   <div><strong>12.3% lower</strong><span>whole-process peak GPU memory</span></div>
 </div>
-
-**Display prompts:** LightX2V: `Steam rises from the ramen while the family talks in the background.` TeleFuser: `A level tripod shot with a subtle push-in; no orbit, roll, or spinning.`
 
 <div class="video-pair" data-sync-group="turbo">
   <figure>
@@ -122,7 +120,7 @@ FastVideo and TeleFuser use the same dense adapter, prompt, and seed, with four 
   <div><strong>14.3% lower</strong><span>whole-process peak GPU memory</span></div>
 </div>
 
-**Prompt (both frameworks):** `integrated_multimodal_description: A red fox runs through fresh snow at dawn. overall_soundscape: Fast pawsteps in snow, winter wind, and distant birds.`
+**Prompt:** `integrated_multimodal_description: A red fox runs through fresh snow at dawn. overall_soundscape: Fast pawsteps in snow, winter wind, and distant birds.`
 
 <div class="video-pair" data-sync-group="fasth3">
   <figure>

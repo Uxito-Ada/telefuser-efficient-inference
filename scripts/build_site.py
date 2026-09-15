@@ -92,7 +92,7 @@ def render(edition: dict[str, Any]) -> str:
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="../README.md">TeleFuser Engineering</a>
+    <a class="brand" href="../README.md">TeleFuser</a>
     <nav aria-label="Article links">
       <a href="{edition["system_href"]}">{edition["system_label"]}</a>
       <a href="{edition["results_href"]}">{edition["results_label"]}</a>

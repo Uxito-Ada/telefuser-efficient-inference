@@ -10,7 +10,7 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="../README.md">TeleFuser Engineering</a>
+    <a class="brand" href="../README.md">TeleFuser</a>
     <nav aria-label="Article links">
       <a href="#q-spa-system">System</a>
       <a href="#results">Results</a>
@@ -156,8 +156,7 @@ unfused implementation added 11.7% denoising overhead; fusion reduced the final
 cost to 2.2%. On a captured MiniMax-H3 layer, K quantization MSE fell by 21.65%
 and attention-output MSE by 8.18%. KV smoothing and V correction are enabled by
 default in the optimized profile.</p>
-<p>The quality case uses a locked camera on a tram moving through snow.
-All three runs use the same prompt, seed, and output specification. The rigid
+<p>The quality case uses a locked camera on a tram moving through snow. The rigid
 body, aligned windows, rails, and pantograph make temporal geometry directly
 visible throughout the clip.</p>
 <table>
@@ -167,7 +166,7 @@ visible throughout the clip.</p>
 <th>Resolution and frames</th>
 <th>Sampling</th>
 <th style="text-align: right;">GPUs</th>
-<th>Prompt / seed</th>
+<th>Case / seed</th>
 </tr>
 </thead>
 <tbody>
@@ -176,7 +175,7 @@ visible throughout the clip.</p>
 <td>1344 × 768, 107 frames, 4 s at 24 FPS</td>
 <td>50 points / 49 DiT updates</td>
 <td style="text-align: right;">1 × H100</td>
-<td>locked tram shot / 17</td>
+<td>snow tram / 17</td>
 </tr>
 </tbody>
 </table>
@@ -211,7 +210,6 @@ correction adds 2.1% denoise time over raw FP8.</p>
 </tr>
 </tbody>
 </table>
-<p><strong>Prompt (all three configurations):</strong> <code>Locked-off cinematic wide shot of a red vintage tram gliding slowly through a snowy alpine village at sunrise. The tram remains rigid and geometrically consistent, its windows and wheels stay aligned. Light snow falls; soft rail sounds and distant church bells are synchronized with the scene. No people, no cuts, no camera movement.</code></p>
 <div class="video-grid video-grid-three" data-sync-group="smoothing">
   <figure>
     <figcaption>BF16 reference</figcaption>
@@ -236,10 +234,12 @@ sparsity strength for further tuning on new workloads. Its MiniMax-H3 defaults
 have already been validated for performance and output quality, so users do not
 need to select these parameters manually.</p>
 <h2 id="the-same-path-on-multiple-gpus">The same path on multiple GPUs</h2>
-<p>Q-SPA combines Ulysses SP with tensor parallelism, using dedicated kernels and
-communication-compute overlap to reduce distributed overhead. FP8
-quantization, Sol routing, video tokens, and timesteps follow one sharding
-contract, so the single- and multi-GPU paths retain the same quality controls.</p>
+<p>TeleFuser specializes its SP kernels for FP8, Sol-Attn, and world-model video
+generation. Each GPU quantizes FP8 QKV and runs Sol-Attn on its local attention
+layout after Ulysses All-to-All. Three-dimensional video-token reordering runs
+before sequence partitioning; scalar timesteps remain replicated, while
+per-token timesteps are sharded with the video tokens. Ulysses communication is
+also overlapped with attention compute to reduce multi-GPU overhead.</p>
 <hr>
 <h1 id="results">Performance and Output Quality</h1>
 <h2 id="evaluation-matrix">Evaluation matrix</h2>
@@ -299,7 +299,7 @@ contract, so the single- and multi-GPU paths retain the same quality controls.</
 </tbody>
 </table>
 <p>The scaling runs disable feature cache and KV smoothing to isolate parallel execution. The smoothing and adapter sections specify their low-precision profiles separately.</p>
-<h2 id="telefuser-scaling-on-one-two-and-four-gpus">TeleFuser scaling on one, two, and four GPUs</h2>
+<h2 id="telefuser-scaling">TeleFuser scaling</h2>
 <p>All three runs use the same prompt, seed, FP8 Linear, and FP8 Sol-Attn. The single-GPU run is local, the two-GPU run uses TP2, and the four-GPU run adds Ulysses SP2 over TP2.</p>
 <p><img alt="TeleFuser MiniMax-H3 Base scaling on one, two, and four GPUs" src="../sections/04-evaluation/assets/base-scaling.svg"></p>
 <div class="result-summary">
@@ -319,7 +319,7 @@ contract, so the single- and multi-GPU paths retain the same quality controls.</
 </div>
 
 <p>TeleFuser completes generation in 52.27 seconds, compared with 137.76 seconds for LightX2V, 114.70 seconds for FastVideo, and 79.37 seconds for SGLang. It is 2.64× faster than LightX2V, 2.19× faster than FastVideo, and 1.52× faster than SGLang on this request. Peak memory is 42.5 GiB/GPU for TeleFuser, versus 71.2 GiB for LightX2V, 41.9 GiB for FastVideo, and 67.8 GiB for SGLang. Against LightX2V, denoising falls from 129.22 to 49.28 seconds and 50-point throughput rises by 162.2%.</p>
-<p><strong>Prompt (all four frameworks):</strong> <code>Steam rises from the ramen while the family talks in the background.</code></p>
+<p><strong>Prompt:</strong> <code>Steam rises from the ramen while the family talks in the background.</code></p>
 <div class="video-pair" data-sync-group="base-h3">
   <figure>
     <figcaption>LightX2V</figcaption>
@@ -352,23 +352,23 @@ contract, so the single- and multi-GPU paths retain the same quality controls.</
 <tbody>
 <tr>
 <td>TeleFuser</td>
-<td>✓ Supported</td>
-<td>✓ Supported</td>
+<td>✅ Supported</td>
+<td>✅ Supported</td>
 </tr>
 <tr>
 <td>LightX2V</td>
-<td>✓ Supported</td>
-<td>✗ Unsupported</td>
+<td>✅ Supported</td>
+<td>❌ Unsupported</td>
 </tr>
 <tr>
 <td>FastVideo</td>
-<td>✗ Unsupported</td>
-<td>✓ Supported</td>
+<td>❌ Unsupported</td>
+<td>✅ Supported</td>
 </tr>
 <tr>
 <td>SGLang</td>
-<td>✓ Supported</td>
-<td>✗ Unsupported</td>
+<td>✅ Supported</td>
+<td>❌ Unsupported</td>
 </tr>
 </tbody>
 </table>
@@ -382,7 +382,6 @@ contract, so the single- and multi-GPU paths retain the same quality controls.</
   <div><strong>12.3% lower</strong><span>whole-process peak GPU memory</span></div>
 </div>
 
-<p><strong>Display prompts:</strong> LightX2V: <code>Steam rises from the ramen while the family talks in the background.</code> TeleFuser: <code>A level tripod shot with a subtle push-in; no orbit, roll, or spinning.</code></p>
 <div class="video-pair" data-sync-group="turbo">
   <figure>
     <figcaption>LightX2V: MiniMax-H3 Turbo</figcaption>
@@ -403,7 +402,7 @@ contract, so the single- and multi-GPU paths retain the same quality controls.</
   <div><strong>14.3% lower</strong><span>whole-process peak GPU memory</span></div>
 </div>
 
-<p><strong>Prompt (both frameworks):</strong> <code>integrated_multimodal_description: A red fox runs through fresh snow at dawn. overall_soundscape: Fast pawsteps in snow, winter wind, and distant birds.</code></p>
+<p><strong>Prompt:</strong> <code>integrated_multimodal_description: A red fox runs through fresh snow at dawn. overall_soundscape: Fast pawsteps in snow, winter wind, and distant birds.</code></p>
 <div class="video-pair" data-sync-group="fasth3">
   <figure>
     <figcaption>FastVideo: FastH3</figcaption>

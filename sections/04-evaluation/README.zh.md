@@ -20,7 +20,7 @@ language: zh-CN
 
 扩展性实验关闭 feature cache 和 KV smoothing，用于单独测量并行收益。Smoothing、Turbo 和 FastH3 的具体低精度配置在对应小节列出。
 
-## TeleFuser 1、2、4 卡扩展性
+## TeleFuser 扩展性
 
 三组运行使用相同 prompt、seed、FP8 Linear 和 FP8 Sol-Attn。单卡直接执行；两卡使用 TP2 切分模型权重和计算；四卡在 TP2 之上增加 Ulysses SP2 切分长序列。
 
@@ -48,7 +48,7 @@ language: zh-CN
 
 TeleFuser 完整生成耗时 52.27 秒；LightX2V 为 137.76 秒，FastVideo 为 114.70 秒，SGLang 为 79.37 秒。在这一请求上，TeleFuser 相比三者分别快 2.64 倍、2.19 倍和 1.52 倍。TeleFuser 峰值显存为 42.5 GiB/GPU，LightX2V、FastVideo 和 SGLang 分别为 71.2、41.9 和 67.8 GiB。相对 LightX2V，TeleFuser 去噪时间从 129.22 秒降至 49.28 秒，50-point 吞吐提高 162.2%。
 
-**Prompt（四个框架）：** `Steam rises from the ramen while the family talks in the background.`
+**Prompt：** `Steam rises from the ramen while the family talks in the background.`
 
 <div class="video-pair" data-sync-group="base-h3">
   <figure>
@@ -75,10 +75,10 @@ Turbo LoRA 与 FastH3 使用不同的权重和采样协议，当前框架支持�
 
 | 框架 | MiniMax-H3 Turbo LoRA | FastH3 Preview Adapter |
 |---|---|---|
-| TeleFuser | ✓ 已支持 | ✓ 已支持 |
-| LightX2V | ✓ 已支持 | ✗ 未支持 |
-| FastVideo | ✗ 未支持 | ✓ 已支持 |
-| SGLang | ✓ 已支持 | ✗ 未支持 |
+| TeleFuser | ✅ 已支持 | ✅ 已支持 |
+| LightX2V | ✅ 已支持 | ❌ 未支持 |
+| FastVideo | ❌ 未支持 | ✅ 已支持 |
+| SGLang | ✅ 已支持 | ❌ 未支持 |
 
 Turbo LoRA 对比 TeleFuser 与 LightX2V，FastH3 对比 TeleFuser 与 FastVideo。
 
@@ -93,8 +93,6 @@ Turbo LoRA 对比 TeleFuser 与 LightX2V，FastH3 对比 TeleFuser 与 FastVideo
   <div><strong>提升 36.5%</strong><span>8-step 去噪吞吐</span></div>
   <div><strong>降低 12.3%</strong><span>进程峰值 GPU 显存</span></div>
 </div>
-
-**展示 Prompt：** LightX2V：`Steam rises from the ramen while the family talks in the background.` TeleFuser：`A level tripod shot with a subtle push-in; no orbit, roll, or spinning.`
 
 <div class="video-pair" data-sync-group="turbo">
   <figure>
@@ -119,7 +117,7 @@ FastVideo 和 TeleFuser 使用相同 dense adapter、prompt 与 seed，实际执
   <div><strong>降低 14.3%</strong><span>进程峰值 GPU 显存</span></div>
 </div>
 
-**Prompt（两个框架）：** `integrated_multimodal_description: A red fox runs through fresh snow at dawn. overall_soundscape: Fast pawsteps in snow, winter wind, and distant birds.`
+**Prompt：** `integrated_multimodal_description: A red fox runs through fresh snow at dawn. overall_soundscape: Fast pawsteps in snow, winter wind, and distant birds.`
 
 <div class="video-pair" data-sync-group="fasth3">
   <figure>

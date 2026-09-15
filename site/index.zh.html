@@ -10,7 +10,7 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="../README.md">TeleFuser Engineering</a>
+    <a class="brand" href="../README.md">TeleFuser</a>
     <nav aria-label="Article links">
       <a href="#q-spa-system">优化方案</a>
       <a href="#results">测试结果</a>
@@ -77,7 +77,7 @@
 <h2 id="fp8-attention">FP8 attention 的误差控制</h2>
 <p>MiniMax-H3 实际层的 profile 显示，部分 K/V 的均值明显偏离零点，直接使用对称 FP8 量化会损失有效动态范围。TeleFuser 在计算前对 K/V 进行中心化，并在 attention 输出中恢复等价偏移。这是一种针对 attention 数据分布设计的非对称量化处理。</p>
 <p>中心化和输出修正已经融合进 FP8 Sol-Attn。最早的非融合版本让去噪时间增加 11.7%，融合后开销降到 2.2%。在捕获的真实 H3 层上，K 的量化 MSE 降低 21.65%，attention 输出 MSE 降低 8.18%；KV smoothing 和 V correction 在优化配置中默认开启。</p>
-<p>质量实验使用固定机位拍摄雪地电车，三组运行采用相同 prompt、seed 和输出规格。车体、车窗、轨道和受电弓的刚性结构可直接反映时序几何是否稳定。</p>
+<p>质量实验使用固定机位拍摄雪地电车。车体、车窗、轨道和受电弓的刚性结构可直接反映时序几何是否稳定。</p>
 <table>
 <thead>
 <tr>
@@ -85,7 +85,7 @@
 <th>分辨率与帧数</th>
 <th>采样</th>
 <th style="text-align: right;">GPU</th>
-<th>Prompt / seed</th>
+<th>场景 / seed</th>
 </tr>
 </thead>
 <tbody>
@@ -94,7 +94,7 @@
 <td>1344 × 768，107 帧，4 秒，24 fps</td>
 <td>50 points / 49 DiT updates</td>
 <td style="text-align: right;">1 × H100</td>
-<td>雪地电车固定机位 / 17</td>
+<td>雪地电车 / 17</td>
 </tr>
 </tbody>
 </table>
@@ -127,7 +127,6 @@
 </tr>
 </tbody>
 </table>
-<p><strong>Prompt（三个配置）：</strong> <code>Locked-off cinematic wide shot of a red vintage tram gliding slowly through a snowy alpine village at sunrise. The tram remains rigid and geometrically consistent, its windows and wheels stay aligned. Light snow falls; soft rail sounds and distant church bells are synchronized with the scene. No people, no cuts, no camera movement.</code></p>
 <div class="video-grid video-grid-three" data-sync-group="smoothing">
   <figure>
     <figcaption>BF16 参考</figcaption>
@@ -147,7 +146,7 @@
 <h2 id="_2">开箱即用、可继续调优的稀疏策略</h2>
 <p>不同模型和生成任务对稀疏 attention 的敏感位置并不相同。TeleFuser 提供 dense window、dense layer、阈值模式和稀疏强度等配置接口，便于针对新的模型或质量目标继续调优；MiniMax-H3 的默认配置已经过性能与生成质量验证，无需用户手动选择稀疏参数。</p>
 <h2 id="_3">多卡执行</h2>
-<p>Q-SPA 将 Ulysses SP 与 Tensor Parallel 组合，并通过专用 kernel 和通信计算重叠降低分布式开销。FP8 quantization、Sol-Attn routing、视频 token 和 timestep 均遵循同一分片语义，使单卡与多卡使用同一条质量优化路径。</p>
+<p>TeleFuser 对 SP kernel 做了面向 FP8、Sol-Attn 和 world-model 视频生成的专门优化：Ulysses All-to-All 完成后，各 GPU 再按本地 attention 布局执行 FP8 quantization 和 Sol-Attn；3D 视频 token 在序列切分前完成 reorder；scalar timestep 保持完整，per-token timestep 则随视频 token 一起切分。TeleFuser 还将 Ulysses 通信与 attention 计算重叠，以降低多卡通信开销。</p>
 <hr>
 <h1 id="results">性能与生成效果</h1>
 <h2 id="_4">测试配置</h2>
@@ -207,7 +206,7 @@
 </tbody>
 </table>
 <p>扩展性实验关闭 feature cache 和 KV smoothing，用于单独测量并行收益。Smoothing、Turbo 和 FastH3 的具体低精度配置在对应小节列出。</p>
-<h2 id="telefuser-124">TeleFuser 1、2、4 卡扩展性</h2>
+<h2 id="telefuser">TeleFuser 扩展性</h2>
 <p>三组运行使用相同 prompt、seed、FP8 Linear 和 FP8 Sol-Attn。单卡直接执行；两卡使用 TP2 切分模型权重和计算；四卡在 TP2 之上增加 Ulysses SP2 切分长序列。</p>
 <p><img alt="TeleFuser MiniMax-H3 Base 1、2、4 卡扩展性能" src="../sections/04-evaluation/assets/base-scaling.svg"></p>
 <div class="result-summary">
@@ -227,7 +226,7 @@
 </div>
 
 <p>TeleFuser 完整生成耗时 52.27 秒；LightX2V 为 137.76 秒，FastVideo 为 114.70 秒，SGLang 为 79.37 秒。在这一请求上，TeleFuser 相比三者分别快 2.64 倍、2.19 倍和 1.52 倍。TeleFuser 峰值显存为 42.5 GiB/GPU，LightX2V、FastVideo 和 SGLang 分别为 71.2、41.9 和 67.8 GiB。相对 LightX2V，TeleFuser 去噪时间从 129.22 秒降至 49.28 秒，50-point 吞吐提高 162.2%。</p>
-<p><strong>Prompt（四个框架）：</strong> <code>Steam rises from the ramen while the family talks in the background.</code></p>
+<p><strong>Prompt：</strong> <code>Steam rises from the ramen while the family talks in the background.</code></p>
 <div class="video-pair" data-sync-group="base-h3">
   <figure>
     <figcaption>LightX2V</figcaption>
@@ -260,23 +259,23 @@
 <tbody>
 <tr>
 <td>TeleFuser</td>
-<td>✓ 已支持</td>
-<td>✓ 已支持</td>
+<td>✅ 已支持</td>
+<td>✅ 已支持</td>
 </tr>
 <tr>
 <td>LightX2V</td>
-<td>✓ 已支持</td>
-<td>✗ 未支持</td>
+<td>✅ 已支持</td>
+<td>❌ 未支持</td>
 </tr>
 <tr>
 <td>FastVideo</td>
-<td>✗ 未支持</td>
-<td>✓ 已支持</td>
+<td>❌ 未支持</td>
+<td>✅ 已支持</td>
 </tr>
 <tr>
 <td>SGLang</td>
-<td>✓ 已支持</td>
-<td>✗ 未支持</td>
+<td>✅ 已支持</td>
+<td>❌ 未支持</td>
 </tr>
 </tbody>
 </table>
@@ -290,7 +289,6 @@
   <div><strong>降低 12.3%</strong><span>进程峰值 GPU 显存</span></div>
 </div>
 
-<p><strong>展示 Prompt：</strong> LightX2V：<code>Steam rises from the ramen while the family talks in the background.</code> TeleFuser：<code>A level tripod shot with a subtle push-in; no orbit, roll, or spinning.</code></p>
 <div class="video-pair" data-sync-group="turbo">
   <figure>
     <figcaption>LightX2V：MiniMax-H3 Turbo</figcaption>
@@ -311,7 +309,7 @@
   <div><strong>降低 14.3%</strong><span>进程峰值 GPU 显存</span></div>
 </div>
 
-<p><strong>Prompt（两个框架）：</strong> <code>integrated_multimodal_description: A red fox runs through fresh snow at dawn. overall_soundscape: Fast pawsteps in snow, winter wind, and distant birds.</code></p>
+<p><strong>Prompt：</strong> <code>integrated_multimodal_description: A red fox runs through fresh snow at dawn. overall_soundscape: Fast pawsteps in snow, winter wind, and distant birds.</code></p>
 <div class="video-pair" data-sync-group="fasth3">
   <figure>
     <figcaption>FastVideo：FastH3</figcaption>
