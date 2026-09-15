@@ -69,40 +69,30 @@ also covers SGLang, LightX2V, FastVideo, Turbo LoRA, and FastH3.</p>
 </ol>
 <hr>
 <h1 id="why-fp8-and-sparse-attention-need-one-design">Why FP8 and Sparse Attention Need One Design</h1>
-<p>World models pay for quality with compute. In MiniMax-H3, large projections and
-MLPs make the DiT compute-heavy, while visual, audio, and conditioning tokens
-make attention expensive. FP8 reduces the cost of projections and MLPs;
-Sol-Attn skips unimportant attention blocks. Further acceleration requires both
-to operate in one execution path.</p>
-<p>The difficulty is not simply that separate libraries expose separate APIs.
-Quantization scales are defined over a fixed partition of the tensor: per
-tensor, row, group, or block. Sol-Attn, Top-K, and Top-P sparsity select and
-evict attention blocks at runtime. The surviving K/V blocks are gathered,
-compacted, or re-indexed, so their physical tiles no longer line up with the
-scale groups assumed by a dense quantized kernel. Dequantizing the selected
-blocks back to BF16 restores compatibility but gives up much of the intended
-bandwidth and compute benefit.</p>
-<p>Existing quantization paths usually treat quantization as a separate data
-conversion. Offline quantization performs it before model loading; online or
-lazy paths create low-precision data and scales when a tensor is first used or
-enters an operator. The kernel then assumes that packed layout remains stable.
-Sparse attention is different: every forward pass selects, evicts, and compacts
-blocks from the current Q/K/V. That recurring reordering changes row, channel,
-and group boundaries, breaking the mapping between packed values and their
-scales. A per-tensor scale remains numerically valid under permutation, but the
-existing kernel&rsquo;s packing and addressing contract still does not. Quantization
-and dynamic sparsity therefore cannot be composed as two independent switches;
-the reordered data, scales, indices, and tiles need one shared mapping.</p>
-<p>Hardware support sharpens the issue. Low-precision formats and kernels do not
-cover every GPU generation. For example, MXFP8 and NVFP4 implementations built
-for newer hardware do not automatically support widely deployed platforms such
-as SM90. New accelerators do not make the installed base disappear. TeleFuser
-builds hardware-matched low-precision paths so existing platforms can run the
-latest world models efficiently.</p>
-<p>Q-SPA gives sparse indices, quantization scales, and kernel tiles a compatible
-layout. Sensitive normalization and positional transforms remain in higher
-precision, while the dominant Linear work and selected attention blocks stay
-on the hardware-matched FP8 path.</p>
+<p><strong>FP8 and sparse attention address different compute bottlenecks.</strong> FP8 reduces
+the compute and bandwidth cost of Linear/MLP layers, while Sol-Attn skips
+unimportant blocks in long-sequence attention. Accelerating the full DiT
+requires both in one execution path.</p>
+<p><strong>The core conflict is a fixed quantized layout meeting per-forward dynamic
+reordering.</strong> Offline, online, or lazy quantization creates low-precision values
+and scales per tensor, row, channel, group, or block, after which the kernel
+assumes a stable layout. Sol-Attn, Top-K, and Top-P select, evict, and compact
+blocks from the current Q/K/V, changing group boundaries and tile indices so
+quantized values, scales, and sparse indices no longer retain their original
+mapping.</p>
+<p><strong>Existing quantization and sparsity implementations cannot be composed as two
+independent switches.</strong> Per-row, per-channel, and per-group scales directly lose
+their mapping; a per-tensor scale remains numerically valid, but the kernel&rsquo;s
+packing and addressing contract still breaks. Dequantizing selected blocks to
+BF16 restores compatibility at the cost of the low-precision speedup.</p>
+<p><strong>Low-precision kernels must also match the deployed GPU.</strong> MXFP8 and NVFP4
+implementations for newer hardware do not automatically cover existing
+platforms such as SM90, so TeleFuser supplies hardware-matched low-precision
+paths for those GPUs.</p>
+<p><strong>Q-SPA gives reordered data, scales, sparse indices, and kernel tiles one
+mapping.</strong> Dominant Linear work and selected attention blocks stay on the
+hardware-matched FP8 path, while sensitive normalization and positional
+transforms remain in higher precision.</p>
 <hr>
 <h1 id="q-spa-system">Q-SPA in TeleFuser</h1>
 <p>The MiniMax-H3 work extends TeleFuser at three levels: dense DiT compute,
@@ -156,9 +146,6 @@ unfused implementation added 11.7% denoising overhead; fusion reduced the final
 cost to 2.2%. On a captured MiniMax-H3 layer, K quantization MSE fell by 21.65%
 and attention-output MSE by 8.18%. KV smoothing and V correction are enabled by
 default in the optimized profile.</p>
-<p>The quality case uses a locked camera on a tram moving through snow. The rigid
-body, aligned windows, rails, and pantograph make temporal geometry directly
-visible throughout the clip.</p>
 <table>
 <thead>
 <tr>
@@ -210,6 +197,7 @@ correction adds 2.1% denoise time over raw FP8.</p>
 </tr>
 </tbody>
 </table>
+<p><strong>Prompt:</strong> <code>Locked-off cinematic wide shot of a red vintage tram gliding slowly through a snowy alpine village at sunrise. The tram remains rigid and geometrically consistent, its windows and wheels stay aligned. Light snow falls; soft rail sounds and distant church bells are synchronized with the scene. No people, no cuts, no camera movement.</code></p>
 <div class="video-grid video-grid-three" data-sync-group="smoothing">
   <figure>
     <figcaption>BF16 reference</figcaption>
@@ -382,6 +370,7 @@ also overlapped with attention compute to reduce multi-GPU overhead.</p>
   <div><strong>12.3% lower</strong><span>whole-process peak GPU memory</span></div>
 </div>
 
+<p><strong>Prompt:</strong> <code>Steam rises from the ramen while the family talks in the background.</code></p>
 <div class="video-pair" data-sync-group="turbo">
   <figure>
     <figcaption>LightX2V: MiniMax-H3 Turbo</figcaption>

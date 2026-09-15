@@ -29,10 +29,6 @@ cost to 2.2%. On a captured MiniMax-H3 layer, K quantization MSE fell by 21.65%
 and attention-output MSE by 8.18%. KV smoothing and V correction are enabled by
 default in the optimized profile.
 
-The quality case uses a locked camera on a tram moving through snow. The rigid
-body, aligned windows, rails, and pantograph make temporal geometry directly
-visible throughout the clip.
-
 | Model | Resolution and frames | Sampling | GPUs | Case / seed |
 |---|---|---|---:|---|
 | MiniMax-H3 Base, T2VA | 1344 × 768, 107 frames, 4 s at 24 FPS | 50 points / 49 DiT updates | 1 × H100 | snow tram / 17 |
@@ -47,6 +43,8 @@ correction adds 2.1% denoise time over raw FP8.
 |---|---:|---:|---:|---:|
 | FP8, unsmoothed | **19.63 dB** | **0.6712** | 0.8504 | 0.5055 |
 | FP8, smoothing enabled | 19.27 dB | 0.6700 | **0.8891** | **0.4537** |
+
+**Prompt:** `Locked-off cinematic wide shot of a red vintage tram gliding slowly through a snowy alpine village at sunrise. The tram remains rigid and geometrically consistent, its windows and wheels stay aligned. Light snow falls; soft rail sounds and distant church bells are synchronized with the scene. No people, no cuts, no camera movement.`
 
 <div class="video-grid video-grid-three" data-sync-group="smoothing">
   <figure>

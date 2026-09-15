@@ -94,6 +94,8 @@ Turbo LoRA 对比 TeleFuser 与 LightX2V，FastH3 对比 TeleFuser 与 FastVideo
   <div><strong>降低 12.3%</strong><span>进程峰值 GPU 显存</span></div>
 </div>
 
+**Prompt：** `Steam rises from the ramen while the family talks in the background.`
+
 <div class="video-pair" data-sync-group="turbo">
   <figure>
     <figcaption>LightX2V：MiniMax-H3 Turbo</figcaption>

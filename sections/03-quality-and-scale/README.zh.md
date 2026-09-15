@@ -14,8 +14,6 @@ MiniMax-H3 实际层的 profile 显示，部分 K/V 的均值明显偏离零点�
 
 中心化和输出修正已经融合进 FP8 Sol-Attn。最早的非融合版本让去噪时间增加 11.7%，融合后开销降到 2.2%。在捕获的真实 H3 层上，K 的量化 MSE 降低 21.65%，attention 输出 MSE 降低 8.18%；KV smoothing 和 V correction 在优化配置中默认开启。
 
-质量实验使用固定机位拍摄雪地电车。车体、车窗、轨道和受电弓的刚性结构可直接反映时序几何是否稳定。
-
 | 模型 | 分辨率与帧数 | 采样 | GPU | 场景 / seed |
 |---|---|---|---:|---|
 | MiniMax-H3 Base，T2VA | 1344 × 768，107 帧，4 秒，24 fps | 50 points / 49 DiT updates | 1 × H100 | 雪地电车 / 17 |
@@ -28,6 +26,8 @@ MiniMax-H3 实际层的 profile 显示，部分 K/V 的均值明显偏离零点�
 |---|---:|---:|---:|---:|
 | FP8，不使用 smoothing | **19.63 dB** | **0.6712** | 0.8504 | 0.5055 |
 | FP8，开启 smoothing | 19.27 dB | 0.6700 | **0.8891** | **0.4537** |
+
+**Prompt:** `Locked-off cinematic wide shot of a red vintage tram gliding slowly through a snowy alpine village at sunrise. The tram remains rigid and geometrically consistent, its windows and wheels stay aligned. Light snow falls; soft rail sounds and distant church bells are synchronized with the scene. No people, no cuts, no camera movement.`
 
 <div class="video-grid video-grid-three" data-sync-group="smoothing">
   <figure>

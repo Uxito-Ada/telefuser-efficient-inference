@@ -75,44 +75,34 @@ do_not_claim: General FP8 support implies an FP8 sparse-attention path.
 
 # Why FP8 and Sparse Attention Need One Design
 
-World models pay for quality with compute. In MiniMax-H3, large projections and
-MLPs make the DiT compute-heavy, while visual, audio, and conditioning tokens
-make attention expensive. FP8 reduces the cost of projections and MLPs;
-Sol-Attn skips unimportant attention blocks. Further acceleration requires both
-to operate in one execution path.
+**FP8 and sparse attention address different compute bottlenecks.** FP8 reduces
+the compute and bandwidth cost of Linear/MLP layers, while Sol-Attn skips
+unimportant blocks in long-sequence attention. Accelerating the full DiT
+requires both in one execution path.
 
-The difficulty is not simply that separate libraries expose separate APIs.
-Quantization scales are defined over a fixed partition of the tensor: per
-tensor, row, group, or block. Sol-Attn, Top-K, and Top-P sparsity select and
-evict attention blocks at runtime. The surviving K/V blocks are gathered,
-compacted, or re-indexed, so their physical tiles no longer line up with the
-scale groups assumed by a dense quantized kernel. Dequantizing the selected
-blocks back to BF16 restores compatibility but gives up much of the intended
-bandwidth and compute benefit.
+**The core conflict is a fixed quantized layout meeting per-forward dynamic
+reordering.** Offline, online, or lazy quantization creates low-precision values
+and scales per tensor, row, channel, group, or block, after which the kernel
+assumes a stable layout. Sol-Attn, Top-K, and Top-P select, evict, and compact
+blocks from the current Q/K/V, changing group boundaries and tile indices so
+quantized values, scales, and sparse indices no longer retain their original
+mapping.
 
-Existing quantization paths usually treat quantization as a separate data
-conversion. Offline quantization performs it before model loading; online or
-lazy paths create low-precision data and scales when a tensor is first used or
-enters an operator. The kernel then assumes that packed layout remains stable.
-Sparse attention is different: every forward pass selects, evicts, and compacts
-blocks from the current Q/K/V. That recurring reordering changes row, channel,
-and group boundaries, breaking the mapping between packed values and their
-scales. A per-tensor scale remains numerically valid under permutation, but the
-existing kernel's packing and addressing contract still does not. Quantization
-and dynamic sparsity therefore cannot be composed as two independent switches;
-the reordered data, scales, indices, and tiles need one shared mapping.
+**Existing quantization and sparsity implementations cannot be composed as two
+independent switches.** Per-row, per-channel, and per-group scales directly lose
+their mapping; a per-tensor scale remains numerically valid, but the kernel's
+packing and addressing contract still breaks. Dequantizing selected blocks to
+BF16 restores compatibility at the cost of the low-precision speedup.
 
-Hardware support sharpens the issue. Low-precision formats and kernels do not
-cover every GPU generation. For example, MXFP8 and NVFP4 implementations built
-for newer hardware do not automatically support widely deployed platforms such
-as SM90. New accelerators do not make the installed base disappear. TeleFuser
-builds hardware-matched low-precision paths so existing platforms can run the
-latest world models efficiently.
+**Low-precision kernels must also match the deployed GPU.** MXFP8 and NVFP4
+implementations for newer hardware do not automatically cover existing
+platforms such as SM90, so TeleFuser supplies hardware-matched low-precision
+paths for those GPUs.
 
-Q-SPA gives sparse indices, quantization scales, and kernel tiles a compatible
-layout. Sensitive normalization and positional transforms remain in higher
-precision, while the dominant Linear work and selected attention blocks stay
-on the hardware-matched FP8 path.
+**Q-SPA gives reordered data, scales, sparse indices, and kernel tiles one
+mapping.** Dominant Linear work and selected attention blocks stay on the
+hardware-matched FP8 path, while sensitive normalization and positional
+transforms remain in higher precision.
 
 ---
 
@@ -201,10 +191,6 @@ unfused implementation added 11.7% denoising overhead; fusion reduced the final
 cost to 2.2%. On a captured MiniMax-H3 layer, K quantization MSE fell by 21.65%
 and attention-output MSE by 8.18%. KV smoothing and V correction are enabled by
 default in the optimized profile.
-
-The quality case uses a locked camera on a tram moving through snow. The rigid
-body, aligned windows, rails, and pantograph make temporal geometry directly
-visible throughout the clip.
 
 | Model | Resolution and frames | Sampling | GPUs | Case / seed |
 |---|---|---|---:|---|
