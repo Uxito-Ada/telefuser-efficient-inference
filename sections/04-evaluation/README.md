@@ -95,7 +95,7 @@ Both frameworks use the 8-step v1.0 768p adapter with resident DiT weights. Tele
   <div><strong>12.3% lower</strong><span>whole-process peak GPU memory</span></div>
 </div>
 
-**Prompt:** `Steam rises from the ramen while the family talks in the background.`
+**Prompt:** `Steam rises from the ramen while the family talks in the background. Bright, warm indoor lighting illuminates every face and the room with natural skin tones. The man holds a pair of straight, rigid chopsticks that remain perfectly straight throughout the video and never bend.`
 
 <div class="video-pair" data-sync-group="turbo">
   <figure>

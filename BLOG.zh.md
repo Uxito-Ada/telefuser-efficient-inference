@@ -250,7 +250,7 @@ Turbo LoRA 对比 TeleFuser 与 LightX2V，FastH3 对比 TeleFuser 与 FastVideo
   <div><strong>降低 12.3%</strong><span>进程峰值 GPU 显存</span></div>
 </div>
 
-**Prompt：** `Steam rises from the ramen while the family talks in the background.`
+**Prompt：** `Steam rises from the ramen while the family talks in the background. Bright, warm indoor lighting illuminates every face and the room with natural skin tones. The man holds a pair of straight, rigid chopsticks that remain perfectly straight throughout the video and never bend.`
 
 <div class="video-pair" data-sync-group="turbo">
   <figure>
