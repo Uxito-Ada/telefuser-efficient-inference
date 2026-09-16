@@ -294,7 +294,7 @@ also overlapped with attention compute to reduce multi-GPU overhead.</p>
 </tbody>
 </table>
 <h2 id="unified-performance-comparison">Unified performance comparison</h2>
-<p>The figure uses denoising throughput as the speed metric and peak GPU memory as the capacity metric. Base H3 uses four GPUs; the adapter records are the validated single-GPU runs currently available. The four-GPU adapter reruns will replace these points once the machine is available.</p>
+<p>The figure uses denoising throughput as the speed metric and peak GPU memory as the capacity metric. Base H3 uses four GPUs; adapter points are labelled with their measured GPU count.</p>
 <p><img alt="MiniMax-H3 Base and adapter performance comparison" src="../sections/04-evaluation/assets/all-workloads-performance.svg"></p>
 <p>The Base H3 points use the official <a href="https://github.com/hao-ai-lab/FastVideo/blob/main/examples/inference/basic/basic_minimax_h3_t2v.py">FastVideo example</a>, <a href="https://github.com/sgl-project/sglang/blob/main/docs/cookbook/diffusion/MiniMax/MiniMax-H3.mdx">SGLang cookbook</a>, and matched LightX2V/TeleFuser configurations. TeleFuser reaches 1.015 denoising steps/s on Base H3, compared with 0.387 for LightX2V and 0.496 for FastVideo. The Turbo point reaches 0.306 steps/s after the adapter reduces the schedule to eight DiT updates.
 <strong>Prompt:</strong> <code>Steam rises from the ramen while the family talks in the background.</code></p>

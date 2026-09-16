@@ -20,7 +20,7 @@ language: zh-CN
 
 ## 统一性能对比
 
-图中以去噪吞吐表示速度，以峰值显存表示资源占用。Base H3 使用四卡；Adapter 暂保留当前已验证的单卡记录，四卡重跑后替换对应点。
+图中以去噪吞吐表示速度，以峰值显存表示资源占用。Base H3 使用四卡；Adapter 点在图中标注实测 GPU 数。
 
 ![MiniMax-H3 Base 与 Adapter 性能对比](assets/all-workloads-performance.svg)
 

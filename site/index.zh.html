@@ -206,7 +206,7 @@
 </tbody>
 </table>
 <h2 id="_5">统一性能对比</h2>
-<p>图中以去噪吞吐表示速度，以峰值显存表示资源占用。Base H3 使用四卡；Adapter 暂保留当前已验证的单卡记录，四卡重跑后替换对应点。</p>
+<p>图中以去噪吞吐表示速度，以峰值显存表示资源占用。Base H3 使用四卡；Adapter 点在图中标注实测 GPU 数。</p>
 <p><img alt="MiniMax-H3 Base 与 Adapter 性能对比" src="../sections/04-evaluation/assets/all-workloads-performance.svg"></p>
 <p>Base H3 对比采用 <a href="https://github.com/hao-ai-lab/FastVideo/blob/main/examples/inference/basic/basic_minimax_h3_t2v.py">FastVideo 官方示例</a>、<a href="https://github.com/sgl-project/sglang/blob/main/docs/cookbook/diffusion/MiniMax/MiniMax-H3.mdx">SGLang 官方 cookbook</a>以及匹配的 LightX2V/TeleFuser 配置。TeleFuser Base H3 去噪吞吐为 1.015 step/s，LightX2V 为 0.387，FastVideo 为 0.496；Turbo Adapter 将调度缩短到 8 次 DiT 更新后，吞吐为 0.306 step/s。</p>
 <p><strong>Prompt：</strong> <code>Steam rises from the ramen while the family talks in the background.</code></p>

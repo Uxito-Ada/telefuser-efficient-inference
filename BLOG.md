@@ -279,7 +279,7 @@ Unless noted otherwise, each run uses MiniMax-H3's 768p profile and writes 24 FP
 | FastH3 adapter | FastH3 dense, T2VA | 1344 × 768, 124 frames, 5 s | 5 points / 4 DiT updates | 1 | local |
 
 ## Unified performance comparison
-The figure uses denoising throughput as the speed metric and peak GPU memory as the capacity metric. Base H3 uses four GPUs; the adapter records are the validated single-GPU runs currently available. The four-GPU adapter reruns will replace these points once the machine is available.
+The figure uses denoising throughput as the speed metric and peak GPU memory as the capacity metric. Base H3 uses four GPUs; adapter points are labelled with their measured GPU count.
 
 ![MiniMax-H3 Base and adapter performance comparison](sections/04-evaluation/assets/all-workloads-performance.svg)
 
