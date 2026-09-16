@@ -247,6 +247,14 @@ th {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.video-grid-four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.video-grid-two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .video-pair figure,
 .video-grid figure {
   margin: 0;
@@ -274,7 +282,6 @@ th {
   display: grid;
   width: min(980px, calc(100vw - 40px));
   margin: 34px 50%;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
   transform: translateX(-50%);

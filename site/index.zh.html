@@ -28,7 +28,6 @@
   <span>相同四卡拓扑下，完整请求比 LightX2V 快 2.64 倍，比 SGLang 快 1.52 倍。</span>
 </div>
 
-<p><img class="results-montage" src="../sections/00-introduction/assets/results-montage.webp" width="1920" height="1098" alt="Base、Turbo、FastH3 与 FP8 质量实验输出总览"></p>
 <p>本文以 MiniMax-H3 为主要测试模型。它的 DiT 联合生成高分辨率视频和音频，计算同时集中在大规模 Linear/MLP 和长序列 attention。性能优化必须和运动稳定性、画面细节及音频完整性一起验证。</p>
 <p>Q-SPA 包含三个相互关联的执行维度：</p>
 <ul>
@@ -206,28 +205,12 @@
 </tr>
 </tbody>
 </table>
-<h2 id="telefuser">TeleFuser 扩展性</h2>
-<p>三组运行使用相同 prompt、seed、FP8 Linear 和 FP8 Sol-Attn。单卡直接执行；两卡使用 TP2 切分模型权重和计算；四卡在 TP2 之上增加 Ulysses SP2 切分长序列。</p>
-<p><img alt="TeleFuser MiniMax-H3 Base 1、2、4 卡扩展性能" src="../sections/04-evaluation/assets/base-scaling.svg"></p>
-<div class="result-summary">
-  <div><strong>提升 3.40 倍</strong><span>四卡相对单卡的去噪吞吐</span></div>
-  <div><strong>降低 70.6%</strong><span>去噪时间：167.41 → 49.28 秒</span></div>
-  <div><strong>降低 35.5%</strong><span>单卡最大采样峰值显存</span></div>
-</div>
-
-<p>去噪时间从单卡的 167.41 秒降至两卡的 90.90 秒，再降至四卡的 49.28 秒。相邻两次扩展分别获得 1.84 倍和 1.84 倍加速；50-step 吞吐为 0.299、0.550 和 1.015 step/s。</p>
-<h2 id="base-h3">四卡 Base H3 框架对比</h2>
-<p>四个框架采用相同的 Base H3 输出规格和 50-point schedule，并关闭 feature cache。SGLang、LightX2V 和 TeleFuser 使用 <code>TP2 × Ulysses SP2</code>，FastVideo 使用 <code>SP4</code>。FastVideo 与 SGLang 分别使用 <a href="https://github.com/hao-ai-lab/FastVideo/blob/main/examples/inference/basic/basic_minimax_h3_t2v.py">Base H3 官方示例</a>和 <a href="https://github.com/sgl-project/sglang/blob/main/docs/cookbook/diffusion/MiniMax/MiniMax-H3.mdx">MiniMax-H3 官方 cookbook</a>。</p>
-<p><img alt="四 GPU MiniMax-H3 Base 性能" src="../sections/04-evaluation/assets/lightx2v-base-h3.svg"></p>
-<div class="result-summary">
-  <div><strong>快 2.64 倍</strong><span>相比 LightX2V 的完整生成</span></div>
-  <div><strong>快 2.19 倍</strong><span>相比 FastVideo 的完整请求</span></div>
-  <div><strong>降低 40.3% / 37.3%</strong><span>相比 LightX2V / SGLang 的峰值显存</span></div>
-</div>
-
-<p>TeleFuser 完整生成耗时 52.27 秒；LightX2V 为 137.76 秒，FastVideo 为 114.70 秒，SGLang 为 79.37 秒。在这一请求上，TeleFuser 相比三者分别快 2.64 倍、2.19 倍和 1.52 倍。TeleFuser 峰值显存为 42.5 GiB/GPU，LightX2V、FastVideo 和 SGLang 分别为 71.2、41.9 和 67.8 GiB。相对 LightX2V，TeleFuser 去噪时间从 129.22 秒降至 49.28 秒，50-point 吞吐提高 162.2%。</p>
+<h2 id="_5">统一性能对比</h2>
+<p>图中以去噪吞吐表示速度，以峰值显存表示资源占用。Base H3 使用四卡；Adapter 暂保留当前已验证的单卡记录，四卡重跑后替换对应点。</p>
+<p><img alt="MiniMax-H3 Base 与 Adapter 性能对比" src="../sections/04-evaluation/assets/all-workloads-performance.svg"></p>
+<p>Base H3 对比采用 <a href="https://github.com/hao-ai-lab/FastVideo/blob/main/examples/inference/basic/basic_minimax_h3_t2v.py">FastVideo 官方示例</a>、<a href="https://github.com/sgl-project/sglang/blob/main/docs/cookbook/diffusion/MiniMax/MiniMax-H3.mdx">SGLang 官方 cookbook</a>以及匹配的 LightX2V/TeleFuser 配置。TeleFuser Base H3 去噪吞吐为 1.015 step/s，LightX2V 为 0.387，FastVideo 为 0.496；Turbo Adapter 将调度缩短到 8 次 DiT 更新后，吞吐为 0.306 step/s。</p>
 <p><strong>Prompt：</strong> <code>Steam rises from the ramen while the family talks in the background.</code></p>
-<div class="video-pair" data-sync-group="base-h3">
+<div class="video-grid video-grid-four" data-sync-group="base-h3">
   <figure>
     <figcaption>LightX2V</figcaption>
     <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/lightx2v-base-h3.mp4" data-result-slot="lightx2v-base-h3"></video>
@@ -247,7 +230,6 @@
 </div>
 
 <h2 id="adapter">Adapter 工作负载</h2>
-<p>Turbo LoRA 与 FastH3 使用不同的权重和采样协议，当前框架支持范围如下。</p>
 <table>
 <thead>
 <tr>
@@ -282,15 +264,8 @@
 <p>Turbo LoRA 对比 TeleFuser 与 LightX2V，FastH3 对比 TeleFuser 与 FastVideo。</p>
 <h3 id="minimax-h3-turbo-lora">MiniMax-H3 Turbo LoRA</h3>
 <p>两套框架均使用 8-step v1.0 768p Adapter，DiT 常驻 GPU。TeleFuser 在构建 FP8 权重前合并 LoRA；对比不包含 CPU block offload。</p>
-<p><img alt="MiniMax-H3 Turbo Adapter 性能" src="../sections/04-evaluation/assets/turbo-performance.svg"></p>
-<div class="result-summary">
-  <div><strong>降低 26.7%</strong><span>相比 LightX2V 的去噪时间</span></div>
-  <div><strong>提升 36.5%</strong><span>8-step 去噪吞吐</span></div>
-  <div><strong>降低 12.3%</strong><span>进程峰值 GPU 显存</span></div>
-</div>
-
 <p><strong>Prompt：</strong> <code>Steam rises from the ramen while the family talks in the background. Bright, warm indoor lighting illuminates every face and the room with natural skin tones. The man holds a pair of straight, rigid chopsticks that remain perfectly straight throughout the video and never bend.</code></p>
-<div class="video-pair" data-sync-group="turbo">
+<div class="video-grid video-grid-two" data-sync-group="turbo">
   <figure>
     <figcaption>LightX2V：MiniMax-H3 Turbo</figcaption>
     <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/turbo-lightx2v.mp4" data-result-slot="turbo-lightx2v"></video>
@@ -302,15 +277,8 @@
 </div>
 
 <h3 id="fasth3-dense-adapter">FastH3 dense adapter</h3>
-<p><img alt="FastH3 Adapter 对齐性能" src="../sections/04-evaluation/assets/end-to-end.svg"></p>
-<div class="result-summary">
-  <div><strong>降低 25.7%</strong><span>相比 FastVideo 的去噪时间</span></div>
-  <div><strong>提升 34.6%</strong><span>实际 DiT forward 吞吐</span></div>
-  <div><strong>降低 14.3%</strong><span>进程峰值 GPU 显存</span></div>
-</div>
-
 <p><strong>Prompt：</strong> <code>integrated_multimodal_description: A red fox runs through fresh snow at dawn. overall_soundscape: Fast pawsteps in snow, winter wind, and distant birds.</code></p>
-<div class="video-pair" data-sync-group="fasth3">
+<div class="video-grid video-grid-two" data-sync-group="fasth3">
   <figure>
     <figcaption>FastVideo：FastH3</figcaption>
     <video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/fastvideo-primary.mp4" data-result-slot="fastvideo-primary"></video>
@@ -322,7 +290,7 @@
 </div>
 
 <hr>
-<h1 id="_5">结语</h1>
+<h1 id="_6">结语</h1>
 <p>Q-SPA 在 TeleFuser 中解决了三个直接相关的问题：</p>
 <ul>
 <li>FP8 scale 与动态稀疏 block 的布局对齐；</li>
@@ -339,7 +307,7 @@
   激活统计具有模型与硬件相关性，需要重新设计面向质量的量化与 kernel 实现。</li>
 <li>World model 的单次请求同时承担条件理解与推理、长序列视频/音频联合去噪和解码，算力压力不能用权重能否装入单卡来衡量。Ulysses SP、Tensor Parallel 与通信计算重叠共同缩短完整生成链路；MiniMax-H3 的去噪时间从单卡的 167.41 秒降至两卡的 90.90 秒和四卡的 49.28 秒，四卡吞吐达到单卡的 3.40 倍。</li>
 </ul>
-<h2 id="_6">延伸阅读</h2>
+<h2 id="_7">延伸阅读</h2>
 <ul>
 <li><a href="https://github.com/Tele-AI/TeleFuser">TeleFuser</a></li>
 <li><a href="https://huggingface.co/MiniMaxAI/MiniMax-H3">MiniMax-H3 模型与官方 Pipeline</a></li>

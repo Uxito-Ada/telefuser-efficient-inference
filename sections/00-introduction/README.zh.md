@@ -15,7 +15,6 @@ language: zh-CN
   <span>相同四卡拓扑下，完整请求比 LightX2V 快 2.64 倍，比 SGLang 快 1.52 倍。</span>
 </div>
 
-<img class="results-montage" src="assets/results-montage.webp" width="1920" height="1098" alt="Base、Turbo、FastH3 与 FP8 质量实验输出总览">
 
 本文以 MiniMax-H3 为主要测试模型。它的 DiT 联合生成高分辨率视频和音频，计算同时集中在大规模 Linear/MLP 和长序列 attention。性能优化必须和运动稳定性、画面细节及音频完整性一起验证。
 

@@ -23,7 +23,6 @@ diffusion transformers.
   <span>At the same four-GPU topology, TeleFuser is 2.64x faster than LightX2V and 1.52x faster than SGLang.</span>
 </div>
 
-<img class="results-montage" src="assets/results-montage.webp" width="1920" height="1098" alt="Overview of Base, Turbo, FastH3, and FP8 quality outputs">
 
 MiniMax-H3 is the primary evaluation model. Its DiT jointly generates
 high-resolution video and synchronized audio, with substantial work in both
