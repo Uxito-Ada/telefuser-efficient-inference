@@ -16,7 +16,7 @@ MiniMax-H3 实际层的 profile 显示，部分 K/V 的均值明显偏离零点�
 
 | 模型 | 分辨率与帧数 | 采样 | GPU | 场景 / seed |
 |---|---|---|---:|---|
-| MiniMax-H3 Base，T2VA | 1344 × 768，107 帧，4 秒，24 fps | 50 points / 49 DiT updates | 1 × H100 | 雪地电车 / 17 |
+| MiniMax-H3 Base，T2VA | 1344 × 768，107 帧，4 秒，24 fps | 50 次去噪步 | 1 × H100 | 雪地电车 / 17 |
 
 ![MiniMax-H3 FP8 smoothing 单卡性能](assets/smoothing-performance.svg)
 

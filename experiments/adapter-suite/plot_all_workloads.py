@@ -30,30 +30,30 @@ def main() -> None:
         "FastVideo\\nBase H3\\n4 GPU",
         "SGLang\\nBase H3\\n4 GPU",
         "TeleFuser\\nBase H3\\n4 GPU",
-        "LightX2V\\nTurbo LoRA\\n1 GPU",
-        "TeleFuser\\nTurbo LoRA\\n1 GPU",
         "FastVideo\\nFastH3\\n1 GPU",
         "TeleFuser\\nFastH3\\n1 GPU",
+        "LightX2V\\nTurbo LoRA\\n1 GPU",
+        "TeleFuser\\nTurbo LoRA\\n1 GPU",
     ]
     speed = [
         50 / base["lightx2v_bf16_sageattention2"]["denoise_seconds"],
         50 / base["fastvideo_bf16_fa4"]["denoise_seconds"],
         50 / base["sglang_matched_h100"]["generation_seconds"],
         50 / base["telefuser_fp8_sol_exact"]["denoise_seconds"],
-        turbo_lx["steps_per_second"],
-        turbo_tf["scheduler_points_per_second"],
         fasth3_fv["actual_dit_forwards_per_second"],
         fasth3_tf["actual_dit_forwards_per_second"],
+        turbo_lx["steps_per_second"],
+        turbo_tf["scheduler_points_per_second"],
     ]
     memory = [
         base["lightx2v_bf16_sageattention2"]["representative_peak_memory_mib"] / 1024,
         base["fastvideo_bf16_fa4"]["representative_peak_memory_mib"] / 1024,
         base["sglang_matched_h100"]["representative_peak_memory_mib"] / 1024,
         base["telefuser_fp8_sol_exact"]["representative_peak_memory_mib"] / 1024,
-        turbo_lx["formal_run_peak_memory_mib"] / 1024,
-        turbo_tf["whole_process_peak_memory_mib"] / 1024,
         fasth3_fv["max_per_gpu_peak_mib"] / 1024,
         fasth3_tf["max_per_gpu_peak_mib"] / 1024,
+        turbo_lx["formal_run_peak_memory_mib"] / 1024,
+        turbo_tf["whole_process_peak_memory_mib"] / 1024,
     ]
     framework_colors = {
         "LightX2V": "#4C78A8",
@@ -89,8 +89,8 @@ def main() -> None:
     for start, end in ((0, 3), (4, 5), (6, 7)):
         memory_axis.axvline(end + 0.5, color="#D0D5DD", linewidth=0.8, zorder=1)
     memory_axis.text(1.5, -0.17, "Base H3", transform=memory_axis.get_xaxis_transform(), ha="center", color="#667085", fontsize=10)
-    memory_axis.text(4.5, -0.17, "Turbo LoRA", transform=memory_axis.get_xaxis_transform(), ha="center", color="#667085", fontsize=10)
-    memory_axis.text(6.5, -0.17, "FastH3", transform=memory_axis.get_xaxis_transform(), ha="center", color="#667085", fontsize=10)
+    memory_axis.text(4.5, -0.17, "FastH3", transform=memory_axis.get_xaxis_transform(), ha="center", color="#667085", fontsize=10)
+    memory_axis.text(6.5, -0.17, "Turbo LoRA", transform=memory_axis.get_xaxis_transform(), ha="center", color="#667085", fontsize=10)
     fig.subplots_adjust(left=0.08, right=0.89, top=0.95, bottom=0.23)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(OUT, format="svg", facecolor="white")

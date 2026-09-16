@@ -15,18 +15,18 @@ Unless noted otherwise, each run uses MiniMax-H3's 768p profile and writes 24 FP
 
 | Experiment | Model and task | Output | Sampling | GPUs | Topology |
 |---|---|---|---|---:|---|
-| TeleFuser scaling | Base H3, T2VA | 1344 × 768, 124 frames, 5 s | 50 points / 49 DiT updates | 1 / 2 / 4 | local / TP2 / TP2 × Ulysses SP2 |
-| Four-GPU frameworks | Base H3, T2VA | 1344 × 768, 124 frames, 5 s | 50 points / 49 DiT updates | 4 | TP2 × Ulysses SP2; FastVideo SP4 |
-| FP8 smoothing | Base H3, T2VA | 1344 × 768, 107 frames, 4 s | 50 points / 49 DiT updates | 1 | local |
-| Turbo LoRA | MiniMax-H3 Turbo, I2AV | 1344 × 768, 124 frames, 5 s | 9 points / 8 DiT updates | 1 | local |
-| FastH3 adapter | FastH3 dense, T2VA | 1344 × 768, 124 frames, 5 s | 5 points / 4 DiT updates | 1 | local |
+| TeleFuser scaling | Base H3, T2VA | 1344 × 768, 124 frames, 5 s | 50 denoising steps | 1 / 2 / 4 | local / TP2 / TP2 × Ulysses SP2 |
+| Four-GPU frameworks | Base H3, T2VA | 1344 × 768, 124 frames, 5 s | 50 denoising steps | 4 | TP2 × Ulysses SP2; FastVideo SP4 |
+| FP8 smoothing | Base H3, T2VA | 1344 × 768, 107 frames, 4 s | 50 denoising steps | 1 | local |
+| Turbo LoRA | MiniMax-H3 Turbo, I2AV | 1344 × 768, 124 frames, 5 s | 8 denoising steps | 1 | local |
+| FastH3 adapter | FastH3 dense, T2VA | 1344 × 768, 124 frames, 5 s | 4 denoising steps | 1 | local |
 
 ## Unified performance comparison
 The figure uses denoising throughput as the speed metric and peak GPU memory as the capacity metric. Base H3 uses four GPUs; adapter points are labelled with their measured GPU count.
 
 ![MiniMax-H3 Base and adapter performance comparison](assets/all-workloads-performance.svg)
 
-The Base H3 points use the official [FastVideo example](https://github.com/hao-ai-lab/FastVideo/blob/main/examples/inference/basic/basic_minimax_h3_t2v.py), [SGLang cookbook](https://github.com/sgl-project/sglang/blob/main/docs/cookbook/diffusion/MiniMax/MiniMax-H3.mdx), and matched LightX2V/TeleFuser configurations. TeleFuser reaches 1.015 denoising steps/s on Base H3, compared with 0.387 for LightX2V and 0.496 for FastVideo. The Turbo point reaches 0.306 steps/s after the adapter reduces the schedule to eight DiT updates.
+The Base H3 points use the official [FastVideo example](https://github.com/hao-ai-lab/FastVideo/blob/main/examples/inference/basic/basic_minimax_h3_t2v.py), [SGLang cookbook](https://github.com/sgl-project/sglang/blob/main/docs/cookbook/diffusion/MiniMax/MiniMax-H3.mdx), and matched LightX2V/TeleFuser configurations. TeleFuser reaches 1.015 denoising steps/s on Base H3, compared with 0.387 for LightX2V and 0.496 for FastVideo. The Turbo point reaches 0.306 steps/s after the adapter reduces the schedule to eight denoising steps.
 **Prompt:** `Steam rises from the ramen while the family talks in the background.`
 
 <div class="video-grid video-grid-four" data-sync-group="base-h3">
@@ -63,8 +63,7 @@ The Turbo LoRA comparison covers TeleFuser and LightX2V; the FastH3 comparison c
 
 ### MiniMax-H3 Turbo LoRA
 
-Both frameworks use the 8-step v1.0 768p adapter with resident DiT weights. TeleFuser merges the LoRA before creating FP8 weights. CPU block offload is excluded.
-
+TeleFuser merges the 8-step v1.0 768p LoRA before creating FP8 weights.
 
 
 **Prompt:** `Steam rises from the ramen while the family talks in the background. Bright, warm indoor lighting illuminates every face and the room with natural skin tones. The man holds a pair of straight, rigid chopsticks that remain perfectly straight throughout the video and never bend.`

@@ -159,7 +159,7 @@ default in the optimized profile.</p>
 <tr>
 <td>MiniMax-H3 Base, T2VA</td>
 <td>1344 × 768, 107 frames, 4 s at 24 FPS</td>
-<td>50 points / 49 DiT updates</td>
+<td>50 denoising steps</td>
 <td style="text-align: right;">1 × H100</td>
 <td>snow tram / 17</td>
 </tr>
@@ -255,7 +255,7 @@ also overlapped with attention compute to reduce multi-GPU overhead.</p>
 <td>TeleFuser scaling</td>
 <td>Base H3, T2VA</td>
 <td>1344 × 768, 124 frames, 5 s</td>
-<td>50 points / 49 DiT updates</td>
+<td>50 denoising steps</td>
 <td style="text-align: right;">1 / 2 / 4</td>
 <td>local / TP2 / TP2 × Ulysses SP2</td>
 </tr>
@@ -263,7 +263,7 @@ also overlapped with attention compute to reduce multi-GPU overhead.</p>
 <td>Four-GPU frameworks</td>
 <td>Base H3, T2VA</td>
 <td>1344 × 768, 124 frames, 5 s</td>
-<td>50 points / 49 DiT updates</td>
+<td>50 denoising steps</td>
 <td style="text-align: right;">4</td>
 <td>TP2 × Ulysses SP2; FastVideo SP4</td>
 </tr>
@@ -271,7 +271,7 @@ also overlapped with attention compute to reduce multi-GPU overhead.</p>
 <td>FP8 smoothing</td>
 <td>Base H3, T2VA</td>
 <td>1344 × 768, 107 frames, 4 s</td>
-<td>50 points / 49 DiT updates</td>
+<td>50 denoising steps</td>
 <td style="text-align: right;">1</td>
 <td>local</td>
 </tr>
@@ -279,7 +279,7 @@ also overlapped with attention compute to reduce multi-GPU overhead.</p>
 <td>Turbo LoRA</td>
 <td>MiniMax-H3 Turbo, I2AV</td>
 <td>1344 × 768, 124 frames, 5 s</td>
-<td>9 points / 8 DiT updates</td>
+<td>8 denoising steps</td>
 <td style="text-align: right;">1</td>
 <td>local</td>
 </tr>
@@ -287,7 +287,7 @@ also overlapped with attention compute to reduce multi-GPU overhead.</p>
 <td>FastH3 adapter</td>
 <td>FastH3 dense, T2VA</td>
 <td>1344 × 768, 124 frames, 5 s</td>
-<td>5 points / 4 DiT updates</td>
+<td>4 denoising steps</td>
 <td style="text-align: right;">1</td>
 <td>local</td>
 </tr>
@@ -296,7 +296,7 @@ also overlapped with attention compute to reduce multi-GPU overhead.</p>
 <h2 id="unified-performance-comparison">Unified performance comparison</h2>
 <p>The figure uses denoising throughput as the speed metric and peak GPU memory as the capacity metric. Base H3 uses four GPUs; adapter points are labelled with their measured GPU count.</p>
 <p><img alt="MiniMax-H3 Base and adapter performance comparison" src="../sections/04-evaluation/assets/all-workloads-performance.svg"></p>
-<p>The Base H3 points use the official <a href="https://github.com/hao-ai-lab/FastVideo/blob/main/examples/inference/basic/basic_minimax_h3_t2v.py">FastVideo example</a>, <a href="https://github.com/sgl-project/sglang/blob/main/docs/cookbook/diffusion/MiniMax/MiniMax-H3.mdx">SGLang cookbook</a>, and matched LightX2V/TeleFuser configurations. TeleFuser reaches 1.015 denoising steps/s on Base H3, compared with 0.387 for LightX2V and 0.496 for FastVideo. The Turbo point reaches 0.306 steps/s after the adapter reduces the schedule to eight DiT updates.
+<p>The Base H3 points use the official <a href="https://github.com/hao-ai-lab/FastVideo/blob/main/examples/inference/basic/basic_minimax_h3_t2v.py">FastVideo example</a>, <a href="https://github.com/sgl-project/sglang/blob/main/docs/cookbook/diffusion/MiniMax/MiniMax-H3.mdx">SGLang cookbook</a>, and matched LightX2V/TeleFuser configurations. TeleFuser reaches 1.015 denoising steps/s on Base H3, compared with 0.387 for LightX2V and 0.496 for FastVideo. The Turbo point reaches 0.306 steps/s after the adapter reduces the schedule to eight denoising steps.
 <strong>Prompt:</strong> <code>Steam rises from the ramen while the family talks in the background.</code></p>
 <div class="video-grid video-grid-four" data-sync-group="base-h3">
   <figure>
@@ -352,7 +352,7 @@ also overlapped with attention compute to reduce multi-GPU overhead.</p>
 </table>
 <p>The Turbo LoRA comparison covers TeleFuser and LightX2V; the FastH3 comparison covers TeleFuser and FastVideo.</p>
 <h3 id="minimax-h3-turbo-lora">MiniMax-H3 Turbo LoRA</h3>
-<p>Both frameworks use the 8-step v1.0 768p adapter with resident DiT weights. TeleFuser merges the LoRA before creating FP8 weights. CPU block offload is excluded.</p>
+<p>TeleFuser merges the 8-step v1.0 768p LoRA before creating FP8 weights.</p>
 <p><strong>Prompt:</strong> <code>Steam rises from the ramen while the family talks in the background. Bright, warm indoor lighting illuminates every face and the room with natural skin tones. The man holds a pair of straight, rigid chopsticks that remain perfectly straight throughout the video and never bend.</code></p>
 <div class="video-grid video-grid-two" data-sync-group="turbo">
   <figure>

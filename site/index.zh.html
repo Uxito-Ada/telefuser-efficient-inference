@@ -89,7 +89,7 @@
 <tr>
 <td>MiniMax-H3 Base，T2VA</td>
 <td>1344 × 768，107 帧，4 秒，24 fps</td>
-<td>50 points / 49 DiT updates</td>
+<td>50 次去噪步</td>
 <td style="text-align: right;">1 × H100</td>
 <td>雪地电车 / 17</td>
 </tr>
@@ -167,7 +167,7 @@
 <td>TeleFuser 扩展性</td>
 <td>Base H3，T2VA</td>
 <td>1344 × 768，124 帧，5 秒</td>
-<td>50 points / 49 DiT updates</td>
+<td>50 次去噪步</td>
 <td style="text-align: right;">1 / 2 / 4</td>
 <td>单卡 / TP2 / TP2 × Ulysses SP2</td>
 </tr>
@@ -175,7 +175,7 @@
 <td>四卡框架对比</td>
 <td>Base H3，T2VA</td>
 <td>1344 × 768，124 帧，5 秒</td>
-<td>50 points / 49 DiT updates</td>
+<td>50 次去噪步</td>
 <td style="text-align: right;">4</td>
 <td>TP2 × Ulysses SP2；FastVideo 为 SP4</td>
 </tr>
@@ -183,7 +183,7 @@
 <td>FP8 smoothing</td>
 <td>Base H3，T2VA</td>
 <td>1344 × 768，107 帧，4 秒</td>
-<td>50 points / 49 DiT updates</td>
+<td>50 次去噪步</td>
 <td style="text-align: right;">1</td>
 <td>单卡</td>
 </tr>
@@ -191,7 +191,7 @@
 <td>Turbo LoRA</td>
 <td>MiniMax-H3 Turbo，I2AV</td>
 <td>1344 × 768，124 帧，5 秒</td>
-<td>9 points / 8 DiT updates</td>
+<td>8 次去噪步</td>
 <td style="text-align: right;">1</td>
 <td>单卡</td>
 </tr>
@@ -199,7 +199,7 @@
 <td>FastH3 Adapter</td>
 <td>FastH3 dense，T2VA</td>
 <td>1344 × 768，124 帧，5 秒</td>
-<td>5 points / 4 DiT updates</td>
+<td>4 次去噪步</td>
 <td style="text-align: right;">1</td>
 <td>单卡</td>
 </tr>
@@ -208,7 +208,7 @@
 <h2 id="_5">统一性能对比</h2>
 <p>图中以去噪吞吐表示速度，以峰值显存表示资源占用。Base H3 使用四卡；Adapter 点在图中标注实测 GPU 数。</p>
 <p><img alt="MiniMax-H3 Base 与 Adapter 性能对比" src="../sections/04-evaluation/assets/all-workloads-performance.svg"></p>
-<p>Base H3 对比采用 <a href="https://github.com/hao-ai-lab/FastVideo/blob/main/examples/inference/basic/basic_minimax_h3_t2v.py">FastVideo 官方示例</a>、<a href="https://github.com/sgl-project/sglang/blob/main/docs/cookbook/diffusion/MiniMax/MiniMax-H3.mdx">SGLang 官方 cookbook</a>以及匹配的 LightX2V/TeleFuser 配置。TeleFuser Base H3 去噪吞吐为 1.015 step/s，LightX2V 为 0.387，FastVideo 为 0.496；Turbo Adapter 将调度缩短到 8 次 DiT 更新后，吞吐为 0.306 step/s。</p>
+<p>Base H3 对比采用 <a href="https://github.com/hao-ai-lab/FastVideo/blob/main/examples/inference/basic/basic_minimax_h3_t2v.py">FastVideo 官方示例</a>、<a href="https://github.com/sgl-project/sglang/blob/main/docs/cookbook/diffusion/MiniMax/MiniMax-H3.mdx">SGLang 官方 cookbook</a>以及匹配的 LightX2V/TeleFuser 配置。TeleFuser Base H3 去噪吞吐为 1.015 step/s，LightX2V 为 0.387，FastVideo 为 0.496；Turbo Adapter 将调度缩短到 8 次去噪步后，吞吐为 0.306 step/s。</p>
 <p><strong>Prompt：</strong> <code>Steam rises from the ramen while the family talks in the background.</code></p>
 <div class="video-grid video-grid-four" data-sync-group="base-h3">
   <figure>
@@ -263,7 +263,7 @@
 </table>
 <p>Turbo LoRA 对比 TeleFuser 与 LightX2V，FastH3 对比 TeleFuser 与 FastVideo。</p>
 <h3 id="minimax-h3-turbo-lora">MiniMax-H3 Turbo LoRA</h3>
-<p>两套框架均使用 8-step v1.0 768p Adapter，DiT 常驻 GPU。TeleFuser 在构建 FP8 权重前合并 LoRA；对比不包含 CPU block offload。</p>
+<p>TeleFuser 在构建 FP8 权重前合并 8-step v1.0 768p LoRA。</p>
 <p><strong>Prompt：</strong> <code>Steam rises from the ramen while the family talks in the background. Bright, warm indoor lighting illuminates every face and the room with natural skin tones. The man holds a pair of straight, rigid chopsticks that remain perfectly straight throughout the video and never bend.</code></p>
 <div class="video-grid video-grid-two" data-sync-group="turbo">
   <figure>

@@ -31,7 +31,7 @@ default in the optimized profile.
 
 | Model | Resolution and frames | Sampling | GPUs | Case / seed |
 |---|---|---|---:|---|
-| MiniMax-H3 Base, T2VA | 1344 × 768, 107 frames, 4 s at 24 FPS | 50 points / 49 DiT updates | 1 × H100 | snow tram / 17 |
+| MiniMax-H3 Base, T2VA | 1344 × 768, 107 frames, 4 s at 24 FPS | 50 denoising steps | 1 × H100 | snow tram / 17 |
 
 ![MiniMax-H3 FP8 smoothing performance on one GPU](assets/smoothing-performance.svg)
 
