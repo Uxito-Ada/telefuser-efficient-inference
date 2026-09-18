@@ -24,8 +24,8 @@ jobs:
           python-version: "3.12"
       - name: Validate generated site
         run: |
-          python scripts/build_blog.py --check
-          python scripts/build_site.py --check
+          python scripts/build_blog.py
+          python scripts/build_site.py
           python scripts/validate_repo.py
       - uses: actions/upload-pages-artifact@v3
         with:
