@@ -8,6 +8,6 @@
 - `sglang-base-h3.mp4`: SGLang Base H3 output for the media comparison.
 - `turbo-lightx2v.mp4`: LightX2V resident BF16 Turbo LoRA output.
 - `turbo-sglang.mp4`: SGLang TP2 x Ulysses SP2 MiniMax-H3 Turbo LoRA output.
-- `turbo-telefuser.mp4`: TeleFuser FP8 Turbo LoRA output using a camera-stable presentation prompt.
+- `turbo-telefuser.mp4`: Regenerated TeleFuser FP8 Turbo LoRA output using the same ramen prompt, image, seed, and four-GPU setup as the comparison render.
 - `fastvideo-primary.mp4`: FastVideo BF16 Linear + FA4 FastH3 dense-adapter output, four-GPU SP4 run.
 - `telefuser-primary.mp4`: TeleFuser FP8 Linear + FP8 Sol FastH3 dense-adapter output, four-GPU TP2 x Ulysses SP2 run.

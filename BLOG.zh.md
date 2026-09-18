@@ -135,8 +135,7 @@ Base H3 使用 [FastVideo 官方示例](https://github.com/hao-ai-lab/FastVideo/
 ![TeleFuser Base H3 扩展性](sections/04-evaluation/assets/base-scaling.svg)
 
 在测试的单卡、双卡和四卡配置中，量化后的分布式路径保持了接近线性的扩展，
-同时降低了单卡显存占用。释放出的显存空间可以支持更大规模的视频生成请求，而
-不改变模型和输出接口。
+同时降低了单卡显存占用。释放出的显存空间可以支持更大规模的视频生成请求。
 
 ## 生成效果
 
@@ -147,9 +146,7 @@ Base H3 使用 [FastVideo 官方示例](https://github.com/hao-ai-lab/FastVideo/
 | FastVideo | ✅ 已支持 | ❌ 未支持 | ✅ 已支持 |
 | SGLang | ✅ 已支持 | ✅ 已支持 | ❌ 未支持 |
 
-**Base H3 与 Turbo LoRA Prompt：** `Steam rises from the ramen while the family talks in the background.`
-
-**FastH3 Prompt：** `Steam rises from the ramen while the family talks in the background.`
+**Prompt:** `Steam rises from the ramen while the family talks in the background.`
 
 <div class="video-matrix">
   <div></div>
@@ -157,25 +154,25 @@ Base H3 使用 [FastVideo 官方示例](https://github.com/hao-ai-lab/FastVideo/
   <div class="video-matrix-heading">Turbo LoRA</div>
   <div class="video-matrix-heading">FastH3</div>
 
+  <div class="video-matrix-label">TeleFuser</div>
+  <figure><video controls playsinline preload="metadata" data-result-slot="telefuser-base-h3"></video></figure>
+  <figure><video controls playsinline preload="metadata" data-result-slot="turbo-telefuser"></video></figure>
+  <figure><video controls playsinline preload="metadata" data-result-slot="telefuser-primary"></video></figure>
+
   <div class="video-matrix-label">LightX2V</div>
   <figure><video controls playsinline preload="metadata" data-result-slot="lightx2v-base-h3"></video></figure>
   <figure><video controls playsinline preload="metadata" data-result-slot="turbo-lightx2v"></video></figure>
-  <div class="video-matrix-empty">暂不支持</div>
+  <div class="video-matrix-empty">该框架尚未支持</div>
 
   <div class="video-matrix-label">FastVideo</div>
   <figure><video controls playsinline preload="metadata" data-result-slot="fastvideo-base-h3"></video></figure>
-  <div class="video-matrix-empty">暂不支持</div>
+  <div class="video-matrix-empty">该框架尚未支持</div>
   <figure><video controls playsinline preload="metadata" data-result-slot="fastvideo-primary"></video></figure>
 
   <div class="video-matrix-label">SGLang</div>
   <figure><video controls playsinline preload="metadata" data-result-slot="sglang-base-h3"></video></figure>
   <figure><video controls playsinline preload="metadata" data-result-slot="turbo-sglang"></video></figure>
-  <div class="video-matrix-empty">暂不支持</div>
-
-  <div class="video-matrix-label">TeleFuser</div>
-  <figure><video controls playsinline preload="metadata" data-result-slot="telefuser-base-h3"></video></figure>
-  <figure><video controls playsinline preload="metadata" data-result-slot="turbo-telefuser"></video></figure>
-  <figure><video controls playsinline preload="metadata" data-result-slot="telefuser-primary"></video></figure>
+  <div class="video-matrix-empty">该框架尚未支持</div>
 </div>
 
 ## FP8 attention smoothing

@@ -238,6 +238,13 @@ th {
   text-transform: uppercase;
 }
 
+article h2#fp8-attention-smoothing + table {
+  display: table;
+  width: auto;
+  min-width: 680px;
+  margin: 30px auto;
+}
+
 .video-pair,
 .video-grid {
   display: grid;

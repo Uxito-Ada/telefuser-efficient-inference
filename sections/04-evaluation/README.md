@@ -39,7 +39,7 @@ Base H3 uses the official [FastVideo example](https://github.com/hao-ai-lab/Fast
 Across the tested one-, two-, and four-GPU points, the quantized distributed
 path preserves near-linear scaling while lowering per-GPU memory relative to
 dense execution. The resulting headroom supports larger video-generation
-requests without changing the model or output contract.
+requests.
 
 ## Generated output
 
@@ -50,9 +50,7 @@ requests without changing the model or output contract.
 | FastVideo | ✅ Supported | ❌ Unsupported | ✅ Supported |
 | SGLang | ✅ Supported | ✅ Supported | ❌ Unsupported |
 
-**Base H3 and Turbo LoRA prompt:** `Steam rises from the ramen while the family talks in the background.`
-
-**FastH3 prompt:** `Steam rises from the ramen while the family talks in the background.`
+**Prompt:** `Steam rises from the ramen while the family talks in the background.`
 
 <div class="video-matrix">
   <div></div>
@@ -60,34 +58,28 @@ requests without changing the model or output contract.
   <div class="video-matrix-heading">Turbo LoRA</div>
   <div class="video-matrix-heading">FastH3</div>
 
+  <div class="video-matrix-label">TeleFuser</div>
+  <figure><video controls playsinline preload="metadata" data-result-slot="telefuser-base-h3"></video></figure>
+  <figure><video controls playsinline preload="metadata" data-result-slot="turbo-telefuser"></video></figure>
+  <figure><video controls playsinline preload="metadata" data-result-slot="telefuser-primary"></video></figure>
+
   <div class="video-matrix-label">LightX2V</div>
   <figure><video controls playsinline preload="metadata" data-result-slot="lightx2v-base-h3"></video></figure>
   <figure><video controls playsinline preload="metadata" data-result-slot="turbo-lightx2v"></video></figure>
-  <div class="video-matrix-empty">Not supported</div>
+  <div class="video-matrix-empty">Framework not supported</div>
 
   <div class="video-matrix-label">FastVideo</div>
   <figure><video controls playsinline preload="metadata" data-result-slot="fastvideo-base-h3"></video></figure>
-  <div class="video-matrix-empty">Not supported</div>
+  <div class="video-matrix-empty">Framework not supported</div>
   <figure><video controls playsinline preload="metadata" data-result-slot="fastvideo-primary"></video></figure>
 
   <div class="video-matrix-label">SGLang</div>
   <figure><video controls playsinline preload="metadata" data-result-slot="sglang-base-h3"></video></figure>
   <figure><video controls playsinline preload="metadata" data-result-slot="turbo-sglang"></video></figure>
-  <div class="video-matrix-empty">Not supported</div>
-
-  <div class="video-matrix-label">TeleFuser</div>
-  <figure><video controls playsinline preload="metadata" data-result-slot="telefuser-base-h3"></video></figure>
-  <figure><video controls playsinline preload="metadata" data-result-slot="turbo-telefuser"></video></figure>
-  <figure><video controls playsinline preload="metadata" data-result-slot="telefuser-primary"></video></figure>
+  <div class="video-matrix-empty">Framework not supported</div>
 </div>
 
 ## FP8 attention smoothing
-
-The first unfused implementation added 11.7% denoising overhead; fusion reduced
-the final cost to 2.2%. On a captured MiniMax-H3 layer, K quantization MSE fell
-by 21.65% and attention-output MSE by 8.18%.
-
-![MiniMax-H3 FP8 smoothing performance](assets/smoothing-performance.svg)
 
 | Configuration (BF16 reference) | Video PSNR ↑ | Video SSIM ↑ | Audio cosine ↑ | Spectral convergence error ↓ |
 |---|---:|---:|---:|---:|
@@ -106,3 +98,9 @@ In the latter part of the clip, smoothing improves the temporal stability of
 the tram's roof markings, overhead linkage, and window alignment. It also raises
 audio cosine similarity from 0.850 to 0.889 and reduces spectral convergence
 error from 0.506 to 0.454.
+
+The fused quality path adds only about **2% overhead**, so the quality gain is
+obtained with almost no additional performance cost. On a captured MiniMax-H3
+layer, K quantization MSE fell by 21.65% and attention-output MSE by 8.18%.
+
+![MiniMax-H3 FP8 smoothing performance](assets/smoothing-performance.svg)
