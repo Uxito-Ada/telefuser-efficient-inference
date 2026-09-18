@@ -29,6 +29,14 @@ jobs:
           python scripts/build_blog.py
           python scripts/build_site.py
           python scripts/validate_repo.py
+      - name: Stage and verify media assets
+        run: |
+          mkdir -p site/assets
+          find sections -type f \
+            \( -iname '*.mp4' -o -iname '*.svg' -o -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' -o -iname '*.gif' \) \
+            -exec cp -f {} site/assets/ \;
+          test -s site/assets/smoothing-performance.svg
+          test -s site/assets/turbo-telefuser.mp4
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
