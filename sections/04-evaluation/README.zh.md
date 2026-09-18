@@ -93,4 +93,4 @@ Base H3 使用 [FastVideo 官方示例](https://github.com/hao-ai-lab/FastVideo/
 
 融合后的质量路径只增加约 **2% overhead**，几乎没有额外性能开销即可提升质量。在捕获的 MiniMax-H3 真实层上，K 的量化 MSE 降低 21.65%，attention 输出 MSE 降低 8.18%。
 
-![MiniMax-H3 FP8 smoothing 性能](assets/smoothing-performance.svg)
+![MiniMax-H3 FP8 smoothing 性能](assets/smoothing-performance-lines.svg)

@@ -1,6 +1,6 @@
 # Assets
 - `all-workloads-performance.svg`: combined Base H3, FastH3, and Turbo performance chart; Base H3 points use four GPUs.
-- `smoothing-performance.svg`: FP8 attention smoothing throughput comparison.
+- `smoothing-performance-lines.svg`: FP8 attention smoothing throughput comparison.
 
 - `lightx2v-base-h3.mp4`: LightX2V BF16 + SageAttention2 Base H3 output.
 - `telefuser-base-h3.mp4`: TeleFuser FP8 + Sol Base H3 output.

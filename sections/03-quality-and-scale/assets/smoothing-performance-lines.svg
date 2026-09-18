@@ -1,0 +1,63 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 650" width="1200" height="650">
+  <rect x="0" y="0" width="1200" height="650" fill="#FFFFFF" />
+  <style>text { font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; }</style>
+  <text x="210" y="42" text-anchor="middle" font-size="20" font-weight="700" fill="#17212B">Denoise time</text>
+  <text x="60" y="76" font-size="14" fill="#65727B">seconds / video</text>
+  <text x="360" y="76" text-anchor="end" font-size="12" font-weight="600" fill="#65727B">↓ lower is better</text>
+  <line x1="60" y1="470.0" x2="360" y2="470.0" stroke="#E7ECEF" stroke-width="1" />
+  <line x1="60" y1="378.75" x2="360" y2="378.75" stroke="#E7ECEF" stroke-width="1" />
+  <line x1="60" y1="287.5" x2="360" y2="287.5" stroke="#E7ECEF" stroke-width="1" />
+  <line x1="60" y1="196.25" x2="360" y2="196.25" stroke="#E7ECEF" stroke-width="1" />
+  <line x1="60" y1="105.0" x2="360" y2="105.0" stroke="#E7ECEF" stroke-width="1" />
+  <polyline points="108,165.83333333333331 210,252.95258698157764 312,248.33470404971027" fill="none" stroke="#C93F4B" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+  <circle cx="108" cy="165.83333333333331" r="6" fill="#5379A5" stroke="#FFFFFF" stroke-width="2" />
+  <text x="108" y="152.83333333333331" text-anchor="middle" font-size="13" font-weight="700" fill="#26343D">213.20</text>
+  <text x="108" y="500" text-anchor="middle" font-size="12" font-weight="600" fill="#38464F">BF16 + FA4</text>
+  <circle cx="210" cy="252.95258698157764" r="6" fill="#D57C57" stroke="#FFFFFF" stroke-width="2" />
+  <text x="210" y="239.95258698157764" text-anchor="middle" font-size="13" font-weight="700" fill="#26343D">152.14</text>
+  <text x="210" y="500" text-anchor="middle" font-size="12" font-weight="600" fill="#38464F">FP8 raw</text>
+  <circle cx="312" cy="248.33470404971027" r="6" fill="#23806F" stroke="#FFFFFF" stroke-width="2" />
+  <text x="312" y="235.33470404971027" text-anchor="middle" font-size="13" font-weight="700" fill="#26343D">155.37</text>
+  <text x="312" y="500" text-anchor="middle" font-size="12" font-weight="600" fill="#38464F">FP8 smoothing</text>
+  <line x1="60" y1="470" x2="360" y2="470" stroke="#CBD5DA" stroke-width="1" />
+  <text x="600" y="42" text-anchor="middle" font-size="20" font-weight="700" fill="#17212B">Denoise throughput</text>
+  <text x="450" y="76" font-size="14" fill="#65727B">steps / second</text>
+  <text x="750" y="76" text-anchor="end" font-size="12" font-weight="600" fill="#65727B">↑ higher is better</text>
+  <line x1="450" y1="470.0" x2="750" y2="470.0" stroke="#E7ECEF" stroke-width="1" />
+  <line x1="450" y1="378.75" x2="750" y2="378.75" stroke="#E7ECEF" stroke-width="1" />
+  <line x1="450" y1="287.5" x2="750" y2="287.5" stroke="#E7ECEF" stroke-width="1" />
+  <line x1="450" y1="196.25" x2="750" y2="196.25" stroke="#E7ECEF" stroke-width="1" />
+  <line x1="450" y1="105.0" x2="750" y2="105.0" stroke="#E7ECEF" stroke-width="1" />
+  <polyline points="498,252.95258698157764 600,165.83333333333331 702,172.1699412016123" fill="none" stroke="#1769AA" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+  <circle cx="498" cy="252.95258698157764" r="6" fill="#5379A5" stroke="#FFFFFF" stroke-width="2" />
+  <text x="498" y="239.95258698157764" text-anchor="middle" font-size="13" font-weight="700" fill="#26343D">0.23</text>
+  <text x="498" y="500" text-anchor="middle" font-size="12" font-weight="600" fill="#38464F">BF16 + FA4</text>
+  <circle cx="600" cy="165.83333333333331" r="6" fill="#D57C57" stroke="#FFFFFF" stroke-width="2" />
+  <text x="600" y="152.83333333333331" text-anchor="middle" font-size="13" font-weight="700" fill="#26343D">0.33</text>
+  <text x="600" y="500" text-anchor="middle" font-size="12" font-weight="600" fill="#38464F">FP8 raw</text>
+  <circle cx="702" cy="172.1699412016123" r="6" fill="#23806F" stroke="#FFFFFF" stroke-width="2" />
+  <text x="702" y="159.1699412016123" text-anchor="middle" font-size="13" font-weight="700" fill="#26343D">0.32</text>
+  <text x="702" y="500" text-anchor="middle" font-size="12" font-weight="600" fill="#38464F">FP8 smoothing</text>
+  <line x1="450" y1="470" x2="750" y2="470" stroke="#CBD5DA" stroke-width="1" />
+  <text x="990" y="42" text-anchor="middle" font-size="20" font-weight="700" fill="#17212B">Peak allocated memory</text>
+  <text x="840" y="76" font-size="14" fill="#65727B">GiB</text>
+  <text x="1140" y="76" text-anchor="end" font-size="12" font-weight="600" fill="#65727B">↓ lower is better</text>
+  <line x1="840" y1="470.0" x2="1140" y2="470.0" stroke="#E7ECEF" stroke-width="1" />
+  <line x1="840" y1="378.75" x2="1140" y2="378.75" stroke="#E7ECEF" stroke-width="1" />
+  <line x1="840" y1="287.5" x2="1140" y2="287.5" stroke="#E7ECEF" stroke-width="1" />
+  <line x1="840" y1="196.25" x2="1140" y2="196.25" stroke="#E7ECEF" stroke-width="1" />
+  <line x1="840" y1="105.0" x2="1140" y2="105.0" stroke="#E7ECEF" stroke-width="1" />
+  <rect x="863" y="165.83333333333331" width="50" height="304.1666666666667" rx="4" fill="#5379A5" />
+  <text x="888" y="153.83333333333331" text-anchor="middle" font-size="13" font-weight="700" fill="#26343D">64.68</text>
+  <text x="888" y="500" text-anchor="middle" font-size="12" font-weight="600" fill="#38464F">BF16 + FA4</text>
+  <rect x="965" y="295.4079843259851" width="50" height="174.59201567401485" rx="4" fill="#D57C57" />
+  <text x="990" y="283.4079843259851" text-anchor="middle" font-size="13" font-weight="700" fill="#26343D">37.13</text>
+  <text x="990" y="500" text-anchor="middle" font-size="12" font-weight="600" fill="#38464F">FP8 raw</text>
+  <rect x="1067" y="295.4078587579631" width="50" height="174.59214124203692" rx="4" fill="#23806F" />
+  <text x="1092" y="283.4078587579631" text-anchor="middle" font-size="13" font-weight="700" fill="#26343D">37.13</text>
+  <text x="1092" y="500" text-anchor="middle" font-size="12" font-weight="600" fill="#38464F">FP8 smoothing</text>
+  <line x1="840" y1="470" x2="1140" y2="470" stroke="#CBD5DA" stroke-width="1" />
+  <text x="600.0" y="557" text-anchor="middle" font-size="15" font-weight="600" fill="#4D5B64">MiniMax-H3 Base · 1344 × 768 · 107 frames · 4 seconds · 50 steps · 1 × H100</text>
+  <text x="600.0" y="588" text-anchor="middle" font-size="14" fill="#69767F">seed 17 · FP8 Sol: tau 1.0, exact routing, 10 dense steps, 2 dense layers · no warm-up</text>
+</svg>

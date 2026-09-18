@@ -1,6 +1,6 @@
 # Assets
 
-- smoothing-performance.svg: one-H100 BF16/unsmoothed/smoothed tram ablation.
+- smoothing-performance-lines.svg: one-H100 BF16/unsmoothed/smoothed tram ablation.
 - bf16-fa4.mp4: matched BF16 reference with video and stereo audio.
 - fp8-sol-unsmoothed.mp4: matched unsmoothed FP8 Sol tram output, seed 17.
 - fp8-sol-smoothed.mp4: matched tram output with KV smoothing and V correction, seed 17.

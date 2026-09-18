@@ -280,7 +280,7 @@ The fused quality path adds only about **2% overhead**, so the quality gain is
 obtained with almost no additional performance cost. On a captured MiniMax-H3
 layer, K quantization MSE fell by 21.65% and attention-output MSE by 8.18%.
 
-![MiniMax-H3 FP8 smoothing performance](sections/04-evaluation/assets/smoothing-performance.svg)
+![MiniMax-H3 FP8 smoothing performance](sections/04-evaluation/assets/smoothing-performance-lines.svg)
 
 ---
 
