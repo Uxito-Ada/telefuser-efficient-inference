@@ -33,7 +33,7 @@ diffusion transformers.</p>
   <span>At the same four-GPU topology, TeleFuser is 2.64x faster than LightX2V and 1.52x faster than SGLang.</span>
 </div>
 
-<p><img class="hero-throughput" src="../sections/00-introduction/assets/four-gpu-throughput.svg" alt="Four-GPU MiniMax-H3 end-to-end throughput"></p>
+<p><img class="hero-throughput" src=\"assets/four-gpu-throughput.svg\" alt="Four-GPU MiniMax-H3 end-to-end throughput"></p>
 <p>MiniMax-H3 is the primary evaluation model. Its DiT jointly generates
 high-resolution video and synchronized audio, with substantial work in both
 large Linear/MLP layers and long-sequence attention. We therefore evaluate
@@ -191,7 +191,7 @@ end-to-end distributed inference.</p>
 <h2 id="unified-four-gpu-comparison">Unified four-GPU comparison</h2>
 <p>Peak GPU memory is shown as bars; denoising throughput is shown as the line.
 Every point uses four H100 GPUs and disables CPU offload.</p>
-<p><img alt="MiniMax-H3 Base and adapter performance comparison" src="../sections/04-evaluation/assets/all-workloads-performance.svg"></p>
+<p><img alt="MiniMax-H3 Base and adapter performance comparison" src="assets/all-workloads-performance.svg"></p>
 <p>Base H3 uses the official <a href="https://github.com/hao-ai-lab/FastVideo/blob/main/examples/inference/basic/basic_minimax_h3_t2v.py">FastVideo example</a> and <a href="https://github.com/sgl-project/sglang/blob/main/docs/cookbook/diffusion/MiniMax/MiniMax-H3.mdx">SGLang cookbook</a>, together with the corresponding LightX2V and TeleFuser examples. Turbo LoRA is compared across TeleFuser, SGLang, and LightX2V; FastH3 is compared across TeleFuser and FastVideo.</p>
 <ul>
 <li><strong>Base H3:</strong> TeleFuser delivers 163.5% higher end-to-end throughput than LightX2V, 119.4% higher than FastVideo, and 51.8% higher than SGLang. Peak memory is 40.3% lower than LightX2V and 37.3% lower than SGLang, while remaining within 1.5% of FastVideo.</li>
@@ -199,7 +199,7 @@ Every point uses four H100 GPUs and disables CPU offload.</p>
 <li><strong>FastH3:</strong> TeleFuser delivers 208.5% higher end-to-end throughput than FastVideo while using 37.4% less peak GPU memory.</li>
 </ul>
 <h2 id="telefuser-scaling">TeleFuser scaling</h2>
-<p><img alt="TeleFuser Base H3 scaling" src="../sections/04-evaluation/assets/base-scaling.svg"></p>
+<p><img alt="TeleFuser Base H3 scaling" src="assets/base-scaling.svg"></p>
 <p>Across the tested one-, two-, and four-GPU points, the quantized distributed
 path preserves near-linear scaling while lowering per-GPU memory relative to
 dense execution. The resulting headroom supports larger video-generation
@@ -249,23 +249,23 @@ requests.</p>
   <div class="video-matrix-heading">FastH3</div>
 
   <div class="video-matrix-label">TeleFuser</div>
-  <figure><video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/telefuser-base-h3.mp4" data-result-slot="telefuser-base-h3"></video></figure>
-  <figure><video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/turbo-telefuser.mp4" data-result-slot="turbo-telefuser"></video></figure>
-  <figure><video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/telefuser-primary.mp4" data-result-slot="telefuser-primary"></video></figure>
+  <figure><video controls playsinline preload="metadata" src="assets/telefuser-base-h3.mp4" data-result-slot="telefuser-base-h3"></video></figure>
+  <figure><video controls playsinline preload="metadata" src="assets/turbo-telefuser.mp4" data-result-slot="turbo-telefuser"></video></figure>
+  <figure><video controls playsinline preload="metadata" src="assets/telefuser-primary.mp4" data-result-slot="telefuser-primary"></video></figure>
 
   <div class="video-matrix-label">LightX2V</div>
-  <figure><video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/lightx2v-base-h3.mp4" data-result-slot="lightx2v-base-h3"></video></figure>
-  <figure><video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/turbo-lightx2v.mp4" data-result-slot="turbo-lightx2v"></video></figure>
+  <figure><video controls playsinline preload="metadata" src="assets/lightx2v-base-h3.mp4" data-result-slot="lightx2v-base-h3"></video></figure>
+  <figure><video controls playsinline preload="metadata" src="assets/turbo-lightx2v.mp4" data-result-slot="turbo-lightx2v"></video></figure>
   <div class="video-matrix-empty">Framework not supported</div>
 
   <div class="video-matrix-label">FastVideo</div>
-  <figure><video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/fastvideo-base-h3.mp4" data-result-slot="fastvideo-base-h3"></video></figure>
+  <figure><video controls playsinline preload="metadata" src="assets/fastvideo-base-h3.mp4" data-result-slot="fastvideo-base-h3"></video></figure>
   <div class="video-matrix-empty">Framework not supported</div>
-  <figure><video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/fastvideo-primary.mp4" data-result-slot="fastvideo-primary"></video></figure>
+  <figure><video controls playsinline preload="metadata" src="assets/fastvideo-primary.mp4" data-result-slot="fastvideo-primary"></video></figure>
 
   <div class="video-matrix-label">SGLang</div>
-  <figure><video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/sglang-base-h3.mp4" data-result-slot="sglang-base-h3"></video></figure>
-  <figure><video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/turbo-sglang.mp4" data-result-slot="turbo-sglang"></video></figure>
+  <figure><video controls playsinline preload="metadata" src="assets/sglang-base-h3.mp4" data-result-slot="sglang-base-h3"></video></figure>
+  <figure><video controls playsinline preload="metadata" src="assets/turbo-sglang.mp4" data-result-slot="turbo-sglang"></video></figure>
   <div class="video-matrix-empty">Framework not supported</div>
 </div>
 
@@ -299,9 +299,9 @@ requests.</p>
 </table>
 <p><strong>Prompt:</strong> <code>Locked-off cinematic wide shot of a red vintage tram gliding slowly through a snowy alpine village at sunrise. The tram remains rigid and geometrically consistent, its windows and wheels stay aligned. Light snow falls; soft rail sounds and distant church bells are synchronized with the scene. No people, no cuts, no camera movement.</code></p>
 <div class="video-grid video-grid-three" data-sync-group="smoothing">
-  <figure><figcaption>BF16 reference</figcaption><video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/bf16-fa4.mp4" data-result-slot="bf16-quality"></video></figure>
-  <figure><figcaption>FP8, unsmoothed</figcaption><video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/fp8-sol-unsmoothed.mp4" data-result-slot="fp8-unsmoothed"></video></figure>
-  <figure><figcaption>FP8, smoothing enabled</figcaption><video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/fp8-sol-smoothed.mp4" data-result-slot="fp8-smoothed"></video></figure>
+  <figure><figcaption>BF16 reference</figcaption><video controls playsinline preload="metadata" src="assets/bf16-fa4.mp4" data-result-slot="bf16-quality"></video></figure>
+  <figure><figcaption>FP8, unsmoothed</figcaption><video controls playsinline preload="metadata" src="assets/fp8-sol-unsmoothed.mp4" data-result-slot="fp8-unsmoothed"></video></figure>
+  <figure><figcaption>FP8, smoothing enabled</figcaption><video controls playsinline preload="metadata" src="assets/fp8-sol-smoothed.mp4" data-result-slot="fp8-smoothed"></video></figure>
 </div>
 
 <p>In the latter part of the clip, smoothing improves the temporal stability of
@@ -311,7 +311,7 @@ error from 0.506 to 0.454.</p>
 <p>The fused quality path adds only about <strong>2% overhead</strong>, so the quality gain is
 obtained with almost no additional performance cost. On a captured MiniMax-H3
 layer, K quantization MSE fell by 21.65% and attention-output MSE by 8.18%.</p>
-<p><img alt="MiniMax-H3 FP8 smoothing performance" src="../sections/04-evaluation/assets/smoothing-performance.svg"></p>
+<p><img alt="MiniMax-H3 FP8 smoothing performance" src="assets/smoothing-performance.svg"></p>
 <hr>
 <h1 id="q-spa-in-telefuser">Q-SPA in TeleFuser</h1>
 <p>Q-SPA addresses three connected problems in TeleFuser:</p>

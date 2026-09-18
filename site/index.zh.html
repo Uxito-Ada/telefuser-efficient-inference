@@ -28,7 +28,7 @@
   <span>相同四卡拓扑下，完整请求比 LightX2V 快 2.64 倍，比 SGLang 快 1.52 倍。</span>
 </div>
 
-<p><img class="hero-throughput" src="../sections/00-introduction/assets/four-gpu-throughput.svg" alt="MiniMax-H3 四卡端到端生成吞吐"></p>
+<p><img class="hero-throughput" src=\"assets/four-gpu-throughput.svg\" alt="MiniMax-H3 四卡端到端生成吞吐"></p>
 <p>本文以 MiniMax-H3 为主要测试模型。它的 DiT 联合生成高分辨率视频和音频，计算同时集中在大规模 Linear/MLP 和长序列 attention。性能优化必须和运动稳定性、画面细节及音频完整性一起验证。</p>
 <p>Q-SPA 包含三个相互关联的执行维度：</p>
 <ul>
@@ -127,7 +127,7 @@
 </table>
 <h2 id="_2">四卡统一性能对比</h2>
 <p>柱形表示峰值 GPU 显存，折线表示去噪吞吐。所有数据均使用四张 H100，且未启用 CPU offload。</p>
-<p><img alt="MiniMax-H3 Base 与 Adapter 性能对比" src="../sections/04-evaluation/assets/all-workloads-performance.svg"></p>
+<p><img alt="MiniMax-H3 Base 与 Adapter 性能对比" src="assets/all-workloads-performance.svg"></p>
 <p>Base H3 使用 <a href="https://github.com/hao-ai-lab/FastVideo/blob/main/examples/inference/basic/basic_minimax_h3_t2v.py">FastVideo 官方示例</a>与 <a href="https://github.com/sgl-project/sglang/blob/main/docs/cookbook/diffusion/MiniMax/MiniMax-H3.mdx">SGLang 官方 cookbook</a>，并采用 LightX2V 和 TeleFuser 的对应示例。Turbo LoRA 对比 TeleFuser、SGLang 与 LightX2V，FastH3 对比 TeleFuser 与 FastVideo。</p>
 <ul>
 <li><strong>Base H3：</strong> TeleFuser 的端到端吞吐相比 LightX2V、FastVideo 和 SGLang 分别提高 163.5%、119.4% 和 51.8%。峰值显存相比 LightX2V 和 SGLang 分别降低 40.3% 和 37.3%，与 FastVideo 的差异为 1.5%。</li>
@@ -135,7 +135,7 @@
 <li><strong>FastH3：</strong> TeleFuser 的端到端吞吐相比 FastVideo 提高 208.5%，峰值显存降低 37.4%。</li>
 </ul>
 <h2 id="telefuser">TeleFuser 扩展性</h2>
-<p><img alt="TeleFuser Base H3 扩展性" src="../sections/04-evaluation/assets/base-scaling.svg"></p>
+<p><img alt="TeleFuser Base H3 扩展性" src="assets/base-scaling.svg"></p>
 <p>在测试的单卡、双卡和四卡配置中，量化后的分布式路径保持了接近线性的扩展，
 同时降低了单卡显存占用。释放出的显存空间可以支持更大规模的视频生成请求。</p>
 <h2 id="_3">生成效果</h2>
@@ -183,23 +183,23 @@
   <div class="video-matrix-heading">FastH3</div>
 
   <div class="video-matrix-label">TeleFuser</div>
-  <figure><video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/telefuser-base-h3.mp4" data-result-slot="telefuser-base-h3"></video></figure>
-  <figure><video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/turbo-telefuser.mp4" data-result-slot="turbo-telefuser"></video></figure>
-  <figure><video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/telefuser-primary.mp4" data-result-slot="telefuser-primary"></video></figure>
+  <figure><video controls playsinline preload="metadata" src="assets/telefuser-base-h3.mp4" data-result-slot="telefuser-base-h3"></video></figure>
+  <figure><video controls playsinline preload="metadata" src="assets/turbo-telefuser.mp4" data-result-slot="turbo-telefuser"></video></figure>
+  <figure><video controls playsinline preload="metadata" src="assets/telefuser-primary.mp4" data-result-slot="telefuser-primary"></video></figure>
 
   <div class="video-matrix-label">LightX2V</div>
-  <figure><video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/lightx2v-base-h3.mp4" data-result-slot="lightx2v-base-h3"></video></figure>
-  <figure><video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/turbo-lightx2v.mp4" data-result-slot="turbo-lightx2v"></video></figure>
+  <figure><video controls playsinline preload="metadata" src="assets/lightx2v-base-h3.mp4" data-result-slot="lightx2v-base-h3"></video></figure>
+  <figure><video controls playsinline preload="metadata" src="assets/turbo-lightx2v.mp4" data-result-slot="turbo-lightx2v"></video></figure>
   <div class="video-matrix-empty">该框架尚未支持</div>
 
   <div class="video-matrix-label">FastVideo</div>
-  <figure><video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/fastvideo-base-h3.mp4" data-result-slot="fastvideo-base-h3"></video></figure>
+  <figure><video controls playsinline preload="metadata" src="assets/fastvideo-base-h3.mp4" data-result-slot="fastvideo-base-h3"></video></figure>
   <div class="video-matrix-empty">该框架尚未支持</div>
-  <figure><video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/fastvideo-primary.mp4" data-result-slot="fastvideo-primary"></video></figure>
+  <figure><video controls playsinline preload="metadata" src="assets/fastvideo-primary.mp4" data-result-slot="fastvideo-primary"></video></figure>
 
   <div class="video-matrix-label">SGLang</div>
-  <figure><video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/sglang-base-h3.mp4" data-result-slot="sglang-base-h3"></video></figure>
-  <figure><video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/turbo-sglang.mp4" data-result-slot="turbo-sglang"></video></figure>
+  <figure><video controls playsinline preload="metadata" src="assets/sglang-base-h3.mp4" data-result-slot="sglang-base-h3"></video></figure>
+  <figure><video controls playsinline preload="metadata" src="assets/turbo-sglang.mp4" data-result-slot="turbo-sglang"></video></figure>
   <div class="video-matrix-empty">该框架尚未支持</div>
 </div>
 
@@ -233,14 +233,14 @@
 </table>
 <p><strong>Prompt:</strong> <code>Locked-off cinematic wide shot of a red vintage tram gliding slowly through a snowy alpine village at sunrise. The tram remains rigid and geometrically consistent, its windows and wheels stay aligned. Light snow falls; soft rail sounds and distant church bells are synchronized with the scene. No people, no cuts, no camera movement.</code></p>
 <div class="video-grid video-grid-three" data-sync-group="smoothing">
-  <figure><figcaption>BF16 reference</figcaption><video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/bf16-fa4.mp4" data-result-slot="bf16-quality"></video></figure>
-  <figure><figcaption>FP8，不使用 smoothing</figcaption><video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/fp8-sol-unsmoothed.mp4" data-result-slot="fp8-unsmoothed"></video></figure>
-  <figure><figcaption>FP8，开启 smoothing</figcaption><video controls playsinline preload="metadata" src="../sections/04-evaluation/assets/fp8-sol-smoothed.mp4" data-result-slot="fp8-smoothed"></video></figure>
+  <figure><figcaption>BF16 reference</figcaption><video controls playsinline preload="metadata" src="assets/bf16-fa4.mp4" data-result-slot="bf16-quality"></video></figure>
+  <figure><figcaption>FP8，不使用 smoothing</figcaption><video controls playsinline preload="metadata" src="assets/fp8-sol-unsmoothed.mp4" data-result-slot="fp8-unsmoothed"></video></figure>
+  <figure><figcaption>FP8，开启 smoothing</figcaption><video controls playsinline preload="metadata" src="assets/fp8-sol-smoothed.mp4" data-result-slot="fp8-smoothed"></video></figure>
 </div>
 
 <p>在视频后半段，smoothing 提高了车顶标识、受电弓连线和窗框对齐的时序稳定性；音频 cosine 从 0.850 提升至 0.889，频谱收敛误差从 0.506 降至 0.454。</p>
 <p>融合后的质量路径只增加约 <strong>2% overhead</strong>，几乎没有额外性能开销即可提升质量。在捕获的 MiniMax-H3 真实层上，K 的量化 MSE 降低 21.65%，attention 输出 MSE 降低 8.18%。</p>
-<p><img alt="MiniMax-H3 FP8 smoothing 性能" src="../sections/04-evaluation/assets/smoothing-performance.svg"></p>
+<p><img alt="MiniMax-H3 FP8 smoothing 性能" src="assets/smoothing-performance.svg"></p>
 <hr>
 <h1 id="_4">结语</h1>
 <p>Q-SPA 在 TeleFuser 中解决了三个直接相关的问题：</p>
