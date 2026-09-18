@@ -21,7 +21,15 @@ tiles consumed by the attention kernel are kept in the same layout contract.
 Selected QKV blocks can therefore remain in FP8 instead of returning to a BF16
 attention backend.
 
-## Model variants
+**TeleFuser also optimizes Sol-Attn itself.** QK and PV GEMMs execute in FP8,
+dequantization is fused into attention, and Two-way KV splitting raises SM
+utilization for sparse shapes. The combined FP8 and sparse path also restores
+the true route length after tile-aligned Tail padding, so padded tokens never
+enter valid outputs. Dense windows, dense layers, threshold modes, and sparsity
+strength remain configurable; the MiniMax-H3 defaults are tuned for immediate
+use.
+
+## Distilled and quality adapters
 
 MiniMax-H3 is used both as a base model and with acceleration or style adapters.
 TeleFuser supports the official Turbo LoRA path as well as FastH3-style LoRA

@@ -3,90 +3,23 @@ SECTION-CONTRACT
 id: 03-quality-and-scale
 incoming_premise: The shared FP8 sparse path is faster but perturbs a recurrent denoising trajectory.
 outgoing_question: What performance and quality does the complete path deliver?
-evidence: PR40 quality suite, PR37 overlap work, and distributed benchmark
+evidence: PR40 quality suite
 do_not_claim: One prompt or one full-reference metric proves perceptual equivalence.
 -->
 
-# Quality Controls and Multi-GPU Scaling
+# Quality-aware FP8
 
-Diffusion models feed each prediction into the next denoising update, so FP8
-and sparse attention must preserve a stable trajectory as well as reduce
-compute. TeleFuser addresses this inside its FP8 path and in the policy that
-selects sparse work.
+Diffusion models feed each prediction into the next denoising update, so local
+FP8 error can accumulate across the trajectory. TeleFuser therefore includes
+attention smoothing in its FP8 path rather than treating quality as a separate
+post-processing step.
 
-## Quality-aware FP8 attention
+Profiling MiniMax-H3 layers showed that some K/V tensors have clearly non-zero
+mean distributions. TeleFuser centralizes K/V before FP8 attention and restores
+the equivalent shift in the output. This attention-specific asymmetric
+quantization keeps more of the useful FP8 range without changing the model's
+interface.
 
-Profiling real MiniMax-H3 layers revealed that K and V can have clear non-zero
-mean distributions. That offset reduces the useful range of symmetric FP8.
-TeleFuser handles it as an attention-specific form of asymmetric quantization:
-K and V are centralized before FP8 compute, and the equivalent shift is
-compensated in the attention output.
-
-The centralization and correction were fused into the existing FP8 Sol-Attn
-path so quality does not require a separate performance mode. The initial
-unfused implementation added 11.7% denoising overhead; fusion reduced the final
-cost to 2.2%. On a captured MiniMax-H3 layer, K quantization MSE fell by 21.65%
-and attention-output MSE by 8.18%. KV smoothing and V correction are enabled by
-default in the optimized profile.
-
-| Model | Resolution and frames | Sampling | GPUs | Case / seed |
-|---|---|---|---:|---|
-| MiniMax-H3 Base, T2VA | 1344 × 768, 107 frames, 4 s at 24 FPS | 50 denoising steps | 1 × H100 | snow tram / 17 |
-
-![MiniMax-H3 FP8 smoothing performance on one GPU](assets/smoothing-performance.svg)
-
-Smoothed FP8 raises denoise throughput by 37.2% over BF16 Linear +
-FlashAttention 4 and reduces peak allocated memory by 42.6%. The fused
-correction adds 2.1% denoise time over raw FP8.
-
-| Configuration (BF16 reference) | Video PSNR ↑ | Video SSIM ↑ | Audio cosine ↑ | Spectral convergence error ↓ |
-|---|---:|---:|---:|---:|
-| FP8, unsmoothed | **19.63 dB** | **0.6712** | 0.8504 | 0.5055 |
-| FP8, smoothing enabled | 19.27 dB | 0.6700 | **0.8891** | **0.4537** |
-
-**Prompt:** `Locked-off cinematic wide shot of a red vintage tram gliding slowly through a snowy alpine village at sunrise. The tram remains rigid and geometrically consistent, its windows and wheels stay aligned. Light snow falls; soft rail sounds and distant church bells are synchronized with the scene. No people, no cuts, no camera movement.`
-
-<div class="video-grid video-grid-three" data-sync-group="smoothing">
-  <figure>
-    <figcaption>BF16 reference</figcaption>
-    <video controls playsinline preload="metadata" data-result-slot="bf16-quality"></video>
-  </figure>
-  <figure>
-    <figcaption>FP8, unsmoothed</figcaption>
-    <video controls playsinline preload="metadata" data-result-slot="fp8-unsmoothed"></video>
-  </figure>
-  <figure>
-    <figcaption>FP8, smoothing enabled</figcaption>
-    <video controls playsinline preload="metadata" data-result-slot="fp8-smoothed"></video>
-  </figure>
-</div>
-
-In the latter part of the clip, the unsmoothed output shows less stable roof
-markings, overhead linkage, and window alignment than the smoothed output.
-
-## Sparsity designed for continued optimization
-
-**TeleFuser also optimizes Sol-Attn execution itself.** QK and PV GEMMs run in
-FP8, dequantization is fused into attention execution to avoid a separate data
-conversion and memory round trip, and Two-way KV splitting schedules K/V work
-in two parallel partitions to improve SM utilization on sparse shapes.
-
-**Combining FP8 with Sol-Attn also requires explicit handling of sparse-route
-boundaries.** When a route length does not meet the FP8 kernel's tile alignment,
-TeleFuser applies Tail padding and restores the true route length after compute.
-Padding therefore cannot enter the valid output, preserving correctness across
-quantization and dynamic sparsity.
-
-**The sparsity policy remains configurable for continued optimization.**
-TeleFuser exposes the dense window, dense layers, threshold mode, and sparsity
-strength. Its MiniMax-H3 defaults are already tuned for performance and output
-quality and can be used directly.
-
-## The same path on multiple GPUs
-
-TeleFuser specializes its SP kernels for FP8, Sol-Attn, and world-model video
-generation. Each GPU quantizes FP8 QKV and runs Sol-Attn on its local attention
-layout after Ulysses All-to-All. Three-dimensional video-token reordering runs
-before sequence partitioning; scalar timesteps remain replicated, while
-per-token timesteps are sharded with the video tokens. Ulysses communication is
-also overlapped with attention compute to reduce multi-GPU overhead.
+Centralization and output correction are fused into FP8 Sol-Attn and enabled by
+default. The end-to-end quality and overhead measurements appear after the main
+performance evaluation.

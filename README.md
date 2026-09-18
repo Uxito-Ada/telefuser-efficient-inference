@@ -21,7 +21,7 @@ smoothing, and distributed execution across Base H3 and adapter variants.
 | [Introduction](sections/00-introduction/README.md) | TeleFuser and the MiniMax-H3 optimization result |
 | [Why co-design](sections/01-why-co-design/README.md) | Why FP8 and sparse attention need one design |
 | [Q-SPA implementation](sections/02-system-overview/README.md) | Layout-aware FP8 Sol-Attn and distributed execution |
-| [Quality and scale](sections/03-quality-and-scale/README.md) | Quality-aware FP8, sparse policy, and Ulysses |
+| [Quality-aware FP8](sections/03-quality-and-scale/README.md) | Attention-specific quality control |
 | [Results](sections/04-evaluation/README.md) | External performance baseline and generated output |
 | [Conclusion](sections/05-lessons/README.md) | The unified TeleFuser inference path |
 

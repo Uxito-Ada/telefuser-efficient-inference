@@ -25,6 +25,7 @@ diffusion transformers.
   <span>At the same four-GPU topology, TeleFuser is 2.64x faster than LightX2V and 1.52x faster than SGLang.</span>
 </div>
 
+![Four-GPU MiniMax-H3 end-to-end throughput](sections/00-introduction/assets/four-gpu-throughput.svg)
 
 MiniMax-H3 is the primary evaluation model. Its DiT jointly generates
 high-resolution video and synchronized audio, with substantial work in both
@@ -53,13 +54,6 @@ TeleFuser now brings three execution dimensions together:
 TeleFuser scales the same Base H3 request across one, two, and four GPUs; the
 four-GPU run reaches **3.40x** the single-GPU denoise throughput. The evaluation
 also covers SGLang, LightX2V, FastVideo, Turbo LoRA, and FastH3.
-
-The rest of this post follows four questions:
-
-1. Why do quantization and block-sparse attention conflict in existing kernels?
-2. How does Q-SPA make their layouts compatible?
-3. How does attention smoothing recover quality without giving back the speed?
-4. How does the same attention path scale across GPUs?
 
 ---
 
@@ -128,7 +122,15 @@ tiles consumed by the attention kernel are kept in the same layout contract.
 Selected QKV blocks can therefore remain in FP8 instead of returning to a BF16
 attention backend.
 
-## Model variants
+**TeleFuser also optimizes Sol-Attn itself.** QK and PV GEMMs execute in FP8,
+dequantization is fused into attention, and Two-way KV splitting raises SM
+utilization for sparse shapes. The combined FP8 and sparse path also restores
+the true route length after tile-aligned Tail padding, so padded tokens never
+enter valid outputs. Dense windows, dense layers, threshold modes, and sparsity
+strength remain configurable; the MiniMax-H3 defaults are tuned for immediate
+use.
+
+## Distilled and quality adapters
 
 MiniMax-H3 is used both as a base model and with acceleration or style adapters.
 TeleFuser supports the official Turbo LoRA path as well as FastH3-style LoRA
@@ -165,93 +167,26 @@ SECTION-CONTRACT
 id: 03-quality-and-scale
 incoming_premise: The shared FP8 sparse path is faster but perturbs a recurrent denoising trajectory.
 outgoing_question: What performance and quality does the complete path deliver?
-evidence: PR40 quality suite, PR37 overlap work, and distributed benchmark
+evidence: PR40 quality suite
 do_not_claim: One prompt or one full-reference metric proves perceptual equivalence.
 -->
 
-# Quality Controls and Multi-GPU Scaling
+# Quality-aware FP8
 
-Diffusion models feed each prediction into the next denoising update, so FP8
-and sparse attention must preserve a stable trajectory as well as reduce
-compute. TeleFuser addresses this inside its FP8 path and in the policy that
-selects sparse work.
+Diffusion models feed each prediction into the next denoising update, so local
+FP8 error can accumulate across the trajectory. TeleFuser therefore includes
+attention smoothing in its FP8 path rather than treating quality as a separate
+post-processing step.
 
-## Quality-aware FP8 attention
+Profiling MiniMax-H3 layers showed that some K/V tensors have clearly non-zero
+mean distributions. TeleFuser centralizes K/V before FP8 attention and restores
+the equivalent shift in the output. This attention-specific asymmetric
+quantization keeps more of the useful FP8 range without changing the model's
+interface.
 
-Profiling real MiniMax-H3 layers revealed that K and V can have clear non-zero
-mean distributions. That offset reduces the useful range of symmetric FP8.
-TeleFuser handles it as an attention-specific form of asymmetric quantization:
-K and V are centralized before FP8 compute, and the equivalent shift is
-compensated in the attention output.
-
-The centralization and correction were fused into the existing FP8 Sol-Attn
-path so quality does not require a separate performance mode. The initial
-unfused implementation added 11.7% denoising overhead; fusion reduced the final
-cost to 2.2%. On a captured MiniMax-H3 layer, K quantization MSE fell by 21.65%
-and attention-output MSE by 8.18%. KV smoothing and V correction are enabled by
-default in the optimized profile.
-
-| Model | Resolution and frames | Sampling | GPUs | Case / seed |
-|---|---|---|---:|---|
-| MiniMax-H3 Base, T2VA | 1344 × 768, 107 frames, 4 s at 24 FPS | 50 denoising steps | 1 × H100 | snow tram / 17 |
-
-![MiniMax-H3 FP8 smoothing performance on one GPU](sections/03-quality-and-scale/assets/smoothing-performance.svg)
-
-Smoothed FP8 raises denoise throughput by 37.2% over BF16 Linear +
-FlashAttention 4 and reduces peak allocated memory by 42.6%. The fused
-correction adds 2.1% denoise time over raw FP8.
-
-| Configuration (BF16 reference) | Video PSNR ↑ | Video SSIM ↑ | Audio cosine ↑ | Spectral convergence error ↓ |
-|---|---:|---:|---:|---:|
-| FP8, unsmoothed | **19.63 dB** | **0.6712** | 0.8504 | 0.5055 |
-| FP8, smoothing enabled | 19.27 dB | 0.6700 | **0.8891** | **0.4537** |
-
-**Prompt:** `Locked-off cinematic wide shot of a red vintage tram gliding slowly through a snowy alpine village at sunrise. The tram remains rigid and geometrically consistent, its windows and wheels stay aligned. Light snow falls; soft rail sounds and distant church bells are synchronized with the scene. No people, no cuts, no camera movement.`
-
-<div class="video-grid video-grid-three" data-sync-group="smoothing">
-  <figure>
-    <figcaption>BF16 reference</figcaption>
-    <video controls playsinline preload="metadata" data-result-slot="bf16-quality"></video>
-  </figure>
-  <figure>
-    <figcaption>FP8, unsmoothed</figcaption>
-    <video controls playsinline preload="metadata" data-result-slot="fp8-unsmoothed"></video>
-  </figure>
-  <figure>
-    <figcaption>FP8, smoothing enabled</figcaption>
-    <video controls playsinline preload="metadata" data-result-slot="fp8-smoothed"></video>
-  </figure>
-</div>
-
-In the latter part of the clip, the unsmoothed output shows less stable roof
-markings, overhead linkage, and window alignment than the smoothed output.
-
-## Sparsity designed for continued optimization
-
-**TeleFuser also optimizes Sol-Attn execution itself.** QK and PV GEMMs run in
-FP8, dequantization is fused into attention execution to avoid a separate data
-conversion and memory round trip, and Two-way KV splitting schedules K/V work
-in two parallel partitions to improve SM utilization on sparse shapes.
-
-**Combining FP8 with Sol-Attn also requires explicit handling of sparse-route
-boundaries.** When a route length does not meet the FP8 kernel's tile alignment,
-TeleFuser applies Tail padding and restores the true route length after compute.
-Padding therefore cannot enter the valid output, preserving correctness across
-quantization and dynamic sparsity.
-
-**The sparsity policy remains configurable for continued optimization.**
-TeleFuser exposes the dense window, dense layers, threshold mode, and sparsity
-strength. Its MiniMax-H3 defaults are already tuned for performance and output
-quality and can be used directly.
-
-## The same path on multiple GPUs
-
-TeleFuser specializes its SP kernels for FP8, Sol-Attn, and world-model video
-generation. Each GPU quantizes FP8 QKV and runs Sol-Attn on its local attention
-layout after Ulysses All-to-All. Three-dimensional video-token reordering runs
-before sequence partitioning; scalar timesteps remain replicated, while
-per-token timesteps are sharded with the video tokens. Ulysses communication is
-also overlapped with attention compute to reduce multi-GPU overhead.
+Centralization and output correction are fused into FP8 Sol-Attn and enabled by
+default. The end-to-end quality and overhead measurements appear after the main
+performance evaluation.
 
 ---
 
@@ -268,90 +203,100 @@ do_not_claim: Do not combine incomparable schedules or present invalid media as 
 
 ## Evaluation matrix
 
-Unless noted otherwise, each run uses MiniMax-H3's 768p profile and writes 24 FPS H.264 video with 32 kHz stereo AAC audio.
-
 | Experiment | Model and task | Output | Sampling | GPUs | Topology |
 |---|---|---|---|---:|---|
-| TeleFuser scaling | Base H3, T2VA | 1344 × 768, 124 frames, 5 s | 50 denoising steps | 1 / 2 / 4 | local / TP2 / TP2 × Ulysses SP2 |
-| Four-GPU frameworks | Base H3, T2VA | 1344 × 768, 124 frames, 5 s | 50 denoising steps | 4 | TP2 × Ulysses SP2; FastVideo SP4 |
-| FP8 smoothing | Base H3, T2VA | 1344 × 768, 107 frames, 4 s | 50 denoising steps | 1 | local |
-| Turbo LoRA | MiniMax-H3 Turbo, I2AV | 1344 × 768, 124 frames, 5 s | 8 denoising steps | 1 | local |
-| FastH3 adapter | FastH3 dense, T2VA | 1344 × 768, 124 frames, 5 s | 4 denoising steps | 1 | local |
+| TeleFuser scaling | Base H3, T2VA | 1344 × 768, 124 frames, 5 s at 24 FPS | 50 denoising steps | 1 / 2 / 4 | local / TP2 / TP2 × Ulysses SP2 |
+| Framework comparison | Base H3, T2VA | 1344 × 768, 124 frames, 5 s at 24 FPS | 50 denoising steps | 4 | framework-native distributed path |
+| Turbo LoRA | MiniMax-H3 Turbo, T2VA | 1344 × 768, 124 frames, 5 s at 24 FPS | 8 denoising steps | 4 | TP2 × Ulysses SP2 |
+| FastH3 adapter | FastH3 dense, T2VA | 1344 × 768, 124 frames, 5 s at 24 FPS | 4 denoising steps | 4 | framework-native distributed path |
+| FP8 smoothing | Base H3, T2VA | 1344 × 768, 107 frames, 4 s at 24 FPS | 50 denoising steps | 1 | local |
 
-## Unified performance comparison
-The figure uses denoising throughput as the speed metric and peak GPU memory as the capacity metric. Base H3 uses four GPUs; adapter points are labelled with their measured GPU count.
+## TeleFuser scaling
+
+![TeleFuser Base H3 scaling](sections/04-evaluation/assets/base-scaling.svg)
+
+The four-GPU Base H3 run reaches **3.40×** the single-GPU denoising throughput.
+The distributed path combines tensor parallelism and Ulysses sequence
+parallelism with communication-compute overlap.
+
+## Unified four-GPU comparison
+
+Peak GPU memory is shown as bars; denoising throughput is shown as the line.
+Every point uses four H100 GPUs and disables CPU offload.
 
 ![MiniMax-H3 Base and adapter performance comparison](sections/04-evaluation/assets/all-workloads-performance.svg)
 
-The Base H3 points use the official [FastVideo example](https://github.com/hao-ai-lab/FastVideo/blob/main/examples/inference/basic/basic_minimax_h3_t2v.py), [SGLang cookbook](https://github.com/sgl-project/sglang/blob/main/docs/cookbook/diffusion/MiniMax/MiniMax-H3.mdx), and matched LightX2V/TeleFuser configurations. TeleFuser reaches 1.015 denoising steps/s on Base H3, compared with 0.387 for LightX2V and 0.496 for FastVideo. The Turbo point reaches 0.306 steps/s after the adapter reduces the schedule to eight denoising steps.
-**Prompt:** `Steam rises from the ramen while the family talks in the background.`
+Base H3 uses the official [FastVideo example](https://github.com/hao-ai-lab/FastVideo/blob/main/examples/inference/basic/basic_minimax_h3_t2v.py) and [SGLang cookbook](https://github.com/sgl-project/sglang/blob/main/docs/cookbook/diffusion/MiniMax/MiniMax-H3.mdx), together with the corresponding LightX2V and TeleFuser examples. Turbo LoRA is compared across TeleFuser, SGLang, and LightX2V; FastH3 is compared across TeleFuser and FastVideo.
 
-<div class="video-grid video-grid-four" data-sync-group="base-h3">
-  <figure>
-    <figcaption>LightX2V</figcaption>
-    <video controls playsinline preload="metadata" data-result-slot="lightx2v-base-h3"></video>
-  </figure>
-  <figure>
-    <figcaption>FastVideo</figcaption>
-    <video controls playsinline preload="metadata" data-result-slot="fastvideo-base-h3"></video>
-  </figure>
-  <figure>
-    <figcaption>SGLang</figcaption>
-    <video controls playsinline preload="metadata" data-result-slot="sglang-base-h3"></video>
-  </figure>
-  <figure>
-    <figcaption>TeleFuser</figcaption>
-    <video controls playsinline preload="metadata" data-result-slot="telefuser-base-h3"></video>
-  </figure>
+- **Base H3:** TeleFuser delivers 163.5% higher end-to-end throughput than LightX2V, 119.4% higher than FastVideo, and 51.8% higher than SGLang. Peak memory is 40.3% lower than LightX2V and 37.3% lower than SGLang, while remaining within 1.5% of FastVideo.
+- **Turbo LoRA:** TeleFuser throughput is 58.8% higher than LightX2V and 0.3% higher than SGLang. Peak memory is 42.3% lower than LightX2V and 26.3% lower than SGLang.
+- **FastH3:** TeleFuser delivers 208.5% higher end-to-end throughput than FastVideo while using 37.4% less peak GPU memory.
+
+## Generated output
+
+| Framework | Base H3 | MiniMax-H3 Turbo LoRA | FastH3 Preview adapter |
+|---|---|---|---|
+| TeleFuser | ✅ Supported | ✅ Supported | ✅ Supported |
+| LightX2V | ✅ Supported | ✅ Supported | ❌ Unsupported |
+| FastVideo | ✅ Supported | ❌ Unsupported | ✅ Supported |
+| SGLang | ✅ Supported | ✅ Supported | ❌ Unsupported |
+
+**Base H3 and Turbo LoRA prompt:** `Steam rises from the ramen while the family talks in the background.`
+
+**FastH3 prompt:** `Steam rises from the ramen while the family talks in the background.`
+
+<div class="video-matrix">
+  <div></div>
+  <div class="video-matrix-heading">Base H3</div>
+  <div class="video-matrix-heading">Turbo LoRA</div>
+  <div class="video-matrix-heading">FastH3</div>
+
+  <div class="video-matrix-label">LightX2V</div>
+  <figure><video controls playsinline preload="metadata" data-result-slot="lightx2v-base-h3"></video></figure>
+  <figure><video controls playsinline preload="metadata" data-result-slot="turbo-lightx2v"></video></figure>
+  <div class="video-matrix-empty">Not supported</div>
+
+  <div class="video-matrix-label">FastVideo</div>
+  <figure><video controls playsinline preload="metadata" data-result-slot="fastvideo-base-h3"></video></figure>
+  <div class="video-matrix-empty">Not supported</div>
+  <figure><video controls playsinline preload="metadata" data-result-slot="fastvideo-primary"></video></figure>
+
+  <div class="video-matrix-label">SGLang</div>
+  <figure><video controls playsinline preload="metadata" data-result-slot="sglang-base-h3"></video></figure>
+  <figure><video controls playsinline preload="metadata" data-result-slot="turbo-sglang"></video></figure>
+  <div class="video-matrix-empty">Not supported</div>
+
+  <div class="video-matrix-label">TeleFuser</div>
+  <figure><video controls playsinline preload="metadata" data-result-slot="telefuser-base-h3"></video></figure>
+  <figure><video controls playsinline preload="metadata" data-result-slot="turbo-telefuser"></video></figure>
+  <figure><video controls playsinline preload="metadata" data-result-slot="telefuser-primary"></video></figure>
 </div>
 
-## Adapter workloads
+## FP8 attention smoothing
 
-Turbo LoRA and FastH3 use different weights and sampling contracts. Current framework support is:
+The first unfused implementation added 11.7% denoising overhead; fusion reduced
+the final cost to 2.2%. On a captured MiniMax-H3 layer, K quantization MSE fell
+by 21.65% and attention-output MSE by 8.18%.
 
-| Framework | MiniMax-H3 Turbo LoRA | FastH3 Preview adapter |
-|---|---|---|
-| TeleFuser | ✅ Supported | ✅ Supported |
-| LightX2V | ✅ Supported | ❌ Unsupported |
-| FastVideo | ❌ Unsupported | ✅ Supported |
-| SGLang | ✅ Supported | ❌ Unsupported |
+![MiniMax-H3 FP8 smoothing performance](sections/04-evaluation/assets/smoothing-performance.svg)
 
-The Turbo LoRA comparison covers TeleFuser and LightX2V; the FastH3 comparison covers TeleFuser and FastVideo.
+| Configuration (BF16 reference) | Video PSNR ↑ | Video SSIM ↑ | Audio cosine ↑ | Spectral convergence error ↓ |
+|---|---:|---:|---:|---:|
+| FP8, unsmoothed | **19.63 dB** | **0.6712** | 0.8504 | 0.5055 |
+| FP8, smoothing enabled | 19.27 dB | 0.6700 | **0.8891** | **0.4537** |
 
-### MiniMax-H3 Turbo LoRA
+**Prompt:** `Locked-off cinematic wide shot of a red vintage tram gliding slowly through a snowy alpine village at sunrise. The tram remains rigid and geometrically consistent, its windows and wheels stay aligned. Light snow falls; soft rail sounds and distant church bells are synchronized with the scene. No people, no cuts, no camera movement.`
 
-TeleFuser merges the 8-step v1.0 768p LoRA before creating FP8 weights.
-
-
-**Prompt:** `Steam rises from the ramen while the family talks in the background. Bright, warm indoor lighting illuminates every face and the room with natural skin tones. The man holds a pair of straight, rigid chopsticks that remain perfectly straight throughout the video and never bend.`
-
-<div class="video-grid video-grid-two" data-sync-group="turbo">
-  <figure>
-    <figcaption>LightX2V: MiniMax-H3 Turbo</figcaption>
-    <video controls playsinline preload="metadata" data-result-slot="turbo-lightx2v"></video>
-  </figure>
-  <figure>
-    <figcaption>TeleFuser: MiniMax-H3 Turbo</figcaption>
-    <video controls playsinline preload="metadata" data-result-slot="turbo-telefuser"></video>
-  </figure>
+<div class="video-grid video-grid-three" data-sync-group="smoothing">
+  <figure><figcaption>BF16 reference</figcaption><video controls playsinline preload="metadata" data-result-slot="bf16-quality"></video></figure>
+  <figure><figcaption>FP8, unsmoothed</figcaption><video controls playsinline preload="metadata" data-result-slot="fp8-unsmoothed"></video></figure>
+  <figure><figcaption>FP8, smoothing enabled</figcaption><video controls playsinline preload="metadata" data-result-slot="fp8-smoothed"></video></figure>
 </div>
 
-### FastH3 dense adapter
-
-
-
-**Prompt:** `integrated_multimodal_description: A red fox runs through fresh snow at dawn. overall_soundscape: Fast pawsteps in snow, winter wind, and distant birds.`
-
-<div class="video-grid video-grid-two" data-sync-group="fasth3">
-  <figure>
-    <figcaption>FastVideo: FastH3</figcaption>
-    <video controls playsinline preload="metadata" data-result-slot="fastvideo-primary"></video>
-  </figure>
-  <figure>
-    <figcaption>TeleFuser: FastH3</figcaption>
-    <video controls playsinline preload="metadata" data-result-slot="telefuser-primary"></video>
-  </figure>
-</div>
+In the latter part of the clip, smoothing improves the temporal stability of
+the tram's roof markings, overhead linkage, and window alignment. It also raises
+audio cosine similarity from 0.850 to 0.889 and reduces spectral convergence
+error from 0.506 to 0.454.
 
 ---
 
@@ -381,8 +326,9 @@ for the actual adapter model.
 
 On the matched four-GPU Base H3 workload, TeleFuser completes generation in
 52.27 seconds. It is 2.64× faster than LightX2V, 2.19× faster than FastVideo,
-and 1.52× faster than SGLang. The Turbo LoRA and FastH3 runs also outperform
-their LightX2V and FastVideo baselines.
+and 1.52× faster than SGLang. On Turbo LoRA, TeleFuser is 1.59× faster than
+LightX2V and matches SGLang within 0.3%; on FastH3, it is 3.09× faster than
+FastVideo.
 
 These implementations and experiments lead to three practical insights for world-model inference:
 

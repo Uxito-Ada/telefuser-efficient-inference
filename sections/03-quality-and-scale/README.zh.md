@@ -4,56 +4,10 @@ id: 03-quality-and-scale
 language: zh-CN
 -->
 
-# 控制误差，并扩展到多卡
+# 面向生成质量的 FP8
 
-Diffusion 的每一步输出都会成为下一步输入。FP8 或稀疏 attention 引入的局部误差可能沿去噪过程累积，因此评测同时覆盖 kernel 吞吐、tensor 误差、最终视频和音频。
+Diffusion 的每一步输出都会成为下一步输入，局部 FP8 误差可能沿去噪过程累积。因此，TeleFuser 将 attention smoothing 直接纳入 FP8 执行路径，而不是作为独立的后处理步骤。
 
-## FP8 attention 的误差控制
+MiniMax-H3 的层级 profile 显示，部分 K/V tensor 的均值明显偏离零点。TeleFuser 在 FP8 attention 前中心化 K/V，并在输出中恢复等价偏移。这种针对 attention 分布设计的非对称量化处理，可以更充分地利用 FP8 动态范围，同时保持模型接口不变。
 
-MiniMax-H3 实际层的 profile 显示，部分 K/V 的均值明显偏离零点，直接使用对称 FP8 量化会损失有效动态范围。TeleFuser 在计算前对 K/V 进行中心化，并在 attention 输出中恢复等价偏移。这是一种针对 attention 数据分布设计的非对称量化处理。
-
-中心化和输出修正已经融合进 FP8 Sol-Attn。最早的非融合版本让去噪时间增加 11.7%，融合后开销降到 2.2%。在捕获的真实 H3 层上，K 的量化 MSE 降低 21.65%，attention 输出 MSE 降低 8.18%；KV smoothing 和 V correction 在优化配置中默认开启。
-
-| 模型 | 分辨率与帧数 | 采样 | GPU | 场景 / seed |
-|---|---|---|---:|---|
-| MiniMax-H3 Base，T2VA | 1344 × 768，107 帧，4 秒，24 fps | 50 次去噪步 | 1 × H100 | 雪地电车 / 17 |
-
-![MiniMax-H3 FP8 smoothing 单卡性能](assets/smoothing-performance.svg)
-
-平滑 FP8 的去噪吞吐比 BF16 Linear + FlashAttention 4 提高 37.2%，峰值分配显存降低 42.6%；相对未平滑 FP8，融合修正增加 2.1% 去噪时间。
-
-| 配置（BF16 为 reference） | 视频 PSNR ↑ | 视频 SSIM ↑ | 音频 cosine ↑ | 频谱收敛误差 ↓ |
-|---|---:|---:|---:|---:|
-| FP8，不使用 smoothing | **19.63 dB** | **0.6712** | 0.8504 | 0.5055 |
-| FP8，开启 smoothing | 19.27 dB | 0.6700 | **0.8891** | **0.4537** |
-
-**Prompt:** `Locked-off cinematic wide shot of a red vintage tram gliding slowly through a snowy alpine village at sunrise. The tram remains rigid and geometrically consistent, its windows and wheels stay aligned. Light snow falls; soft rail sounds and distant church bells are synchronized with the scene. No people, no cuts, no camera movement.`
-
-<div class="video-grid video-grid-three" data-sync-group="smoothing">
-  <figure>
-    <figcaption>BF16 参考</figcaption>
-    <video controls playsinline preload="metadata" data-result-slot="bf16-quality"></video>
-  </figure>
-  <figure>
-    <figcaption>FP8，不使用 smoothing</figcaption>
-    <video controls playsinline preload="metadata" data-result-slot="fp8-unsmoothed"></video>
-  </figure>
-  <figure>
-    <figcaption>FP8，开启 smoothing</figcaption>
-    <video controls playsinline preload="metadata" data-result-slot="fp8-smoothed"></video>
-  </figure>
-</div>
-
-在视频后半段，未平滑输出的车顶标识、受电弓连线和窗框对齐相较平滑输出更不稳定。
-
-## 可持续优化的稀疏策略
-
-**TeleFuser 同时优化了 Sol-Attn 本身的执行效率。** QK 和 PV GEMM 使用 FP8 计算，dequant 被融合进 attention 执行，减少独立的数据转换和显存读写；Two-way KV splitting 将 K/V 计算分成两路并行调度，提高稀疏 shape 下的 SM 利用率。
-
-**FP8 与 Sol-Attn 共同使用时，稀疏路由的边界也需要重新处理。** Route 长度不满足 FP8 kernel 的 tile 对齐要求时，TeleFuser 使用 Tail padding 补齐输入，并在计算后恢复真实 route length，避免 padding 进入有效输出，保证量化与动态稀疏组合的正确性。
-
-**稀疏策略保留了持续调优的接口。** TeleFuser 支持配置 dense window、dense layer、阈值模式和稀疏强度；MiniMax-H3 的默认参数已经过性能与生成质量调优，可以直接使用。
-
-## 多卡执行
-
-TeleFuser 对 SP kernel 做了面向 FP8、Sol-Attn 和 world-model 视频生成的专门优化：Ulysses All-to-All 完成后，各 GPU 再按本地 attention 布局执行 FP8 quantization 和 Sol-Attn；3D 视频 token 在序列切分前完成 reorder；scalar timestep 保持完整，per-token timestep 则随视频 token 一起切分。TeleFuser 还将 Ulysses 通信与 attention 计算重叠，以降低多卡通信开销。
+中心化与输出修正已经融合进 FP8 Sol-Attn，并在优化配置中默认开启。相关端到端质量与性能数据放在主体性能评测之后。

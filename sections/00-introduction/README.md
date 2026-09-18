@@ -23,6 +23,7 @@ diffusion transformers.
   <span>At the same four-GPU topology, TeleFuser is 2.64x faster than LightX2V and 1.52x faster than SGLang.</span>
 </div>
 
+![Four-GPU MiniMax-H3 end-to-end throughput](assets/four-gpu-throughput.svg)
 
 MiniMax-H3 is the primary evaluation model. Its DiT jointly generates
 high-resolution video and synchronized audio, with substantial work in both
@@ -51,10 +52,3 @@ TeleFuser now brings three execution dimensions together:
 TeleFuser scales the same Base H3 request across one, two, and four GPUs; the
 four-GPU run reaches **3.40x** the single-GPU denoise throughput. The evaluation
 also covers SGLang, LightX2V, FastVideo, Turbo LoRA, and FastH3.
-
-The rest of this post follows four questions:
-
-1. Why do quantization and block-sparse attention conflict in existing kernels?
-2. How does Q-SPA make their layouts compatible?
-3. How does attention smoothing recover quality without giving back the speed?
-4. How does the same attention path scale across GPUs?

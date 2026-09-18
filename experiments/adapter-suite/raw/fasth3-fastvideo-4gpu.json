@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "framework": "FastVideo",
+  "model": "MiniMaxAI/MiniMax-H3",
+  "adapter": "FastH3 dense data-free adapter",
+  "hardware": "4x NVIDIA H100 80GB HBM3",
+  "parallelism": "SP4 with FSDP and post-denoise reshard",
+  "workload": {
+    "prompt": "Steam rises from the ramen while the family talks in the background.",
+    "seed": 0,
+    "resolution": [1344, 768],
+    "frames": 124,
+    "fps": 24,
+    "sigma_points": 5,
+    "actual_dit_forwards": 4
+  },
+  "configuration": {
+    "linear": "BF16",
+    "attention": "FlashAttention 4",
+    "cpu_offload": false,
+    "replicated_dit": false,
+    "reshard_after_denoise": true,
+    "parallel_vae": true
+  },
+  "measurement": {
+    "warmups": 1,
+    "repeats": 3,
+    "e2e_seconds": {
+      "samples": [22.571, 23.191, 21.642],
+      "median": 22.571
+    },
+    "generation_seconds": {
+      "samples": [21.687, 22.255, 20.730],
+      "median": 21.687
+    },
+    "denoise_seconds": {
+      "samples": [8.517510, 8.790577, 8.500767],
+      "median": 8.517510
+    },
+    "denoising_steps_per_second": 0.469621,
+    "observed_peak_memory_mib": 69159
+  },
+  "outputs": [
+    "/data/heyang/fastvideo-fasth3-4gpu-blog/fasth3_all_run_01.mp4",
+    "/data/heyang/fastvideo-fasth3-4gpu-blog/fasth3_all_run_02.mp4",
+    "/data/heyang/fastvideo-fasth3-4gpu-blog/fasth3_all_run_03.mp4"
+  ]
+}

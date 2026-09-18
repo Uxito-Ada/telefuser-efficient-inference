@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "framework": "LightX2V",
+  "model": "MiniMaxAI/MiniMax-H3",
+  "adapter": "MiniMax-H3 Turbo 8-step v1.0 768p",
+  "hardware": "4x NVIDIA H100 80GB HBM3",
+  "parallelism": "TP2 x Ulysses SP2",
+  "workload": {
+    "prompt": "Steam rises from the ramen while the family talks in the background.",
+    "seed": 0,
+    "resolution": [1344, 768],
+    "frames": 124,
+    "fps": 24,
+    "denoising_steps": 8
+  },
+  "configuration": {
+    "linear": "BF16",
+    "attention": "SageAttention2",
+    "cpu_offload": false,
+    "vae_parallel_decode": true
+  },
+  "measurement": {
+    "denoise_seconds": 19.075535,
+    "pipeline_seconds": 21.555260,
+    "denoising_steps_per_second": 0.419385,
+    "peak_reserved_gib": 73.28
+  },
+  "output": "/data/heyang/lightx2v-turbo-4gpu.mp4"
+}

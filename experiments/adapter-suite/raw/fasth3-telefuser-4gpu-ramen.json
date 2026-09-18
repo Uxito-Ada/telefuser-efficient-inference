@@ -1,0 +1,61 @@
+{
+  "adapter_path": "/data/heyang/FastH3-models/v1-lora/dense-datafree/adapter_model.safetensors",
+  "attention": "SOL_ATTN",
+  "audio_shape": [
+    1,
+    2,
+    165600
+  ],
+  "denoise_peak_allocated_bytes": 12405556736,
+  "denoising_seconds_median": 4.157062666490674,
+  "denoising_seconds_samples": [
+    4.157062666490674
+  ],
+  "duration_seconds": 5.0,
+  "effective_dit_updates": 4,
+  "generation_seconds_median": 6.793166292831302,
+  "generation_seconds_samples": [
+    6.793166292831302
+  ],
+  "gpu_num": 4,
+  "load_seconds": 295.35772425308824,
+  "output": "/data/heyang/telefuser-fasth3-ramen-4gpu.mp4",
+  "profile": "tf-kernel-fp8-linear+fp8-sol",
+  "repeats": 1,
+  "resident_memory_mib": 40050,
+  "runtime_metrics": {
+    "audio_decoding_seconds": 0.040740396827459335,
+    "audio_encoding_seconds": 0.0,
+    "denoising_seconds": 4.157062666490674,
+    "denoising_stage_seconds": 4.209440940991044,
+    "feature_cache_computed_steps": 4,
+    "feature_cache_skipped_steps": 0,
+    "media_preparation_seconds": 0.0001470465213060379,
+    "peak_allocated_bytes": 12405556736,
+    "peak_reserved_bytes": 14938013696,
+    "pipeline_seconds": 6.565639505162835,
+    "text_encoding_seconds": 0.045582544058561325,
+    "video_decoding_seconds": 1.4843692723661661,
+    "visual_encoding_seconds": 0.0
+  },
+  "scheduler_points_per_second": 1.202772342188654,
+  "schema_version": 1,
+  "seed": 1000,
+  "sol_dense_layers": 0,
+  "sol_dense_steps": 1,
+  "sol_fp8": true,
+  "sol_tau": 1.0,
+  "sol_threshold_type": "exact",
+  "steps": 5,
+  "video_shape": [
+    1,
+    124,
+    768,
+    1344,
+    3
+  ],
+  "warmup_seconds": 78.55283678509295,
+  "warmup_seed": 999,
+  "whole_process_peak_memory_mib": 43262,
+  "workload": "fasth3"
+}

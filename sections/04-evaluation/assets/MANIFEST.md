@@ -1,19 +1,13 @@
 # Assets
+- `all-workloads-performance.svg`: combined Base H3, FastH3, and Turbo performance chart; Base H3 points use four GPUs.
+- `smoothing-performance.svg`: FP8 attention smoothing throughput comparison.
 
-- `base-scaling.svg`: matched TeleFuser one-, two-, and four-H100 Base H3 scaling chart.
-- `lightx2v-base-h3.svg`: matched four-H100 SGLang, LightX2V, FastVideo, and TeleFuser chart; FastVideo is labelled SP4 while the other points use TP2 × Ulysses SP2.
 - `lightx2v-base-h3.mp4`: LightX2V BF16 + SageAttention2 Base H3 output.
 - `telefuser-base-h3.mp4`: TeleFuser FP8 + Sol Base H3 output.
 - `fastvideo-base-h3.mp4`: FastVideo BF16 + dense FA4 Base H3 output, 4-GPU SP4 run.
 - `sglang-base-h3.mp4`: SGLang Base H3 output for the media comparison.
-- `turbo-performance.svg`: matched one-H100 MiniMax-H3 Turbo LoRA chart.
 - `turbo-lightx2v.mp4`: LightX2V resident BF16 Turbo LoRA output.
+- `turbo-sglang.mp4`: SGLang TP2 x Ulysses SP2 MiniMax-H3 Turbo LoRA output.
 - `turbo-telefuser.mp4`: TeleFuser FP8 Turbo LoRA output using a camera-stable presentation prompt.
-- `end-to-end.svg`: generated from the normalized single-H100 records.
-- `fastvideo-primary.mp4`: FastVideo BF16 Linear + FA4 output.
-- `telefuser-primary.mp4`: TeleFuser FP8 Linear + smoothed FP8 Sol output.
-
-Videos are grouped only within the same Base, Turbo, or FastH3 workload. The
-performance records use matched prompts and seeds. The refreshed TeleFuser
-Turbo presentation sample uses a camera-stable prompt, as disclosed in the
-evaluation text, and is not presented as a paired quality measurement.
+- `fastvideo-primary.mp4`: FastVideo BF16 Linear + FA4 FastH3 dense-adapter output, four-GPU SP4 run.
+- `telefuser-primary.mp4`: TeleFuser FP8 Linear + FP8 Sol FastH3 dense-adapter output, four-GPU TP2 x Ulysses SP2 run.

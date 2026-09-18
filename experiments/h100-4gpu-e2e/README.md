@@ -3,8 +3,8 @@
 Status: **complete for the claims published in the article**.
 
 The article keeps the TeleFuser scaling run, the four-H100 framework
-comparison, the one-H100 adapter runs, and the communication-overlap regression
-as separate protocols.
+comparison, the four-H100 adapter comparison, and the communication-overlap
+regression as separate protocols.
 
 ## TeleFuser one-, two-, and four-GPU scaling
 
@@ -69,35 +69,20 @@ reported statistic.
 
 ## FastH3 adapter comparison
 
-Both systems use the MiniMax-H3 base, FastH3 Dense/Data-Free adapter at strength
-1.0, same prompt and seed, 1344 x 768 output, 124 frames at 24 FPS, five sigma
-points, four actual DiT forwards, one H100, one warm-up, and three measured
-requests. Neither DiT is CPU-offloaded during denoising.
+The current four-GPU adapter measurements are maintained in
+[`experiments/adapter-suite/README.md`](../adapter-suite/README.md). They use the
+MiniMax-H3 base with the FastH3 Dense/Data-Free adapter at strength 1.0, and
+compare the official FastVideo distributed path with TeleFuser's FP8 Sol path.
+The adapter video matrix uses the same ramen prompt for the four-GPU FastVideo
+and TeleFuser FastH3 renders.
 
 - FastVideo: BF16 Linear + FlashAttention 4.
 - TeleFuser: FP8 Linear + FP8 Sol-Attn, `tau=1.0`, exact routing, quality-aware
   FP8 attention, and selective dense computation.
 
-The chart uses matched denoising time, actual DiT forwards per second, and
-whole-process peak GPU memory. It omits an end-to-end speedup because the
-recorded frameworks used different prompt-conditioning cache policies.
-
-Normalized records:
-
-- `raw/fastvideo-single-h100.json`
-- `raw/telefuser-single-h100.json`
-- `raw/telefuser-single-h100-source.json`
-- `raw/summary.json`
-
-Generate the chart with:
-
-```bash
-python experiments/h100-4gpu-e2e/scripts/plot_results.py \
-  --baseline experiments/h100-4gpu-e2e/raw/fastvideo-single-h100.json \
-  --telefuser experiments/h100-4gpu-e2e/raw/telefuser-single-h100.json \
-  --figure sections/04-evaluation/assets/end-to-end.svg \
-  --summary experiments/h100-4gpu-e2e/raw/summary.json
-```
+The unified four-GPU chart uses the normalized records in
+`experiments/adapter-suite/raw/` and reports end-to-end throughput and whole-
+process peak memory for each supported workload.
 
 ## Communication-overlap regression
 

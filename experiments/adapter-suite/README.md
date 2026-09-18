@@ -5,16 +5,16 @@ the article. Results are not mixed across adapter families.
 
 ## MiniMax-H3 Turbo LoRA
 
-- One NVIDIA H100 80GB.
-- Same MiniMax-H3 base, Turbo 8-step v1.0 768p adapter, input image, prompt,
-  seed, 1344 x 768 output, 124 frames, and eight DiT updates.
-- LightX2V: BF16 + Sol-Attn with the DiT resident on GPU. Text-encoder and VAE
-  lifecycle follows its example configuration.
-- TeleFuser: FP8 Linear + FP8 Sol-Attn, `tau=1.0`, one dense opening update.
-- One warm-up followed by three measured generations; denoise time is the
-  median. Throughput is eight updates divided by median denoise time.
-- Memory is each framework's whole-process formal-run peak after warm-up. This
-  is an end-to-end framework metric, not a pure DiT weight-size comparison.
+The four-GPU comparison uses the same MiniMax-H3 base, Turbo 8-step v1.0 768p
+adapter, prompt, seed, 1344 x 768 output, 124 frames, and eight DiT updates.
+LightX2V and SGLang use TP2 x Ulysses SP2 with the DiT resident on GPU;
+TeleFuser uses TP2 x Ulysses SP2, FP8 Linear, and FP8 Sol-Attn at `tau=1.0`.
+CPU offload is disabled for every plotted point. The records report the
+end-to-end request time and the peak GPU memory observed during the formal run.
+
+The four-GPU records are one completed request after framework initialization;
+the Base H3 and TeleFuser adapter records retain the longer repeated benchmark
+series used for the main comparison.
 
 The official LightX2V CPU block-offload run is retained outside this article as
 a diagnostic. It is deliberately excluded from the chart because the plotted
@@ -22,8 +22,9 @@ comparison keeps the DiT resident in both frameworks.
 
 Raw records:
 
-- `raw/turbo-lightx2v-bf16-resident.json`
-- `raw/turbo-telefuser-fp8.json`
+- `raw/turbo-lightx2v-4gpu.json`
+- `raw/turbo-sglang-4gpu.json`
+- TeleFuser: `/data/heyang/telefuser-lora-adapter-pr-artifacts/turbo_telefuser_fp8_sol_4gpu.json`
 
 Regenerate the figure with:
 
@@ -37,8 +38,13 @@ python experiments/adapter-suite/plot_turbo.py \
 
 ## FastH3 dense adapter
 
-The matched FastVideo and TeleFuser records remain under
-`experiments/h100-4gpu-e2e/raw/` because the original end-to-end harness
-produced them. They use one H100, the same dense adapter, prompt, seed, output
-shape, and four actual DiT forwards. See
-`experiments/h100-4gpu-e2e/README.md` for the exact timing boundary.
+The four-GPU comparison uses the same dense adapter, prompt, seed, output
+shape, and four actual DiT forwards. FastVideo uses BF16 Linear + FlashAttention
+4 with SP4 and FSDP resharding on H100; TeleFuser uses FP8 Linear + FP8
+Sol-Attn with `tau=1.0` and TP2 x Ulysses SP2. Neither path uses CPU offload.
+
+Raw records:
+
+- `raw/fasth3-fastvideo-4gpu.json`
+- `raw/fasth3-telefuser-4gpu-ramen.json` (same-prompt matrix render)
+- TeleFuser: `/data/heyang/telefuser-lora-adapter-pr-artifacts/fasth3_telefuser_fp8_sol_4gpu.json`
