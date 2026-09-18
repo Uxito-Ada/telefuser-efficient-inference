@@ -6,20 +6,11 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from xml.etree import ElementTree as ET
 
-
-SVG = "http://www.w3.org/2000/svg"
-ET.register_namespace("", SVG)
-
-
-def element(parent: ET.Element, tag: str, **attributes: object) -> ET.Element:
-    return ET.SubElement(parent, f"{{{SVG}}}{tag}", {key: str(value) for key, value in attributes.items()})
-
-
-def text(parent: ET.Element, value: str, x: float, y: float, **attributes: object) -> None:
-    node = element(parent, "text", x=x, y=y, **attributes)
-    node.text = value
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 
 
 def main() -> None:
@@ -29,88 +20,77 @@ def main() -> None:
     args = parser.parse_args()
 
     report = json.loads(args.input.read_text(encoding="utf-8"))
-    one = report["results"]["1_gpu"]
-    two = report["results"]["2_gpu"]
-    four = report["results"]["4_gpu"]
-    panels = (
-        (
-            "Denoise time",
-            "seconds / video",
-            [one["denoise_seconds"], two["denoise_seconds"], four["denoise_seconds"]],
-        ),
-        (
-            "Denoise throughput",
-            "steps / second",
-            [
-                one["config_points_per_second"],
-                two["config_points_per_second"],
-                four["config_points_per_second"],
-            ],
-        ),
-        (
-            "Peak memory",
-            "GiB / GPU",
-            [
-                one["peak_memory_mib"] / 1024.0,
-                two["peak_memory_mib"] / 1024.0,
-                four["peak_memory_mib"] / 1024.0,
-            ],
-        ),
-    )
-
-    width, height = 1200, 640
-    root = ET.Element(
-        f"{{{SVG}}}svg",
-        {"viewBox": f"0 0 {width} {height}", "width": str(width), "height": str(height)},
-    )
-    element(root, "rect", x=0, y=0, width=width, height=height, fill="#FFFFFF")
-    style = element(root, "style")
-    style.text = "text { font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; }"
-
-    chart_top, chart_bottom = 100, 475
-    panel_width = 300
-    panel_starts = (60, 450, 840)
-    colors = ("#7894A8", "#D48B4E", "#167D6B")
+    keys = ("1_gpu", "2_gpu", "4_gpu")
     names = ("1 GPU", "2 GPUs", "4 GPUs")
+    results = [report["results"][key] for key in keys]
+    x = np.arange(len(results), dtype=float)
+    denoise = np.array([item["denoise_seconds"] for item in results], dtype=float)
+    throughput = np.array([item["config_points_per_second"] for item in results], dtype=float)
+    memory = np.array([item["peak_memory_mib"] / 1024.0 for item in results], dtype=float)
 
-    for start, (title, unit, values) in zip(panel_starts, panels, strict=True):
-        text(root, title, start + panel_width / 2, 42, **{"text-anchor": "middle", "font-size": 20, "font-weight": 700, "fill": "#16232C"})
-        text(root, unit, start, 76, **{"font-size": 14, "fill": "#65727B"})
-        upper = max(values) * 1.18
-        for tick in range(5):
-            ratio = tick / 4
-            y = chart_bottom - ratio * (chart_bottom - chart_top)
-            element(root, "line", x1=start, y1=y, x2=start + panel_width, y2=y, stroke="#E7ECEF", **{"stroke-width": 1})
-            text(root, f"{upper * ratio:.1f}", start - 10, y + 5, **{"text-anchor": "end", "font-size": 12, "fill": "#74818A"})
-
-        bar_width = 42
-        centers = (start + 62, start + 150, start + 238)
-        for center, name, color, value in zip(centers, names, colors, values, strict=True):
-            bar_height = value / upper * (chart_bottom - chart_top)
-            y = chart_bottom - bar_height
-            element(root, "rect", x=center - bar_width / 2, y=y, width=bar_width, height=bar_height, rx=2, fill=color)
-            text(root, f"{value:.2f}", center, y - 12, **{"text-anchor": "middle", "font-size": 14, "font-weight": 700, "fill": "#26343D"})
-            text(root, name, center, chart_bottom + 31, **{"text-anchor": "middle", "font-size": 14, "font-weight": 600, "fill": "#38464F"})
-        element(root, "line", x1=start, y1=chart_bottom, x2=start + panel_width, y2=chart_bottom, stroke="#CBD5DA", **{"stroke-width": 1})
-
-    text(
-        root,
-        "MiniMax-H3 Base · 1344 × 768 · 124 frames · 50 steps · FP8 Linear + FP8 Sol",
-        width / 2,
-        555,
-        **{"text-anchor": "middle", "font-size": 15, "font-weight": 600, "fill": "#4D5B64"},
+    plt.rcParams.update({"font.family": "DejaVu Sans", "svg.fonttype": "none"})
+    fig, memory_axis = plt.subplots(figsize=(13.5, 6.8), facecolor="white")
+    memory_axis.set_facecolor("white")
+    bars = memory_axis.bar(
+        x, memory, width=0.40, color=("#9AAFC0", "#D28A4F", "#168A72"),
+        edgecolor=("#667F91", "#A66732", "#075E4C"), linewidth=1.2, zorder=2,
     )
-    text(
-        root,
-        "1 GPU: local · 2 GPUs: TP2 · 4 GPUs: TP2 × Ulysses SP2 · feature cache disabled",
-        width / 2,
-        585,
-        **{"text-anchor": "middle", "font-size": 14, "fill": "#69767F"},
-    )
+    memory_axis.set_ylabel("Peak GPU memory (GiB)", color="#344054", fontsize=11, labelpad=10)
+    memory_axis.set_ylim(0, max(memory) * 1.30)
+    memory_axis.set_xticks(x, names, fontsize=11)
+    memory_axis.tick_params(axis="x", length=0, pad=10)
+    memory_axis.tick_params(axis="y", colors="#667085", labelsize=10)
+    memory_axis.grid(axis="y", color="#E7EBEF", linewidth=0.8, zorder=0)
+    memory_axis.spines[["top", "right"]].set_visible(False)
+    memory_axis.spines[["left", "bottom"]].set_color("#D0D5DD")
+    for bar, value in zip(bars, memory, strict=True):
+        memory_axis.text(
+            bar.get_x() + bar.get_width() / 2, value + max(memory) * 0.025,
+            f"{value:.1f}", ha="center", va="bottom", fontsize=10.5,
+            color="#344054", fontweight=600,
+        )
 
+    time_axis = memory_axis.twinx()
+    time_axis.plot(
+        x, denoise, color="#C93F4B", marker="o", markersize=7, linewidth=2.0,
+        markeredgecolor="white", markeredgewidth=1.0, zorder=4,
+    )
+    time_axis.set_ylabel("Denoise time (s / video)", color="#C93F4B", fontsize=11, labelpad=10)
+    time_axis.set_ylim(0, max(denoise) * 1.28)
+    time_axis.tick_params(axis="y", colors="#C93F4B", labelsize=10)
+    time_axis.spines["top"].set_visible(False)
+    time_axis.spines["right"].set_color("#C93F4B")
+    for point_x, value in zip(x, denoise, strict=True):
+        time_axis.text(point_x, value + max(denoise) * 0.035, f"{value:.1f}", ha="center", va="bottom", fontsize=10, color="#C93F4B")
+
+    throughput_axis = memory_axis.twinx()
+    throughput_axis.spines["right"].set_position(("outward", 58))
+    throughput_axis.plot(
+        x, throughput, color="#1769AA", marker="s", markersize=6.5, linewidth=2.0,
+        markeredgecolor="white", markeredgewidth=1.0, zorder=5,
+    )
+    throughput_axis.set_ylabel("Denoise throughput (steps / s)", color="#1769AA", fontsize=11, labelpad=10)
+    throughput_axis.set_ylim(0, max(throughput) * 1.55)
+    throughput_axis.tick_params(axis="y", colors="#1769AA", labelsize=10)
+    throughput_axis.spines["top"].set_visible(False)
+    throughput_axis.spines["right"].set_color("#1769AA")
+    for point_x, value in zip(x, throughput, strict=True):
+        throughput_axis.text(point_x, value + max(throughput) * 0.06, f"{value:.2f}", ha="center", va="bottom", fontsize=10, color="#1769AA")
+
+    memory_axis.annotate("↓ lower is better", xy=(0.02, 0.98), xycoords="axes fraction", ha="left", va="top", fontsize=10, color="#344054")
+    time_axis.annotate("↓ lower is better", xy=(0.98, 0.98), xycoords="axes fraction", ha="right", va="top", fontsize=10, color="#C93F4B")
+    throughput_axis.annotate("↑ higher is better", xy=(1.18, 0.98), xycoords="axes fraction", ha="right", va="top", fontsize=10, color="#1769AA")
+
+    handles = [
+        Patch(facecolor="#168A72", edgecolor="#075E4C", label="Peak GPU memory"),
+        Line2D([0], [0], color="#C93F4B", marker="o", linewidth=2, label="Denoise time"),
+        Line2D([0], [0], color="#1769AA", marker="s", linewidth=2, label="Denoise throughput"),
+    ]
+    fig.legend(handles=handles, loc="lower center", ncol=3, frameon=False, bbox_to_anchor=(0.5, 0.035), fontsize=10.5, columnspacing=2.2)
+    fig.subplots_adjust(left=0.09, right=0.82, top=0.94, bottom=0.20)
     args.figure.parent.mkdir(parents=True, exist_ok=True)
-    ET.indent(root)
-    ET.ElementTree(root).write(args.figure, encoding="utf-8", xml_declaration=True)
+    fig.savefig(args.figure, format="svg", facecolor="white")
+    plt.close(fig)
 
 
 if __name__ == "__main__":

@@ -177,9 +177,6 @@ Base H3 使用 [FastVideo 官方示例](https://github.com/hao-ai-lab/FastVideo/
 
 ## FP8 attention smoothing
 
-最早的非融合实现使去噪时间增加 11.7%，融合后开销降至 2.2%。在捕获的 MiniMax-H3 真实层上，K 的量化 MSE 降低 21.65%，attention 输出 MSE 降低 8.18%。
-
-![MiniMax-H3 FP8 smoothing 性能](sections/04-evaluation/assets/smoothing-performance.svg)
 
 | 配置（BF16 为 reference） | 视频 PSNR ↑ | 视频 SSIM ↑ | 音频 cosine ↑ | 频谱收敛误差 ↓ |
 |---|---:|---:|---:|---:|
@@ -195,6 +192,10 @@ Base H3 使用 [FastVideo 官方示例](https://github.com/hao-ai-lab/FastVideo/
 </div>
 
 在视频后半段，smoothing 提高了车顶标识、受电弓连线和窗框对齐的时序稳定性；音频 cosine 从 0.850 提升至 0.889，频谱收敛误差从 0.506 降至 0.454。
+
+融合后的质量路径只增加约 **2% overhead**，几乎没有额外性能开销即可提升质量。在捕获的 MiniMax-H3 真实层上，K 的量化 MSE 降低 21.65%，attention 输出 MSE 降低 8.18%。
+
+![MiniMax-H3 FP8 smoothing 性能](sections/04-evaluation/assets/smoothing-performance.svg)
 
 ---
 

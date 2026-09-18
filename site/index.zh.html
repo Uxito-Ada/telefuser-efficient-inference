@@ -204,8 +204,6 @@
 </div>
 
 <h2 id="fp8-attention-smoothing">FP8 attention smoothing</h2>
-<p>最早的非融合实现使去噪时间增加 11.7%，融合后开销降至 2.2%。在捕获的 MiniMax-H3 真实层上，K 的量化 MSE 降低 21.65%，attention 输出 MSE 降低 8.18%。</p>
-<p><img alt="MiniMax-H3 FP8 smoothing 性能" src="../sections/04-evaluation/assets/smoothing-performance.svg"></p>
 <table>
 <thead>
 <tr>
@@ -241,6 +239,8 @@
 </div>
 
 <p>在视频后半段，smoothing 提高了车顶标识、受电弓连线和窗框对齐的时序稳定性；音频 cosine 从 0.850 提升至 0.889，频谱收敛误差从 0.506 降至 0.454。</p>
+<p>融合后的质量路径只增加约 <strong>2% overhead</strong>，几乎没有额外性能开销即可提升质量。在捕获的 MiniMax-H3 真实层上，K 的量化 MSE 降低 21.65%，attention 输出 MSE 降低 8.18%。</p>
+<p><img alt="MiniMax-H3 FP8 smoothing 性能" src="../sections/04-evaluation/assets/smoothing-performance.svg"></p>
 <hr>
 <h1 id="_4">结语</h1>
 <p>Q-SPA 在 TeleFuser 中解决了三个直接相关的问题：</p>

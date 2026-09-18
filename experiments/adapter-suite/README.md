@@ -24,7 +24,7 @@ Raw records:
 
 - `raw/turbo-lightx2v-4gpu.json`
 - `raw/turbo-sglang-4gpu.json`
-- `raw/turbo-telefuser-4gpu-regenerated.json` (same-prompt matrix render)
+- `raw/turbo-telefuser-4gpu-regenerated.json` (same-prompt quality-matched render; smoothing=none)
 - TeleFuser: `/data/heyang/telefuser-lora-adapter-pr-artifacts/turbo_telefuser_fp8_sol_4gpu.json`
 
 Regenerate the figure with:
