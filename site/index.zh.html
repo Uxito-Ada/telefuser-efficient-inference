@@ -28,7 +28,7 @@
   <span>相同四卡拓扑下，完整请求比 LightX2V 快 2.64 倍，比 SGLang 快 1.52 倍。</span>
 </div>
 
-<p><img alt="MiniMax-H3 四卡端到端生成吞吐" src="../sections/00-introduction/assets/four-gpu-throughput.svg"></p>
+<p><img class="hero-throughput" src="../sections/00-introduction/assets/four-gpu-throughput.svg" alt="MiniMax-H3 四卡端到端生成吞吐"></p>
 <p>本文以 MiniMax-H3 为主要测试模型。它的 DiT 联合生成高分辨率视频和音频，计算同时集中在大规模 Linear/MLP 和长序列 attention。性能优化必须和运动稳定性、画面细节及音频完整性一起验证。</p>
 <p>Q-SPA 包含三个相互关联的执行维度：</p>
 <ul>
@@ -44,7 +44,6 @@
   激活范围和硬件相关 kernel 需要有针对性的重构，而不是套用通用量化封装。</li>
 <li>World-model 请求不仅包含长序列 DiT 去噪，还要完成条件理解与推理、视频和音频联合生成及解码。模型即使能够放入单卡，整条生成链路仍面临很高的计算压力；序列并行、张量并行与通信计算重叠可以把多卡算力转化为端到端延迟收益。</li>
 </ul>
-<p>TeleFuser 的 Base H3 请求从 1 卡扩展到 2 卡和 4 卡，四卡去噪吞吐达到单卡的 <strong>3.40 倍</strong>。评测还包括 SGLang、LightX2V、FastVideo 以及 Turbo LoRA 和 FastH3 Adapter。</p>
 <hr>
 <h1 id="attention">量化与稀疏 attention 的布局冲突</h1>
 <p><strong>FP8 与稀疏 attention 解决不同的计算瓶颈。</strong> FP8 降低 Linear/MLP 的计算与带宽开销，Sol-Attn 跳过长序列中不重要的 attention block；要进一步加速 DiT，需要让两者在同一执行路径中工作。</p>
@@ -58,6 +57,10 @@
 <h2 id="fp8-block">让 FP8 和稀疏 block 使用同一份布局</h2>
 <p>TeleFuser 将 FP8 应用于 DiT 的投影层和 MLP，并将低精度执行延伸到 Sol-Attn。稀疏 block 索引、量化 scale 和 attention kernel 使用的 tile 遵循统一的布局约定，使选中的 QKV block 能够直接参与 FP8 计算，无需预先转换为 BF16。</p>
 <p><strong>TeleFuser 同时优化了 Sol-Attn 本身的执行效率。</strong> QK 和 PV GEMM 使用 FP8 计算，dequant 被融合进 attention 执行；Two-way KV splitting 将 K/V 计算分成两路并行调度，提高稀疏 shape 下的 SM 利用率。FP8 与 Sol-Attn 共同使用时，TeleFuser 还会通过 Tail padding 满足 kernel 的 tile 对齐要求，并在计算后恢复真实 route length，确保 padding 不会进入有效输出。dense window、dense layer、阈值模式和稀疏强度均保留调优接口，MiniMax-H3 的默认配置已经完成性能与生成质量调优，可直接使用。</p>
+<p><strong>同一条 FP8 Sol-Attn 路径也针对生成质量做了处理。</strong> MiniMax-H3 的 K/V 激活
+可能具有非零均值，TeleFuser 在量化前进行中心化，并在输出中恢复等价修正。融合
+之后可以保留更多有效的 FP8 表示范围，而不改变模型接口；优化配置默认开启质量
+相关处理。</p>
 <h2 id="attention_1">分布式 attention</h2>
 <p>TeleFuser 不只是把 Ulysses SP 接入 MiniMax-H3，还针对 FP8、Sol-Attn 和视频 token 布局重构了多卡执行路径。Ulysses All-to-All 建立各 rank 的局部 attention 视图后，再完成 FP8 quantization 和 Sol-Attn routing，使量化 scale、稀疏 block 与实际计算布局保持一致。3D 视频 token 的 reorder 被移到序列切分之前；全局共享的 scalar timestep 在各 rank 复制，per-token timestep 则随 token 一起切分，从而保持模型语义和单卡结果一致。</p>
 <p>在此基础上，TeleFuser 为 sequence parallel 补充了专用 kernel，并将 Ulysses 通信与 attention 计算重叠。该路径支持双卡和四卡 MiniMax-H3，包括 <code>TP2 × Ulysses SP2</code>，使 FP8 与稀疏带来的算术加速能够继续转化为多卡端到端收益。</p>
@@ -65,10 +68,6 @@
 <p>MiniMax-H3 除了 Base 模型，还有 Turbo LoRA 和 FastH3 一类加速 Adapter。TeleFuser 会先把 Adapter 合并到有效权重，再建立可复用的 FP8 表示，避免量化的仍是原始 Base 权重。</p>
 <p>Turbo LoRA 等蒸馏 Adapter 可以减少去噪步数，其他 Adapter 则用于提高特定任务的输出质量。Q-SPA 会把 Adapter 合并后的有效权重纳入 FP8、稀疏和并行执行路径，从而降低这些模型的端到端推理成本，而不只优化 Base checkpoint。</p>
 <hr>
-<h1 id="fp8">面向生成质量的 FP8</h1>
-<p>Diffusion 的每一步输出都会成为下一步输入，局部 FP8 误差可能沿去噪过程累积。因此，TeleFuser 将 attention smoothing 直接纳入 FP8 执行路径，而不是作为独立的后处理步骤。</p>
-<p>MiniMax-H3 的层级 profile 显示，部分 K/V tensor 的均值明显偏离零点。TeleFuser 在 FP8 attention 前中心化 K/V，并在输出中恢复等价偏移。这种针对 attention 分布设计的非对称量化处理，可以更充分地利用 FP8 动态范围，同时保持模型接口不变。</p>
-<p>中心化与输出修正已经融合进 FP8 Sol-Attn，并在优化配置中默认开启。相关端到端质量与性能数据放在主体性能评测之后。</p>
 <hr>
 <h1 id="results">性能与生成效果</h1>
 <h2 id="_1">测试配置</h2>
@@ -126,9 +125,6 @@
 </tr>
 </tbody>
 </table>
-<h2 id="telefuser">TeleFuser 扩展性</h2>
-<p><img alt="TeleFuser Base H3 扩展性" src="../sections/04-evaluation/assets/base-scaling.svg"></p>
-<p>Base H3 从单卡扩展到四卡后，去噪吞吐达到单卡的 <strong>3.40 倍</strong>。该路径将 Tensor Parallel、Ulysses Sequence Parallel 与通信计算重叠结合起来。</p>
 <h2 id="_2">四卡统一性能对比</h2>
 <p>柱形表示峰值 GPU 显存，折线表示去噪吞吐。所有数据均使用四张 H100，且未启用 CPU offload。</p>
 <p><img alt="MiniMax-H3 Base 与 Adapter 性能对比" src="../sections/04-evaluation/assets/all-workloads-performance.svg"></p>
@@ -138,6 +134,11 @@
 <li><strong>Turbo LoRA：</strong> TeleFuser 的端到端吞吐相比 LightX2V 提高 58.8%，相比 SGLang 提高 0.3%；峰值显存相比 LightX2V 降低 42.3%，相比 SGLang 降低 26.3%。</li>
 <li><strong>FastH3：</strong> TeleFuser 的端到端吞吐相比 FastVideo 提高 208.5%，峰值显存降低 37.4%。</li>
 </ul>
+<h2 id="telefuser">TeleFuser 扩展性</h2>
+<p><img alt="TeleFuser Base H3 扩展性" src="../sections/04-evaluation/assets/base-scaling.svg"></p>
+<p>在测试的单卡、双卡和四卡配置中，量化后的分布式路径保持了接近线性的扩展，
+同时降低了单卡显存占用。释放出的显存空间可以支持更大规模的视频生成请求，而
+不改变模型和输出接口。</p>
 <h2 id="_3">生成效果</h2>
 <table>
 <thead>
@@ -258,7 +259,7 @@
   仍会留下大量 DiT 计算；让稀疏 kernel 直接消费量化表示，才能同时获得两者的收益。</li>
 <li>通用量化封装不能保证 world model 的生成质量。长序列 attention 的布局和
   激活统计具有模型与硬件相关性，需要重新设计面向质量的量化与 kernel 实现。</li>
-<li>World model 的单次请求同时承担条件理解与推理、长序列视频/音频联合去噪和解码，算力压力不能用权重能否装入单卡来衡量。Ulysses SP、Tensor Parallel 与通信计算重叠共同缩短完整生成链路；MiniMax-H3 的去噪时间从单卡的 167.41 秒降至两卡的 90.90 秒和四卡的 49.28 秒，四卡吞吐达到单卡的 3.40 倍。</li>
+<li>World model 的单次请求同时承担条件理解与推理、长序列视频/音频联合去噪和解码，算力压力不能用权重能否装入单卡来衡量。Ulysses SP、Tensor Parallel 与通信计算重叠共同缩短完整生成链路；量化后的路径在测试的 GPU 数量上保持接近线性的扩展，同时降低单卡显存，为更大规模的生成请求留下空间。</li>
 </ul>
 <h2 id="_5">延伸阅读</h2>
 <ul>

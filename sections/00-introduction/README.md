@@ -23,7 +23,7 @@ diffusion transformers.
   <span>At the same four-GPU topology, TeleFuser is 2.64x faster than LightX2V and 1.52x faster than SGLang.</span>
 </div>
 
-![Four-GPU MiniMax-H3 end-to-end throughput](assets/four-gpu-throughput.svg)
+<img class="hero-throughput" src="assets/four-gpu-throughput.svg" alt="Four-GPU MiniMax-H3 end-to-end throughput">
 
 MiniMax-H3 is the primary evaluation model. Its DiT jointly generates
 high-resolution video and synchronized audio, with substantial work in both
@@ -48,7 +48,3 @@ TeleFuser now brings three execution dimensions together:
   the full generation path remains compute-intensive; sequence parallelism,
   tensor parallelism, and communication overlap turn additional GPUs into
   lower end-to-end latency.
-
-TeleFuser scales the same Base H3 request across one, two, and four GPUs; the
-four-GPU run reaches **3.40x** the single-GPU denoise throughput. The evaluation
-also covers SGLang, LightX2V, FastVideo, Turbo LoRA, and FastH3.

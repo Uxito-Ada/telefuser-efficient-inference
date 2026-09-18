@@ -25,7 +25,7 @@ diffusion transformers.
   <span>At the same four-GPU topology, TeleFuser is 2.64x faster than LightX2V and 1.52x faster than SGLang.</span>
 </div>
 
-![Four-GPU MiniMax-H3 end-to-end throughput](sections/00-introduction/assets/four-gpu-throughput.svg)
+<img class="hero-throughput" src="sections/00-introduction/assets/four-gpu-throughput.svg" alt="Four-GPU MiniMax-H3 end-to-end throughput">
 
 MiniMax-H3 is the primary evaluation model. Its DiT jointly generates
 high-resolution video and synchronized audio, with substantial work in both
@@ -50,10 +50,6 @@ TeleFuser now brings three execution dimensions together:
   the full generation path remains compute-intensive; sequence parallelism,
   tensor parallelism, and communication overlap turn additional GPUs into
   lower end-to-end latency.
-
-TeleFuser scales the same Base H3 request across one, two, and four GPUs; the
-four-GPU run reaches **3.40x** the single-GPU denoise throughput. The evaluation
-also covers SGLang, LightX2V, FastVideo, Turbo LoRA, and FastH3.
 
 ---
 
@@ -130,6 +126,12 @@ enter valid outputs. Dense windows, dense layers, threshold modes, and sparsity
 strength remain configurable; the MiniMax-H3 defaults are tuned for immediate
 use.
 
+**The same FP8 Sol-Attn path is quality-aware.** MiniMax-H3 K/V activations can
+have non-zero means, so TeleFuser centralizes them before quantization and
+restores the equivalent output correction. The fused path keeps more useful
+FP8 range without changing the model interface, and the quality-oriented
+defaults are enabled in the optimized profile.
+
 ## Distilled and quality adapters
 
 MiniMax-H3 is used both as a base model and with acceleration or style adapters.
@@ -171,23 +173,6 @@ evidence: PR40 quality suite
 do_not_claim: One prompt or one full-reference metric proves perceptual equivalence.
 -->
 
-# Quality-aware FP8
-
-Diffusion models feed each prediction into the next denoising update, so local
-FP8 error can accumulate across the trajectory. TeleFuser therefore includes
-attention smoothing in its FP8 path rather than treating quality as a separate
-post-processing step.
-
-Profiling MiniMax-H3 layers showed that some K/V tensors have clearly non-zero
-mean distributions. TeleFuser centralizes K/V before FP8 attention and restores
-the equivalent shift in the output. This attention-specific asymmetric
-quantization keeps more of the useful FP8 range without changing the model's
-interface.
-
-Centralization and output correction are fused into FP8 Sol-Attn and enabled by
-default. The end-to-end quality and overhead measurements appear after the main
-performance evaluation.
-
 ---
 
 <!--
@@ -211,14 +196,6 @@ do_not_claim: Do not combine incomparable schedules or present invalid media as 
 | FastH3 adapter | FastH3 dense, T2VA | 1344 × 768, 124 frames, 5 s at 24 FPS | 4 denoising steps | 4 | framework-native distributed path |
 | FP8 smoothing | Base H3, T2VA | 1344 × 768, 107 frames, 4 s at 24 FPS | 50 denoising steps | 1 | local |
 
-## TeleFuser scaling
-
-![TeleFuser Base H3 scaling](sections/04-evaluation/assets/base-scaling.svg)
-
-The four-GPU Base H3 run reaches **3.40×** the single-GPU denoising throughput.
-The distributed path combines tensor parallelism and Ulysses sequence
-parallelism with communication-compute overlap.
-
 ## Unified four-GPU comparison
 
 Peak GPU memory is shown as bars; denoising throughput is shown as the line.
@@ -231,6 +208,15 @@ Base H3 uses the official [FastVideo example](https://github.com/hao-ai-lab/Fast
 - **Base H3:** TeleFuser delivers 163.5% higher end-to-end throughput than LightX2V, 119.4% higher than FastVideo, and 51.8% higher than SGLang. Peak memory is 40.3% lower than LightX2V and 37.3% lower than SGLang, while remaining within 1.5% of FastVideo.
 - **Turbo LoRA:** TeleFuser throughput is 58.8% higher than LightX2V and 0.3% higher than SGLang. Peak memory is 42.3% lower than LightX2V and 26.3% lower than SGLang.
 - **FastH3:** TeleFuser delivers 208.5% higher end-to-end throughput than FastVideo while using 37.4% less peak GPU memory.
+
+## TeleFuser scaling
+
+![TeleFuser Base H3 scaling](sections/04-evaluation/assets/base-scaling.svg)
+
+Across the tested one-, two-, and four-GPU points, the quantized distributed
+path preserves near-linear scaling while lowering per-GPU memory relative to
+dense execution. The resulting headroom supports larger video-generation
+requests without changing the model or output contract.
 
 ## Generated output
 
@@ -341,9 +327,9 @@ These implementations and experiments lead to three practical insights for world
 - A world-model request combines conditioning and reasoning, long-sequence
   video/audio denoising, and decoding; whether its weights fit on one GPU does
   not capture that compute pressure. Ulysses SP, tensor parallelism, and
-  communication overlap shorten the full generation path. MiniMax-H3 denoising
-  falls from 167.41 seconds on one GPU to 90.90 seconds on two and 49.28 seconds
-  on four, reaching 3.40x the single-GPU throughput.
+  communication overlap shorten the full generation path. The quantized path
+  preserves near-linear scaling across the tested GPU counts while lowering
+  per-GPU memory, leaving room for larger generation requests.
 
 ## Further reading
 

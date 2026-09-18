@@ -15,7 +15,7 @@ language: zh-CN
   <span>相同四卡拓扑下，完整请求比 LightX2V 快 2.64 倍，比 SGLang 快 1.52 倍。</span>
 </div>
 
-![MiniMax-H3 四卡端到端生成吞吐](assets/four-gpu-throughput.svg)
+<img class="hero-throughput" src="assets/four-gpu-throughput.svg" alt="MiniMax-H3 四卡端到端生成吞吐">
 
 本文以 MiniMax-H3 为主要测试模型。它的 DiT 联合生成高分辨率视频和音频，计算同时集中在大规模 Linear/MLP 和长序列 attention。性能优化必须和运动稳定性、画面细节及音频完整性一起验证。
 
@@ -32,5 +32,3 @@ Q-SPA 包含三个相互关联的执行维度：
 - 通用量化方案在 world model 的 DiT 上容易出现质量波动。attention 布局、
   激活范围和硬件相关 kernel 需要有针对性的重构，而不是套用通用量化封装。
 - World-model 请求不仅包含长序列 DiT 去噪，还要完成条件理解与推理、视频和音频联合生成及解码。模型即使能够放入单卡，整条生成链路仍面临很高的计算压力；序列并行、张量并行与通信计算重叠可以把多卡算力转化为端到端延迟收益。
-
-TeleFuser 的 Base H3 请求从 1 卡扩展到 2 卡和 4 卡，四卡去噪吞吐达到单卡的 **3.40 倍**。评测还包括 SGLang、LightX2V、FastVideo 以及 Turbo LoRA 和 FastH3 Adapter。

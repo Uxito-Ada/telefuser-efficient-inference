@@ -39,9 +39,9 @@ These implementations and experiments lead to three practical insights for world
 - A world-model request combines conditioning and reasoning, long-sequence
   video/audio denoising, and decoding; whether its weights fit on one GPU does
   not capture that compute pressure. Ulysses SP, tensor parallelism, and
-  communication overlap shorten the full generation path. MiniMax-H3 denoising
-  falls from 167.41 seconds on one GPU to 90.90 seconds on two and 49.28 seconds
-  on four, reaching 3.40x the single-GPU throughput.
+  communication overlap shorten the full generation path. The quantized path
+  preserves near-linear scaling across the tested GPU counts while lowering
+  per-GPU memory, leaving room for larger generation requests.
 
 ## Further reading
 

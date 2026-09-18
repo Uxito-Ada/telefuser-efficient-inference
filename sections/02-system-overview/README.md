@@ -29,6 +29,12 @@ enter valid outputs. Dense windows, dense layers, threshold modes, and sparsity
 strength remain configurable; the MiniMax-H3 defaults are tuned for immediate
 use.
 
+**The same FP8 Sol-Attn path is quality-aware.** MiniMax-H3 K/V activations can
+have non-zero means, so TeleFuser centralizes them before quantization and
+restores the equivalent output correction. The fused path keeps more useful
+FP8 range without changing the model interface, and the quality-oriented
+defaults are enabled in the optimized profile.
+
 ## Distilled and quality adapters
 
 MiniMax-H3 is used both as a base model and with acceleration or style adapters.

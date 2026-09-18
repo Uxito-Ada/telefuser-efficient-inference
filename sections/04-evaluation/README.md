@@ -19,14 +19,6 @@ do_not_claim: Do not combine incomparable schedules or present invalid media as 
 | FastH3 adapter | FastH3 dense, T2VA | 1344 × 768, 124 frames, 5 s at 24 FPS | 4 denoising steps | 4 | framework-native distributed path |
 | FP8 smoothing | Base H3, T2VA | 1344 × 768, 107 frames, 4 s at 24 FPS | 50 denoising steps | 1 | local |
 
-## TeleFuser scaling
-
-![TeleFuser Base H3 scaling](assets/base-scaling.svg)
-
-The four-GPU Base H3 run reaches **3.40×** the single-GPU denoising throughput.
-The distributed path combines tensor parallelism and Ulysses sequence
-parallelism with communication-compute overlap.
-
 ## Unified four-GPU comparison
 
 Peak GPU memory is shown as bars; denoising throughput is shown as the line.
@@ -39,6 +31,15 @@ Base H3 uses the official [FastVideo example](https://github.com/hao-ai-lab/Fast
 - **Base H3:** TeleFuser delivers 163.5% higher end-to-end throughput than LightX2V, 119.4% higher than FastVideo, and 51.8% higher than SGLang. Peak memory is 40.3% lower than LightX2V and 37.3% lower than SGLang, while remaining within 1.5% of FastVideo.
 - **Turbo LoRA:** TeleFuser throughput is 58.8% higher than LightX2V and 0.3% higher than SGLang. Peak memory is 42.3% lower than LightX2V and 26.3% lower than SGLang.
 - **FastH3:** TeleFuser delivers 208.5% higher end-to-end throughput than FastVideo while using 37.4% less peak GPU memory.
+
+## TeleFuser scaling
+
+![TeleFuser Base H3 scaling](assets/base-scaling.svg)
+
+Across the tested one-, two-, and four-GPU points, the quantized distributed
+path preserves near-linear scaling while lowering per-GPU memory relative to
+dense execution. The resulting headroom supports larger video-generation
+requests without changing the model or output contract.
 
 ## Generated output
 

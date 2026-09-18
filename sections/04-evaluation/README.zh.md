@@ -16,12 +16,6 @@ language: zh-CN
 | FastH3 Adapter | FastH3 dense，T2VA | 1344 × 768，124 帧，5 秒，24 fps | 4 次去噪步 | 4 | 各框架原生分布式路径 |
 | FP8 smoothing | Base H3，T2VA | 1344 × 768，107 帧，4 秒，24 fps | 50 次去噪步 | 1 | 单卡 |
 
-## TeleFuser 扩展性
-
-![TeleFuser Base H3 扩展性](assets/base-scaling.svg)
-
-Base H3 从单卡扩展到四卡后，去噪吞吐达到单卡的 **3.40 倍**。该路径将 Tensor Parallel、Ulysses Sequence Parallel 与通信计算重叠结合起来。
-
 ## 四卡统一性能对比
 
 柱形表示峰值 GPU 显存，折线表示去噪吞吐。所有数据均使用四张 H100，且未启用 CPU offload。
@@ -33,6 +27,14 @@ Base H3 使用 [FastVideo 官方示例](https://github.com/hao-ai-lab/FastVideo/
 - **Base H3：** TeleFuser 的端到端吞吐相比 LightX2V、FastVideo 和 SGLang 分别提高 163.5%、119.4% 和 51.8%。峰值显存相比 LightX2V 和 SGLang 分别降低 40.3% 和 37.3%，与 FastVideo 的差异为 1.5%。
 - **Turbo LoRA：** TeleFuser 的端到端吞吐相比 LightX2V 提高 58.8%，相比 SGLang 提高 0.3%；峰值显存相比 LightX2V 降低 42.3%，相比 SGLang 降低 26.3%。
 - **FastH3：** TeleFuser 的端到端吞吐相比 FastVideo 提高 208.5%，峰值显存降低 37.4%。
+
+## TeleFuser 扩展性
+
+![TeleFuser Base H3 扩展性](assets/base-scaling.svg)
+
+在测试的单卡、双卡和四卡配置中，量化后的分布式路径保持了接近线性的扩展，
+同时降低了单卡显存占用。释放出的显存空间可以支持更大规模的视频生成请求，而
+不改变模型和输出接口。
 
 ## 生成效果
 
