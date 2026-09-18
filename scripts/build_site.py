@@ -78,7 +78,7 @@ def render(edition: dict[str, Any]) -> str:
     source = edition["source"].read_text(encoding="utf-8")
     source = re.sub(r"<!--.*?-->", "", source, flags=re.DOTALL)
     source = re.sub(r"\]\(sections/[^)]*/assets/([^)]*)\)", r"](assets/\1)", source)
-    source = re.sub(r"src=\"sections/[^/\"]*/assets/([^\"]+)\"", r"src=\"assets/\1\"", source)
+    source = re.sub(r'src="sections/[^/"]*/assets/([^"]+)"', r'src="assets/\1"', source)
     source = source.replace("](sections/", "](../sections/")
     source = source.replace('src="sections/', 'src="../sections/')
     body = markdown.markdown(
